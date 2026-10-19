@@ -5,10 +5,13 @@ import { RecentSalesWidget } from '@/app/commons/recentsaleswidget';
 import { BestSellingWidget } from '@/app/commons/bestsellingwidget';
 import { RevenueStreamWidget } from '@/app/commons/revenuestreamwidget';
 import { MarketEvolutionWidget } from '@/app/commons/marketEvolution/market-evolution-widge';
+import { PortofolioDistribution } from '@/app/layout/component/portofolio-distribution/portofolio-distribution';
+import { Topmoves } from '@/app/pages/topmoves/topmoves';
+import { ActualitesComponent } from '@/app/pages/actualites/actualites';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget, MarketEvolutionWidget],
+    imports: [StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget, MarketEvolutionWidget, PortofolioDistribution, Topmoves, ActualitesComponent],
     templateUrl: './dashboard.html'
     // template: `
     //     <div class="grid grid-cols-12 gap-8">

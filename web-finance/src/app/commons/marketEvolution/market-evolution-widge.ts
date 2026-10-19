@@ -4,7 +4,8 @@ import { ChartModule } from 'primeng/chart';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { MarketAsset } from '@/app/models/model';
+import { HistoricalPrice, MarketAsset, PeriodOption } from '@/app/models/model';
+import { ActifService } from '@/app/layout/service/actif-service';
 
 @Component({
     standalone: true,
@@ -16,6 +17,8 @@ export class MarketEvolutionWidget {
     private readonly actifService = inject(ActifService);
 
     selectedPeriod = '1M';
+
+    loading = false;
 
     periods: PeriodOption[]  = [
         { label: '1J', value: '1D' },
@@ -83,7 +86,7 @@ export class MarketEvolutionWidget {
         this.loadingAssets = true;
         this.errorMessage = '';
 
-        this.marketService.getAssets()
+        this.actifService.getAssets()
             .pipe(
                 finalize(() => {
                     this.loadingAssets = false;
@@ -144,7 +147,7 @@ export class MarketEvolutionWidget {
         this.loadingChart = true;
         this.errorMessage = '';
 
-        this.marketService.getAssetHistory(
+        this.actifService.getAssetHistory(
             this.selectedAsset.id,
             this.selectedPeriod
         )
@@ -207,4 +210,72 @@ export class MarketEvolutionWidget {
             datasets: []
         };
     }
+
+    // loadChart(): void {
+    //     // Vérifier qu'un actif est sélectionné
+    //     if (this.selectedAssetId == null) {
+    //         this.chartData = {
+    //             labels: [],
+    //             datasets: []
+    //         };
+    //         return;
+    //     }
+    //
+    //     this.loading = true;
+    //     this.errorMessage = '';
+    //
+    //     this.actifService.getAssetHistory(
+    //         this.selectedAssetId,
+    //         this.selectedPeriod
+    //     ).subscribe({
+    //         next: (history) => {
+    //             // Préparer les dates pour l'axe horizontal
+    //             const labels = history.map(
+    //                 (item) => item.date
+    //             );
+    //
+    //             // Préparer les cours de clôture pour l'axe vertical
+    //             const prices = history.map(
+    //                 (item) => item.close
+    //             );
+    //
+    //             // Construire les données du graphique
+    //             this.chartData = {
+    //                 labels,
+    //                 datasets: [
+    //                     {
+    //                         label: 'Cours de clôture',
+    //                         data: prices,
+    //                         fill: true,
+    //                         tension: 0.4,
+    //                         borderColor: '#3B82F6',
+    //                         backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    //                         pointBackgroundColor: '#3B82F6',
+    //                         pointRadius: 2,
+    //                         pointHoverRadius: 5
+    //                     }
+    //                 ]
+    //             };
+    //
+    //             this.loading = false;
+    //         },
+    //
+    //         error: (error) => {
+    //             console.error(
+    //                 'Erreur lors du chargement de l’historique :',
+    //                 error
+    //             );
+    //
+    //             this.chartData = {
+    //                 labels: [],
+    //                 datasets: []
+    //             };
+    //
+    //             this.errorMessage =
+    //                 'Impossible de charger l’historique des cours. Veuillez réessayer.';
+    //
+    //             this.loading = false;
+    //         }
+    //     });
+    // }
 }

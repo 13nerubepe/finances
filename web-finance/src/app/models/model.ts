@@ -67,4 +67,67 @@ export interface HistoricalPrice {
     close: number;
     volume: number;
 }
+export interface PeriodOption {
+    label: string;
+    value: string;
+}
+
+export interface Actif {
+    id: number;
+    name: string;
+    symbol: string;
+}
+export interface HistoricalPrice {
+    date: string;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+}
+
+export interface PortfolioDistributionItem {
+    actifId: number;
+    name: string;
+    symbol: string;
+    quantity: number;
+    unitPrice: number;
+    totalValue: number;
+    percentage?: number;
+}
+
+export interface PortfolioDistributionResponse {
+    totalValue: number;
+    distribution: PortfolioDistributionItem[];
+}
+
+export interface TopMover {
+    actifId: number;
+    name: string;
+    symbol: string;
+    currentPrice: number;
+    previousPrice: number;
+    variation: number;
+}
+
+export interface TopMoversResponse {
+    topGagnants: TopMover[];
+    topPerdants: TopMover[];
+}
+
+export interface Actualite {
+    id: number;
+    titre: string;
+    resume: string;
+    source: string;
+    categorie: string;
+    url: string;
+    imageUrl?: string;
+    datePublication: string;
+}
+
+export interface ActualiteResponse {
+    results: Actualite[];
+    count?: number;
+}
 
