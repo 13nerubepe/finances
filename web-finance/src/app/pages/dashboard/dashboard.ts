@@ -4,9 +4,9 @@ import { StatsWidget } from '@/app/commons/statswidget';
 import { RecentSalesWidget } from '@/app/commons/recentsaleswidget';
 import { BestSellingWidget } from '@/app/commons/bestsellingwidget';
 import { RevenueStreamWidget } from '@/app/commons/revenuestreamwidget';
-import { MarketEvolutionWidget } from '@/app/commons/marketEvolution/market-evolution-widge';
-import { PortofolioDistribution } from '@/app/layout/component/portofolio-distribution/portofolio-distribution';
-import { Topmoves } from '@/app/pages/topmoves/topmoves';
+import { MarketEvolutionWidget } from '@/app/pages/commons/marketEvolution/market-evolution-widge';
+import { PortofolioDistribution } from '@/app/pages/commons/portofolio-distribution/portofolio-distribution';
+import { Topmoves } from '@/app/pages/commons/topmoves/topmoves';
 import { ActualitesComponent } from '@/app/pages/actualites/actualites';
 
 @Component({

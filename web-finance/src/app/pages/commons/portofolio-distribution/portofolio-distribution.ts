@@ -10,7 +10,10 @@ import { Observable } from 'rxjs';
     selector: 'app-portofolio-distribution',
     imports: [DecimalPipe, UIChart],
     templateUrl: './portofolio-distribution.html',
+    host: { class: 'block min-w-0' },
+    styles: [`:host { display: block; min-width: 0; }`],
     styleUrl: './portofolio-distribution.scss'
+
 })
 export class PortofolioDistribution {
     private readonly actifService = inject(ActifService);
@@ -42,23 +45,31 @@ export class PortofolioDistribution {
             hoverOffset: 8
         }]
     };
-
-    chartOptions: ChartOptions<'doughnut'> = {
+    chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
-        cutout: '72%',
+        cutout: '68%',
         plugins: {
-            legend: {
-                display: false
-            },
-            tooltip: {
-                callbacks: {
-                    label: (context) =>
-                        `${context.label}: ${Number(context.raw).toFixed(2)} %`
-                }
-            }
+            legend: { display: false }
         }
-    };
+    }
+
+    // chartOptions: ChartOptions<'doughnut'> = {
+    //     responsive: true,
+    //     maintainAspectRatio: false,
+    //     cutout: '72%',
+    //     plugins: {
+    //         legend: {
+    //             display: false
+    //         },
+    //         tooltip: {
+    //             callbacks: {
+    //                 label: (context) =>
+    //                     `${context.label}: ${Number(context.raw).toFixed(2)} %`
+    //             }
+    //         }
+    //     }
+    // };
 
     ngOnInit(): void {
         this.loadPortfolioDistribution();

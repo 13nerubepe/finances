@@ -26,7 +26,7 @@ export const appRoutes: Routes = [
             },
             {
                 path: AppConstantRoute.ComparaisonActif_PATH,
-                loadComponent: () => import('./app/pages/comparaison-actif/comparaison-actif').then((c) => c.ComparaisonActifComponent),
+                loadComponent: () => import('@/app/pages/commons/comparaison-actif/comparaison-actif').then((c) => c.ComparaisonActifComponent),
                 data: { breadcrumb: 'ComparairéActifs' },
             },
 

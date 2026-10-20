@@ -13,11 +13,21 @@ export class Topmoves implements OnInit {
     loading = false;
     errorMessage = '';
 
+    activeTab: 'gagnants' | 'perdants' = 'gagnants';
+
     topGagnants: TopMover[] = [];
     topPerdants: TopMover[] = [];
 
+    get currentList(): TopMover[] {
+        return this.activeTab === 'gagnants' ? this.topGagnants : this.topPerdants;
+    }
+
     ngOnInit(): void {
         this.loadTopMovers();
+    }
+
+    setTab(tab: 'gagnants' | 'perdants'): void {
+        this.activeTab = tab;
     }
 
     loadTopMovers(): void {

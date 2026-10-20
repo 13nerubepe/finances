@@ -1,13 +1,13 @@
+<div class="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
 
-<div class="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-    <!-- En-tête compact -->
-    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-        <div>
-            <h2 class="text-base font-semibold text-slate-900 dark:text-white">
-                Top gagnants et perdants
+    <!-- En-tête -->
+    <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-700">
+        <div class="min-w-0">
+            <h2 class="m-0 !text-sm !font-bold !leading-tight text-slate-800 dark:text-white">
+                Top mouvements
             </h2>
-            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                Les actifs ayant enregistré les plus fortes variations.
+            <p class="mb-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                Plus fortes variations du marché
             </p>
         </div>
 
@@ -15,139 +15,110 @@
             type="button"
             (click)="loadTopMovers()"
             [disabled]="loading"
-            class="flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700">
-            <i class="pi pi-refresh" [class.pi-spin]="loading"></i>
-            Actualiser
+            aria-label="Actualiser"
+            title="Actualiser"
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800">
+            <i class="pi pi-refresh text-xs" [class.pi-spin]="loading"></i>
         </button>
     </div>
 
-    <!-- Chargement -->
-    @if (loading) {
-        <div class="flex min-h-32 items-center justify-center gap-3 p-4">
-            <i class="pi pi-spin pi-spinner text-lg text-blue-500"></i>
-            <span class="text-sm text-slate-500 dark:text-slate-400">
-                Chargement des performances...
-            </span>
+    <!-- Boutons Gagnants / Perdants -->
+    <div class="px-4 pt-3">
+        <div class="grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+
+            <button
+                type="button"
+                (click)="activeTab = 'gagnants'"
+                [class]="activeTab === 'gagnants'
+                    ? 'bg-white text-emerald-700 shadow-sm dark:bg-slate-900 dark:text-emerald-400'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition">
+                <i class="pi pi-arrow-up-right text-xs"></i>
+                Gagnants
+                <span class="rounded-full bg-emerald-50 px-1.5 text-[10px] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
+                    {{ topGagnants.length }}
+                </span>
+            </button>
+
+            <button
+                type="button"
+                (click)="activeTab = 'perdants'"
+                [class]="activeTab === 'perdants'
+                    ? 'bg-white text-red-600 shadow-sm dark:bg-slate-900 dark:text-red-400'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                class="flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition">
+                <i class="pi pi-arrow-down-right text-xs"></i>
+                Perdants
+                <span class="rounded-full bg-red-50 px-1.5 text-[10px] text-red-600 dark:bg-red-500/10 dark:text-red-400">
+                    {{ topPerdants.length }}
+                </span>
+            </button>
+
         </div>
-    } @else if (errorMessage) {
-        <!-- Erreur -->
-        <div class="m-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-            {{ errorMessage }}
-        </div>
-    } @else {
-        <!-- Gagnants et perdants côte à côte -->
-        <div class="grid grid-cols-1 items-start gap-4 p-3 lg:grid-cols-2">
+    </div>
 
-            <!-- TOP GAGNANTS -->
-            <section class="min-w-0 overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800">
+    <!-- Liste -->
+    <div class="flex flex-1 flex-col p-3">
 
-                <div class="flex items-center gap-2 border-b border-slate-100 bg-emerald-50/60 px-3 py-2.5 dark:border-slate-800 dark:bg-emerald-950/20">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                        <i class="pi pi-arrow-up-right"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
-                            Top gagnants
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Plus fortes hausses
-                        </p>
-                    </div>
-                </div>
+        @if (loading) {
+            <div class="flex flex-1 items-center justify-center gap-2 py-8 text-xs text-slate-500 dark:text-slate-400">
+                <i class="pi pi-spin pi-spinner text-emerald-600"></i>
+                Chargement...
+            </div>
+        } @else if (errorMessage) {
+            <div class="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+                {{ errorMessage }}
+            </div>
+        } @else if (currentList.length === 0) {
+            <div class="flex flex-1 items-center justify-center py-8 text-xs text-slate-500 dark:text-slate-400">
+                {{ activeTab === 'gagnants' ? 'Aucun gagnant disponible.' : 'Aucun perdant disponible.' }}
+            </div>
+        } @else {
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                @for (actif of currentList; track trackByActifId($index, actif)) {
+                    <div class="flex min-w-0 items-center justify-between gap-3 px-1 py-2.5">
 
-                @if (topGagnants.length === 0) {
-                    <p class="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                        Aucun gagnant disponible.
-                    </p>
-                } @else {
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                        @for (actif of topGagnants; track trackByActifId($index, actif)) {
-                            <div class="flex min-w-0 items-center justify-between gap-2 px-3 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-
-                                <div class="flex min-w-0 items-center gap-2.5">
-                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                                        {{ actif.symbol.slice(0, 2) }}
-                                    </div>
-
-                                    <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                            {{ actif.name }}
-                                        </p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                                            {{ actif.symbol }}
-                                        </p>
-                                        <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
-                                            {{ formatCurrency(actif.currentPrice) }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="shrink-0 rounded-md bg-emerald-50 px-2 py-1.5 text-right text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                                    <i class="pi pi-arrow-up-right mr-1"></i>
-                                    {{ formatVariation(actif.variation) }}
-                                </div>
-
+                        <!-- Actif -->
+                        <div class="flex min-w-0 items-center gap-2.5">
+                            <div
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                                [class]="activeTab === 'gagnants'
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'">
+                                {{ actif.symbol.slice(0, 2) }}
                             </div>
-                        }
+
+                            <div class="min-w-0">
+                                <p class="m-0 truncate text-sm font-semibold text-slate-800 dark:text-white">
+                                    {{ actif.name }}
+                                </p>
+                                <p class="m-0 text-xs text-slate-500 dark:text-slate-400">
+                                    {{ actif.symbol }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Prix + variation -->
+                        <div class="flex shrink-0 items-center gap-3">
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                                {{ formatCurrency(actif.currentPrice) }}
+                            </span>
+
+                            <span
+                                class="inline-flex min-w-[70px] items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
+                                [class]="activeTab === 'gagnants'
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
+                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'">
+                                <i class="pi text-[10px]"
+                                   [class.pi-arrow-up-right]="activeTab === 'gagnants'"
+                                   [class.pi-arrow-down-right]="activeTab === 'perdants'"></i>
+                                {{ formatVariation(actif.variation) }}
+                            </span>
+                        </div>
+
                     </div>
                 }
-            </section>
-
-            <!-- TOP PERDANTS -->
-            <section class="min-w-0 overflow-hidden rounded-xl border border-slate-100 dark:border-slate-800">
-
-                <div class="flex items-center gap-2 border-b border-slate-100 bg-red-50/60 px-3 py-2.5 dark:border-slate-800 dark:bg-red-950/20">
-                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400">
-                        <i class="pi pi-arrow-down-right"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="text-sm font-semibold text-slate-900 dark:text-white">
-                            Top perdants
-                        </h3>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Plus fortes baisses
-                        </p>
-                    </div>
-                </div>
-
-                @if (topPerdants.length === 0) {
-                    <p class="p-4 text-center text-xs text-slate-500 dark:text-slate-400">
-                        Aucun perdant disponible.
-                    </p>
-                } @else {
-                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                        @for (actif of topPerdants; track trackByActifId($index, actif)) {
-                            <div class="flex min-w-0 items-center justify-between gap-2 px-3 py-3 transition hover:bg-slate-50 dark:hover:bg-slate-800/50">
-
-                                <div class="flex min-w-0 items-center gap-2.5">
-                                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-50 text-xs font-bold text-red-700 dark:bg-red-950 dark:text-red-400">
-                                        {{ actif.symbol.slice(0, 2) }}
-                                    </div>
-
-                                    <div class="min-w-0">
-                                        <p class="truncate text-sm font-semibold text-slate-900 dark:text-white">
-                                            {{ actif.name }}
-                                        </p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                                            {{ actif.symbol }}
-                                        </p>
-                                        <p class="mt-0.5 text-xs text-slate-600 dark:text-slate-300">
-                                            {{ formatCurrency(actif.currentPrice) }}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div class="shrink-0 rounded-md bg-red-50 px-2 py-1.5 text-right text-xs font-semibold text-red-700 dark:bg-red-950 dark:text-red-400">
-                                    <i class="pi pi-arrow-down-right mr-1"></i>
-                                    {{ formatVariation(actif.variation) }}
-                                </div>
-
-                            </div>
-                        }
-                    </div>
-                }
-            </section>
-
-        </div>
-    }
+            </div>
+        }
+    </div>
 </div>

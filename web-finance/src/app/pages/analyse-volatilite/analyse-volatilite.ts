@@ -1,9 +1,9 @@
 import { Component, DestroyRef, inject, OnInit } from '@angular/core';
-import { HeaderVolatile } from '@/app/pages/header-volatile/header-volatile';
-import { IndicateursVolatile } from '@/app/pages/indicateurs-volatile/indicateurs-volatile';
-import { GraphVolatile } from '@/app/pages/graph-volatile/graph-volatile';
-import { CorrelationsActifs } from '@/app/pages/correlations-actifs/correlations-actifs';
-import { MouvementsInhabituels } from '@/app/pages/mouvements-inhabituels/mouvements-inhabituels';
+import { HeaderVolatile } from '@/app/pages/commons/header-volatile/header-volatile';
+import { IndicateursVolatile } from '@/app/pages/commons/indicateurs-volatile/indicateurs-volatile';
+import { GraphVolatile } from '@/app/pages/commons/graph-volatile/graph-volatile';
+import { CorrelationsActifs } from '@/app/pages/commons/correlations-actifs/correlations-actifs';
+import { MouvementsInhabituels } from '@/app/pages/commons/mouvements-inhabituels/mouvements-inhabituels';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { ActifOption, AnalyseVolatiliteParams, ResultatAnalyseVolatilite } from '@/app/models/model';
 import { catchError, finalize, of } from 'rxjs';

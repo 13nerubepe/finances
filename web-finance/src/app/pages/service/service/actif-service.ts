@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import {
     Actif, ActifOption,
     Actualite, AnalyseVolatiliteParams,
@@ -9,6 +9,10 @@ import {
     TopMoversResponse
 } from '@/app/models/model';
 import { environment } from '@/environments/environment';
+import { ACTIFS_MOCK, COURS_HISTORIQUES_MOCK } from '@/app/DATA/marche-mock.data.ts';
+import { PORTEFEUILLE_MOCK } from '@/app/DATA/portefeuille-mock.data';
+import { TOP_MOVERS_MOCK } from '@/app/DATA/topmoves-mock.data';
+import { ACTUALITES_MOCK } from '@/app/DATA/actualites-mock.data';
 
 @Injectable({
     providedIn: 'root'
@@ -17,51 +21,86 @@ export class ActifService {
     private readonly http = inject(HttpClient);
 
     private readonly apiUrl = `${environment.apiUrl}/`;
+    private readonly useMockData = true;
 
     // Récupérer la liste des actifs
     getAssets(): Observable<Actif[]> {
-        return this.http.get<Actif[]>(`${this.apiUrl}/actifs/`);
+        // return this.http.get<Actif[]>(`${this.apiUrl}/actifs/`);
+        return of(ACTIFS_MOCK);
     }
 
     // Récupérer l'historique des cours d'un actif
     getAssetHistory(assetId: number, period: string): Observable<HistoricalPrice[]> {
-        const params = new HttpParams()
-            .set('actif', assetId.toString())
-            .set('period', period);
+        // const params = new HttpParams()
+        //     .set('actif', assetId.toString())
+        //     .set('period', period);
+        //
+        // return this.http.get<HistoricalPrice[]>(
+        //     `${this.apiUrl}/cours-historiques/`,
+        //     { params }
+        // );
+        const historique = COURS_HISTORIQUES_MOCK[assetId] ?? [];
 
-        return this.http.get<HistoricalPrice[]>(
-            `${this.apiUrl}/cours-historiques/`,
-            { params }
-        );
+        // Pour le moment, on retourne tous les cours disponibles.
+        // Le filtrage par période pourra être ajouté ensuite.
+        return of(historique);
     }
 
     getPortfolioDistribution(): Observable<PortfolioDistributionResponse> {
-        return this.http.get<PortfolioDistributionResponse>(
-            `${this.apiUrl}/portefeuille/repartition/`
-        );
+        // return this.http.get<PortfolioDistributionResponse>(
+        //     `${this.apiUrl}/portefeuille/repartition/`
+        // );
+        return of(PORTEFEUILLE_MOCK);
     }
 
     getTopMovers(): Observable<TopMoversResponse> {
-        return this.http.get<TopMoversResponse>(
-            `${this.apiUrl}/marche/top-movers/`
-        );
+        // return this.http.get<TopMoversResponse>(
+        //     `${this.apiUrl}/marche/top-movers/`
+        // );
+        return of(TOP_MOVERS_MOCK);
     }
+    // getActualites(
+        // categorie = 'Toutes', recherche = ''): Observable<Actualite[]> {
+        // let params = new HttpParams();
+        //
+        // if (categorie !== 'Toutes') {
+        //     params = params.set('categorie', categorie);
+        // }
+        //
+        // if (recherche.trim()) {
+        //     params = params.set('search', recherche.trim());
+        // }
+        //
+        // return this.http.get<Actualite[]>(
+        //     `${this.apiUrl}/`,
+        //     { params }
+        // );
+
+
+    // }
+
     getActualites(
-        categorie = 'Toutes', recherche = ''): Observable<Actualite[]> {
-        let params = new HttpParams();
+        categorie = 'Toutes',
+        recherche = ''
+    ): Observable<Actualite[]> {
+        let resultats = [...ACTUALITES_MOCK];
 
         if (categorie !== 'Toutes') {
-            params = params.set('categorie', categorie);
+            resultats = resultats.filter(
+                actualite => actualite.categorie === categorie
+            );
         }
 
         if (recherche.trim()) {
-            params = params.set('search', recherche.trim());
+            const terme = recherche.trim().toLowerCase();
+
+            resultats = resultats.filter(actualite =>
+                actualite.titre.toLowerCase().includes(terme) ||
+                actualite.resume.toLowerCase().includes(terme)
+            );
         }
 
-        return this.http.get<Actualite[]>(
-            `${this.apiUrl}/`,
-            { params }
-        );
+        return of(resultats);
     }
 
 

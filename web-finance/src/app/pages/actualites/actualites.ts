@@ -5,38 +5,41 @@ import { FormsModule } from '@angular/forms';
 
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Actualite } from '@/app/models/model';
+import { Tag } from 'primeng/tag';
+import { Button, ButtonDirective } from 'primeng/button';
+import { Divider } from 'primeng/divider';
+import { InputIcon } from 'primeng/inputicon';
+import { IconField } from 'primeng/iconfield';
+import { InputText } from 'primeng/inputtext';
 
 @Component({
     selector: 'app-actualites',
     standalone: true,
-    imports: [
-        CommonModule,
-        FormsModule
-    ],
+    imports: [CommonModule, FormsModule,  ButtonDirective, InputText],
     templateUrl: './actualites.html',
     styleUrl: './actualites.scss'
 })
 export class ActualitesComponent implements OnInit {
-
     private readonly actifService = inject(ActifService);
-
-    actualites: Actualite[] = [];
-    actualitePrincipale: Actualite | null = null;
-
-    categories: string[] = [
-        'Toutes',
-        'Marchés',
-        'Économie',
-        'Entreprises',
-        'Technologie',
-        'Matières premières'
-    ];
-
-    categorieSelectionnee = 'Toutes';
-    recherche = '';
 
     loading = false;
     errorMessage = '';
+
+    recherche = '';
+    categorieSelectionnee = 'Toutes';
+
+    categories: string[] = [
+        'Toutes',
+        'Économie',
+        'Bourse',
+        'Finance',
+        'Banque',
+        'Entreprises'
+    ];
+
+    actualites: Actualite[] = [];
+    actualitesFiltrees: Actualite[] = [];
+
 
     ngOnInit(): void {
         this.loadActualites();
@@ -46,50 +49,84 @@ export class ActualitesComponent implements OnInit {
         this.loading = true;
         this.errorMessage = '';
 
-        this.actifService
-            .getActualites(
-                this.categorieSelectionnee,
-                this.recherche
-            )
-            .subscribe({
-                next: (data: Actualite[]) => {
-                    this.actualites = [...data].sort(
-                        (a, b) =>
-                            new Date(b.datePublication).getTime() -
-                            new Date(a.datePublication).getTime()
-                    );
+        this.actifService.getActualites().subscribe({
+            next: (response: Actualite[]) => {
+                this.actualites = response ?? [];
+                this.appliquerFiltres();
+                this.loading = false;
+            },
+            error: (error: unknown) => {
+                console.error(
+                    'Erreur lors du chargement des actualités',
+                    error
+                );
 
-                    this.actualitePrincipale =
-                        this.actualites[0] ?? null;
+                this.errorMessage =
+                    'Une erreur est survenue lors du chargement. Veuillez réessayer.';
 
-                    this.loading = false;
-                },
+                this.loading = false;
+            }
+        });
+    }
 
-                error: (error: unknown) => {
-                    console.error(
-                        'Erreur de chargement des actualités',
-                        error
-                    );
-
-                    this.errorMessage =
-                        'Impossible de charger les actualités. Réessayez plus tard.';
-
-                    this.loading = false;
-                }
-            });
+    rechercherActualites(): void {
+        this.appliquerFiltres();
     }
 
     changerCategorie(categorie: string): void {
         this.categorieSelectionnee = categorie;
-        this.loadActualites();
+        this.appliquerFiltres();
     }
 
-    rechercherActualites(): void {
-        this.loadActualites();
+    reinitialiserFiltres(): void {
+        this.recherche = '';
+        this.categorieSelectionnee = 'Toutes';
+        this.appliquerFiltres();
     }
 
-    trackById(index: number, actualite: Actualite): number {
-        return actualite.id;
+    private appliquerFiltres(): void {
+        const terme = this.normaliser(this.recherche.trim());
+
+        this.actualitesFiltrees = this.actualites.filter(actualite => {
+            const correspondCategorie =
+                this.categorieSelectionnee === 'Toutes' ||
+                this.normaliser(actualite.categorie) ===
+                this.normaliser(this.categorieSelectionnee);
+
+            const contenu = this.normaliser([
+                actualite.titre,
+                actualite.resume ?? '',
+                actualite.categorie,
+                actualite.source ?? ''
+            ].join(' '));
+
+            const correspondRecherche =
+                !terme || contenu.includes(terme);
+
+            return correspondCategorie && correspondRecherche;
+        });
+    }
+
+    get actualitePrincipale(): Actualite | null {
+        return this.actualitesFiltrees[0] ?? null;
+    }
+
+    get actualitesSecondaires(): Actualite[] {
+        return this.actualitesFiltrees.slice(1);
+    }
+
+    trackByActualite(
+        index: number,
+        actualite: Actualite
+    ): number | string {
+        return actualite.id ?? index;
+    }
+
+    private normaliser(valeur: string): string {
+        return valeur
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase();
     }
 }
 

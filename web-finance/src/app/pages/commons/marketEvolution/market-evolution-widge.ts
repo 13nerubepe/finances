@@ -6,35 +6,37 @@ import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { HistoricalPrice, MarketAsset, PeriodOption } from '@/app/models/model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
+import { Select } from 'primeng/select';
 
 @Component({
     standalone: true,
     selector: 'app-market-evolution-widget',
-    imports: [CommonModule, ChartModule, SelectButtonModule, FormsModule],
+    imports: [CommonModule, ChartModule, SelectButtonModule, FormsModule, Select],
+    host: { class: 'block min-w-0' },
+    styles: [`:host { display: block; min-width: 0; }`],
     templateUrl: './market-evolution-widget.html'
 })
 export class MarketEvolutionWidget {
     private readonly actifService = inject(ActifService);
 
+    loadingAssets = false;
+    loadingChart = false;
+    errorMessage = '';
+
+    assets: MarketAsset[] = [];
+    selectedAsset: MarketAsset | null = null;
+
     selectedPeriod = '1M';
 
     loading = false;
 
-    periods: PeriodOption[]  = [
+    periods: PeriodOption[] = [
         { label: '1J', value: '1D' },
         { label: '1S', value: '1W' },
         { label: '1M', value: '1M' },
         { label: '6M', value: '6M' },
         { label: '1A', value: '1Y' }
     ];
-
-
-    assets: MarketAsset[] = [];
-    selectedAsset: MarketAsset | null = null;
-
-    loadingAssets = false;
-    loadingChart = false;
-    errorMessage = '';
 
     chartData: any = {
         labels: [],
@@ -86,7 +88,8 @@ export class MarketEvolutionWidget {
         this.loadingAssets = true;
         this.errorMessage = '';
 
-        this.actifService.getAssets()
+        this.actifService
+            .getAssets()
             .pipe(
                 finalize(() => {
                     this.loadingAssets = false;
@@ -107,13 +110,9 @@ export class MarketEvolutionWidget {
                     this.onAssetChange(this.assets[0]);
                 },
                 error: (error) => {
-                    console.error(
-                        'Erreur lors du chargement des actifs :',
-                        error
-                    );
+                    console.error('Erreur lors du chargement des actifs :', error);
 
-                    this.errorMessage =
-                        'Impossible de charger les actifs du marché.';
+                    this.errorMessage = 'Impossible de charger les actifs du marché.';
                 }
             });
     }
@@ -147,10 +146,8 @@ export class MarketEvolutionWidget {
         this.loadingChart = true;
         this.errorMessage = '';
 
-        this.actifService.getAssetHistory(
-            this.selectedAsset.id,
-            this.selectedPeriod
-        )
+        this.actifService
+            .getAssetHistory(this.selectedAsset.id, this.selectedPeriod)
             .pipe(
                 finalize(() => {
                     this.loadingChart = false;
@@ -158,16 +155,10 @@ export class MarketEvolutionWidget {
             )
             .subscribe({
                 next: (history: HistoricalPrice[]) => {
-                    const rows = [...(history ?? [])].sort(
-                        (a, b) =>
-                            new Date(a.date).getTime() -
-                            new Date(b.date).getTime()
-                    );
+                    const rows = [...(history ?? [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
                     this.chartData = {
-                        labels: rows.map((item) =>
-                            new Date(item.date).toLocaleDateString('fr-FR')
-                        ),
+                        labels: rows.map((item) => new Date(item.date).toLocaleDateString('fr-FR')),
                         datasets: [
                             {
                                 label: `Cours de ${this.selectedAsset?.symbol ?? ''}`,
@@ -184,19 +175,14 @@ export class MarketEvolutionWidget {
                     };
 
                     if (rows.length === 0) {
-                        this.errorMessage =
-                            'Aucune donnée historique pour cette période.';
+                        this.errorMessage = 'Aucune donnée historique pour cette période.';
                     }
                 },
                 error: (error) => {
-                    console.error(
-                        'Erreur lors du chargement de l’historique :',
-                        error
-                    );
+                    console.error('Erreur lors du chargement de l’historique :', error);
 
                     this.clearChart();
-                    this.errorMessage =
-                        'Impossible de charger les données du graphique.';
+                    this.errorMessage = 'Impossible de charger les données du graphique.';
                 }
             });
     }

@@ -54,7 +54,7 @@ export interface AccessRequestResponse {
 }
 
 export interface MarketAsset {
-    id: number;
+    actifId: number;
     name: string;
     symbol: string;
 }
@@ -73,9 +73,14 @@ export interface PeriodOption {
 }
 
 export interface Actif {
-    id: number;
+    actifId: number;
     name: string;
     symbol: string;
+    currentPrice: number;
+    previousPrice: number;
+    variation: number;
+    currency?: string;
+    status?: string;
 }
 export interface HistoricalPrice {
     date: string;
@@ -118,12 +123,12 @@ export interface TopMoversResponse {
 export interface Actualite {
     id: number;
     titre: string;
+    categorie: string;
+    datePublication: string;
     resume: string;
     source: string;
-    categorie: string;
-    url: string;
+    url?: string;
     imageUrl?: string;
-    datePublication: string;
 }
 
 export interface ActualiteResponse {
