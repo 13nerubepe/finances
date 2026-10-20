@@ -4,10 +4,10 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
-import { LayoutService } from '@/app/layout/service/layout.service';
+import { LayoutService } from '@/app/pages/service/service/layout.service';
 import { Avatar } from 'primeng/avatar';
 import { Menu } from 'primeng/menu';
-import { AuthService } from '@/app/layout/service/auth.service';
+import { AuthService } from '@/app/pages/service/service/auth.service';
 import { OverlayBadge } from 'primeng/overlaybadge';
 
 @Component({

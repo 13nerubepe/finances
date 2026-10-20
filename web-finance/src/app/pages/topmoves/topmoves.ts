@@ -1,5 +1,5 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { ActifService } from '@/app/layout/service/actif-service';
+import { ActifService } from '@/app/pages/service/service/actif-service';
 import { TopMover, TopMoversResponse } from '@/app/models/model';
 
 @Component({

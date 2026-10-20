@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { ChartData, ChartOptions } from 'chart.js';
 import { DecimalPipe } from '@angular/common';
 import { UIChart } from 'primeng/chart';
-import { ActifService } from '@/app/layout/service/actif-service';
+import { ActifService } from '@/app/pages/service/service/actif-service';
 import { PortfolioDistributionItem, PortfolioDistributionResponse, TopMoversResponse } from '@/app/models/model';
 import { Observable } from 'rxjs';
 

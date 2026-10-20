@@ -5,7 +5,7 @@ import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { HistoricalPrice, MarketAsset, PeriodOption } from '@/app/models/model';
-import { ActifService } from '@/app/layout/service/actif-service';
+import { ActifService } from '@/app/pages/service/service/actif-service';
 
 @Component({
     standalone: true,

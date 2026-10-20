@@ -131,3 +131,68 @@ export interface ActualiteResponse {
     count?: number;
 }
 
+export interface ActifOption {
+    label: string;
+    value: string;
+}
+
+export interface AnalyseVolatiliteParams {
+    actifs: string[];
+    periode: number;
+}
+
+export interface DonneeVolatilite {
+    date: string;
+    cours: number;
+    volatilite: number;
+}
+/**
+ * Structure d'un point historique.
+ * Adapte les propriétés à la réponse réelle de ton backend.
+ */
+export interface DonneeVolatilite {
+    date: string;
+    cours: number;
+    volatilite: number;
+}
+
+/**
+ * Indicateurs statistiques de volatilité.
+ */
+export interface IndicateursVolatilite {
+    volatiliteActuelle: number;
+    volatiliteMoyenne: number;
+    volatiliteMaximale: number;
+    niveauRisque: string;
+}
+
+/**
+ * Corrélation entre deux actifs.
+ */
+export interface CorrelationActif {
+    actif1: string;
+    actif2: string;
+    correlation: number;
+}
+
+/**
+ * Mouvement inhabituel détecté.
+ */
+export interface MouvementInhabituel {
+    actif: string;
+    date: string;
+    variation: number;
+    type: string;
+    description: string;
+}
+
+/**
+ * Résultat complet de l'analyse.
+ */
+export interface ResultatAnalyseVolatilite {
+    donnees: DonneeVolatilite[];
+    indicateurs: IndicateursVolatilite;
+    correlations: CorrelationActif[];
+    mouvementsInhabituels: MouvementInhabituel[];
+}
+

@@ -3,7 +3,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
-import { ActifService } from '@/app/layout/service/actif-service';
+import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Actualite } from '@/app/models/model';
 
 @Component({
