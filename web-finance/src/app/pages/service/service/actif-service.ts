@@ -1,11 +1,11 @@
-import { inject, Injectable } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, switchMap, tap } from 'rxjs';
 import {
     Actif, ActifOption,
     Actualite, AnalyseVolatiliteParams,
     HistoricalPrice,
-    PortfolioDistributionResponse, ResultatAnalyseVolatilite,
+    PortfolioDistributionResponse, ProfileUpdate, ResultatAnalyseVolatilite,
     TopMoversResponse
 } from '@/app/models/model';
 import { environment } from '@/environments/environment';
@@ -13,15 +13,52 @@ import { ACTIFS_MOCK, COURS_HISTORIQUES_MOCK } from '@/app/DATA/marche-mock.data
 import { PORTEFEUILLE_MOCK } from '@/app/DATA/portefeuille-mock.data';
 import { TOP_MOVERS_MOCK } from '@/app/DATA/topmoves-mock.data';
 import { ACTUALITES_MOCK } from '@/app/DATA/actualites-mock.data';
+import { AccessToken, RegisterPayload, User } from '@/app/models/auth.models';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ActifService {
     private readonly http = inject(HttpClient);
+    private readonly accessToken = signal<string | null>(null);
+    readonly user = signal<User | null>(null);
 
     private readonly apiUrl = `${environment.apiUrl}/`;
     private readonly useMockData = true;
+
+    /**
+     * Connexion et récupération des tokens JWT.
+     */
+    login(email: string, password: string): Observable<User> {
+        return this.http.post<AccessToken>(`${this.apiUrl}/login/`, { email, password }, { withCredentials: true }).pipe(
+            tap(({ access }) => this.accessToken.set(access)),
+            switchMap(() => this.loadCurrentUser())
+        );
+    }
+
+    /**
+     * Récupération du profil connecté.
+     */
+    loadCurrentUser(): Observable<User> {
+        return this.http.get<User>(`${this.apiUrl}/me/`).pipe(tap((user) => this.user.set(user)));
+    }
+
+    /**
+     * Inscription du fondateur et création de son entreprise.
+     */
+    register(payload: RegisterPayload): Observable<User> {
+        return this.http.post<User>(`${this.apiUrl}/register/`, payload);
+    }
+    /** Name and language. The language also sets the language of agent answers. */
+    updateProfile(changes: ProfileUpdate): Observable<User> {
+        return this.http.patch<User>(`${this.apiUrl}/me/`, changes).pipe(tap((user) => this.user.set(user)));
+    }
+
+
+
+
+
+
 
     // Récupérer la liste des actifs
     getAssets(): Observable<Actif[]> {

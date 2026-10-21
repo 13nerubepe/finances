@@ -1,0 +1,209 @@
+
+<div class="grid grid-cols-12 gap-6">
+
+    <!-- Cadre principal du profil -->
+    <div class="col-span-12 lg:col-span-8 lg:col-start-3">
+
+        <!-- Contour dégradé identique à la connexion -->
+        <div
+            class="p-1"
+            style="
+                border-radius: 36px;
+                background: linear-gradient(
+                    180deg,
+                    var(--primary-color) 10%,
+                    rgba(33, 150, 243, 0) 45%
+                );
+            "
+        >
+
+            <!-- Carte du profil -->
+            <div
+                class="w-full bg-surface-0 px-6 py-8 dark:bg-surface-900 sm:px-10 sm:py-10"
+                style="border-radius: 32px"
+            >
+
+                <!-- En-tête -->
+                <div
+                    class="mb-8 flex flex-col gap-4 border-b border-surface-200 pb-6 dark:border-surface-700 sm:flex-row sm:items-center"
+                >
+
+                    <div
+                        class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+                    >
+                        <i class="pi pi-user text-2xl"></i>
+                    </div>
+
+                    <div class="min-w-0">
+                        <h2
+                            class="mb-1 mt-0 text-2xl font-semibold text-surface-900 dark:text-surface-0"
+                        >
+                            Mon profil
+                        </h2>
+
+                        <p class="m-0 break-all text-sm text-surface-500">
+                            {{ actifService.user()?.email }}
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Formulaire du profil -->
+                <form
+                    [formGroup]="form"
+                    (ngSubmit)="save()"
+                    class="flex flex-col gap-7"
+                >
+
+                    <!-- Informations personnelles -->
+                    <section>
+                        <div class="mb-5">
+                            <h3
+                                class="mb-1 mt-0 text-lg font-semibold text-surface-900 dark:text-surface-0"
+                            >
+                                Informations personnelles
+                            </h3>
+
+                            <p class="m-0 text-sm text-surface-500">
+                                Modifiez les informations associées à votre compte.
+                            </p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                            <!-- Prénom -->
+                            <div class="flex flex-col gap-2">
+                                <label
+                                    for="first_name"
+                                    class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                                >
+                                    Prénom
+                                </label>
+
+                                <input
+                                    pInputText
+                                    id="first_name"
+                                    formControlName="first_name"
+                                    maxlength="150"
+                                    autocomplete="given-name"
+                                    placeholder="Votre prénom"
+                                    class="w-full"
+                                />
+                            </div>
+
+                            <!-- Nom -->
+                            <div class="flex flex-col gap-2">
+                                <label
+                                    for="last_name"
+                                    class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                                >
+                                    Nom
+                                </label>
+
+                                <input
+                                    pInputText
+                                    id="last_name"
+                                    formControlName="last_name"
+                                    maxlength="150"
+                                    autocomplete="family-name"
+                                    placeholder="Votre nom"
+                                    class="w-full"
+                                />
+                            </div>
+
+                        </div>
+                    </section>
+
+                    <!-- Préférences linguistiques -->
+                    <section
+                        class="border-t border-surface-200 pt-6 dark:border-surface-700"
+                    >
+                        <div class="mb-5">
+                            <h3
+                                class="mb-1 mt-0 text-lg font-semibold text-surface-900 dark:text-surface-0"
+                            >
+                                Préférences linguistiques
+                            </h3>
+
+                            <p class="m-0 text-sm text-surface-500">
+                                Personnalisez la langue utilisée par l'assistant juridique.
+                            </p>
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label
+                                for="language"
+                                class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                            >
+                                Langue
+                            </label>
+
+                            <p-select
+                                inputId="language"
+                                formControlName="language"
+                                [options]="languages"
+                                optionLabel="label"
+                                optionValue="value"
+                                placeholder="Choisir une langue"
+                                styleClass="w-full sm:!w-72"
+                            />
+
+                            <small class="text-surface-500">
+                                Cette préférence concerne les réponses de l'assistant juridique.
+                            </small>
+                        </div>
+                    </section>
+
+                    <!-- Message d'erreur -->
+                    @if (errorMessage()) {
+                        <div
+                            class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                            role="alert"
+                        >
+                            <i class="pi pi-exclamation-circle mt-0.5"></i>
+                            <span class="text-sm">
+                                {{ errorMessage() }}
+                            </span>
+                        </div>
+                    }
+
+                    <!-- Message de succès -->
+                    @if (saved()) {
+                        <div
+                            class="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+                            role="status"
+                        >
+                            <i class="pi pi-check-circle mt-0.5"></i>
+                            <span class="text-sm">
+                                Profil enregistré avec succès.
+                            </span>
+                        </div>
+                    }
+
+                    <!-- Bouton d'enregistrement -->
+                    <div
+                        class="flex flex-col gap-4 border-t border-surface-200 pt-6 dark:border-surface-700 sm:flex-row sm:items-center sm:justify-between"
+                    >
+
+                        <p class="m-0 text-xs text-surface-500">
+                            <i class="pi pi-info-circle mr-1"></i>
+                            Pensez à enregistrer vos modifications.
+                        </p>
+
+                        <p-button
+                            type="submit"
+                            label="Enregistrer les modifications"
+                            icon="pi pi-check"
+                            [loading]="saving()"
+                            [disabled]="form.invalid || form.pristine || saving()"
+                        />
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+</div>

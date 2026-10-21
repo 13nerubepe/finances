@@ -13,7 +13,7 @@ import { OverlayBadge } from 'primeng/overlaybadge';
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator, Avatar, Menu, OverlayBadge],
+    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator, Avatar, Menu],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
@@ -37,7 +37,7 @@ import { OverlayBadge } from 'primeng/overlaybadge';
                         />
                     </g>
                 </svg>
-                <span>SAKAI</span>
+                <span>MEFA</span>
             </a>
         </div>
 
@@ -68,12 +68,12 @@ import { OverlayBadge } from 'primeng/overlaybadge';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-                    <button type="button" class="layout-topbar-action" title="Notifications">
-                        <p-overlaybadge value="2" severity="danger">
-                            <i class="pi pi-bell"></i>
-                        </p-overlaybadge>
-                        <span>Notifications</span>
-                    </button>
+<!--                    <button type="button" class="layout-topbar-action" title="Notifications">-->
+<!--                        <p-overlaybadge value="2" severity="danger">-->
+<!--                            <i class="pi pi-bell"></i>-->
+<!--                        </p-overlaybadge>-->
+<!--                        <span>Notifications</span>-->
+<!--                    </button>-->
 
 <!--                    <button type="button" class="layout-topbar-action">-->
 <!--                        <i class="pi pi-inbox"></i>-->
@@ -104,12 +104,15 @@ export class AppTopbar {
     }
     userItems: MenuItem[] = [
         { label: 'Mon profil', icon: 'pi pi-user', command: () => this.router.navigate(['/profil']) },
-        { label: 'Paramètres', icon: 'pi pi-cog', command: () => this.router.navigate(['/parametres']) },
+        // { label: 'Paramètres', icon: 'pi pi-cog', command: () => this.router.navigate(['/parametres']) },
         { label: 'Aide', icon: 'pi pi-question-circle', command: () => this.router.navigate(['/aide']) },
+        // { label: 'Actualités', icon: 'pi pi-fw pi-home', routerLink: ['/actualités'] },
         { separator: true },
         // { label: 'Se déconnecter', icon: 'pi pi-sign-out', styleClass: 'text-red-500', command: () => this.authService.logout() }
         { label: 'Se déconnecter', icon: 'pi pi-sign-out', styleClass: 'text-red-500', command: () => this.seDeconnecter() }
     ];
+
+
 
     items!: MenuItem[];
     layoutService = inject(LayoutService);

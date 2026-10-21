@@ -101,6 +101,12 @@ export interface PortfolioDistributionResponse {
     distribution: PortfolioDistributionItem[];
 }
 
+export interface ProfileUpdate {
+    first_name?: string;
+    last_name?: string;
+    language?: 'fr' | 'en';
+}
+
 export interface TopMover {
     actifId: number;
     name: string;

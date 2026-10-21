@@ -20,6 +20,11 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Actif' },
             },
             {
+                path: AppConstantRoute.Profil_PATH,
+                loadComponent: () => import('./app/pages/auth/profile').then((c) => c.Profile),
+                data: { breadcrumb: 'Actif' },
+            },
+            {
                 path: AppConstantRoute.Actualite_PATH,
                 loadComponent: () => import('@/app/pages/commons/actualites/actualites').then((c) => c.ActualitesComponent),
                 data: { breadcrumb: 'Actualité' },
