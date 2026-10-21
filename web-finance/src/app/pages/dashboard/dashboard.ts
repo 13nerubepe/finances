@@ -7,11 +7,12 @@ import { RevenueStreamWidget } from '@/app/commons/revenuestreamwidget';
 import { MarketEvolutionWidget } from '@/app/pages/commons/marketEvolution/market-evolution-widge';
 import { PortofolioDistribution } from '@/app/pages/commons/portofolio-distribution/portofolio-distribution';
 import { Topmoves } from '@/app/pages/commons/topmoves/topmoves';
-import { ActualitesComponent } from '@/app/pages/actualites/actualites';
+import { ActualitesComponent } from '@/app/pages/commons/actualites/actualites';
 
 @Component({
     selector: 'app-dashboard',
-    imports: [StatsWidget, RecentSalesWidget, BestSellingWidget, RevenueStreamWidget, NotificationsWidget, MarketEvolutionWidget, PortofolioDistribution, Topmoves, ActualitesComponent],
+    imports: [StatsWidget, MarketEvolutionWidget, PortofolioDistribution, Topmoves, ActualitesComponent],
+    styleUrl: './dashboard.scss',
     templateUrl: './dashboard.html'
     // template: `
     //     <div class="grid grid-cols-12 gap-8">

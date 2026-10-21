@@ -21,7 +21,7 @@ export const appRoutes: Routes = [
             },
             {
                 path: AppConstantRoute.Actualite_PATH,
-                loadComponent: () => import('./app/pages/actualites/actualites').then((c) => c.ActualitesComponent),
+                loadComponent: () => import('@/app/pages/commons/actualites/actualites').then((c) => c.ActualitesComponent),
                 data: { breadcrumb: 'Actualité' },
             },
             {

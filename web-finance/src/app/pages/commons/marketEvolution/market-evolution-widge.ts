@@ -4,7 +4,7 @@ import { ChartModule } from 'primeng/chart';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { HistoricalPrice, MarketAsset, PeriodOption } from '@/app/models/model';
+import { Actif, HistoricalPrice, PeriodOption } from '@/app/models/model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Select } from 'primeng/select';
 
@@ -23,8 +23,8 @@ export class MarketEvolutionWidget {
     loadingChart = false;
     errorMessage = '';
 
-    assets: MarketAsset[] = [];
-    selectedAsset: MarketAsset | null = null;
+    assets: Actif[] = [];
+    selectedAsset: Actif | null = null;
 
     selectedPeriod = '1M';
 
@@ -120,7 +120,7 @@ export class MarketEvolutionWidget {
     /**
      * Sélectionne un actif et recharge son historique.
      */
-    onAssetChange(asset: MarketAsset): void {
+    onAssetChange(asset: Actif): void {
         this.selectedAsset = asset;
         this.loadChart();
     }
@@ -147,7 +147,7 @@ export class MarketEvolutionWidget {
         this.errorMessage = '';
 
         this.actifService
-            .getAssetHistory(this.selectedAsset.id, this.selectedPeriod)
+            .getAssetHistory(this.selectedAsset.actifId, this.selectedPeriod)
             .pipe(
                 finalize(() => {
                     this.loadingChart = false;

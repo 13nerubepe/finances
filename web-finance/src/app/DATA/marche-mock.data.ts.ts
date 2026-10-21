@@ -1,7 +1,7 @@
-import { HistoricalPrice, MarketAsset } from '@/app/models/model';
+import { Actif, HistoricalPrice} from '@/app/models/model';
 
 
-export const ACTIFS_MOCK: MarketAsset[] = [
+export const ACTIFS_MOCK: Actif[] = [
     {
         actifId: 1,
         name: 'Apple Inc.',
@@ -226,6 +226,8 @@ export const ACTIFS_MOCK: MarketAsset[] = [
         actifId: 23,
         name: 'Qualcomm Inc.',
         symbol: 'QCOM',
+        currentPrice: 68.45,
+        previousPrice: 290.40,
         variation: 1.32,
         currency: 'USD',
         status: 'ACTIVE'
@@ -234,6 +236,7 @@ export const ACTIFS_MOCK: MarketAsset[] = [
         actifId: 24,
         name: 'IBM Corporation',
         symbol: 'IBM',
+        currentPrice: 68.45,
         previousPrice: 290.40,
         variation: 0.59,
         currency: 'USD',

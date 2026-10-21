@@ -1,113 +1,94 @@
 
-<div class="news-dashboard min-w-0 space-y-6">
+<div class="card !mb-0 flex flex-col gap-4">
 
     <!-- En-tête -->
-    <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-            <div class="mb-2 flex items-center gap-2 text-sm font-medium text-emerald-600">
-                <i class="pi pi-chart-line"></i>
-                <span>ESPACE FINANCIER</span>
+    <header class="flex items-start justify-between gap-3">
+        <div class="flex min-w-0 items-start gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl
+                        bg-primary/10 text-primary">
+                <i class="pi pi-chart-line text-xl"></i>
             </div>
 
-            <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">
-                Actualités des marchés
-            </h1>
-
-            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                Suivez les dernières informations économiques et financières.
-            </p>
+            <div class="min-w-0">
+                <h1 class="m-0 text-xl font-semibold tracking-tight">
+                    Actualités financières
+                </h1>
+                <p class="mt-1 mb-0 text-sm text-muted-color">
+                    Les dernières tendances des marchés financiers
+                </p>
+            </div>
         </div>
 
-        <button
-            pButton
-            type="button"
-            icon="pi pi-refresh"
-            label="Actualiser"
-            severity="secondary"
-            [outlined]="true"
-            [loading]="loading"
-            (click)="loadActualites()">
-        </button>
+        <span class="mt-1 hidden shrink-0 text-xs text-muted-color sm:inline">
+            {{ actualitesFiltrees.length }} résultat(s)
+        </span>
     </header>
 
-    <!-- Recherche et filtres -->
-    <section class="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:p-5">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+    <!-- Filtres et recherche -->
+    <section class="flex flex-col gap-3">
 
-            <div class="relative w-full lg:max-w-md">
-                <i class="pi pi-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
-
-                <input
-                    pInputText
-                    type="text"
-                    [(ngModel)]="recherche"
-                    (keyup.enter)="rechercherActualites()"
-                    placeholder="Rechercher une actualité..."
-                    class="w-full !rounded-xl !py-3 !pl-11" />
-            </div>
-
-            <button
-                pButton
-                type="button"
-                label="Rechercher"
-                icon="pi pi-search"
-                (click)="rechercherActualites()">
-            </button>
-        </div>
-
-        <div class="mt-4 flex flex-wrap gap-2">
+        <!-- Catégories -->
+        <div class="flex flex-wrap gap-2">
             <button
                 *ngFor="let categorie of categories"
                 type="button"
-                (click)="changerCategorie(categorie)"
-                class="rounded-full border px-4 py-2 text-sm font-medium transition-colors"
+                class="cursor-pointer rounded-full border px-3 py-1.5 text-xs font-medium
+                       transition-colors duration-200"
                 [ngClass]="categorieSelectionnee === categorie
-                    ? 'border-emerald-600 bg-emerald-600 text-white'
-                    : 'border-slate-200 bg-white text-slate-600 hover:border-emerald-500 hover:text-emerald-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'">
+                    ? 'border-primary bg-primary text-primary-contrast'
+                    : 'border-surface bg-surface-0 text-muted-color hover:border-primary hover:text-primary dark:bg-surface-900'"
+                (click)="changerCategorie(categorie)">
                 {{ categorie }}
             </button>
+        </div>
+
+        <!-- Recherche -->
+        <div class="relative">
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2
+                      text-sm text-muted-color"></i>
+
+            <input
+                pInputText
+                type="text"
+                class="w-full !rounded-xl !py-2.5 !pl-9 !text-sm"
+                [(ngModel)]="recherche"
+                placeholder="Rechercher une actualité..."
+                (keyup.enter)="rechercherActualites()" />
         </div>
     </section>
 
     <!-- Chargement -->
-    <section
-        *ngIf="loading"
-        class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+    <div *ngIf="loading" class="flex flex-col">
+        <div
+            *ngFor="let item of [1, 2, 3]"
+            class="flex items-center gap-3 border-b border-surface py-3 last:border-b-0">
 
-        <div class="animate-pulse rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 lg:col-span-3">
-            <div class="h-56 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
-            <div class="mt-5 h-4 w-1/4 rounded bg-slate-200 dark:bg-slate-800"></div>
-            <div class="mt-3 h-6 w-5/6 rounded bg-slate-200 dark:bg-slate-800"></div>
-            <div class="mt-3 h-4 w-full rounded bg-slate-200 dark:bg-slate-800"></div>
-            <div class="mt-2 h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-800"></div>
-        </div>
+            <p-skeleton
+                width="76px"
+                height="64px"
+                borderRadius="10px">
+            </p-skeleton>
 
-        <div class="space-y-4 lg:col-span-2">
-            <div
-                *ngFor="let item of [1, 2, 3]"
-                class="flex animate-pulse gap-4 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-                <div class="h-24 w-24 shrink-0 rounded-xl bg-slate-200 dark:bg-slate-800"></div>
-                <div class="flex-1 space-y-3">
-                    <div class="h-3 w-1/3 rounded bg-slate-200 dark:bg-slate-800"></div>
-                    <div class="h-4 w-full rounded bg-slate-200 dark:bg-slate-800"></div>
-                    <div class="h-4 w-2/3 rounded bg-slate-200 dark:bg-slate-800"></div>
-                </div>
+            <div class="min-w-0 flex-1">
+                <p-skeleton width="90px" height="1rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="85%" height="1rem" styleClass="mb-2"></p-skeleton>
+                <p-skeleton width="60%" height="0.8rem"></p-skeleton>
             </div>
         </div>
-    </section>
+    </div>
 
     <!-- Erreur -->
     <div
         *ngIf="!loading && errorMessage"
-        class="flex flex-col items-center rounded-2xl border border-red-200 bg-red-50 p-8 text-center dark:border-red-900 dark:bg-red-950/20">
+        class="rounded-xl border border-surface p-5 text-center">
 
-        <i class="pi pi-exclamation-circle text-3xl text-red-500"></i>
+        <i class="pi pi-exclamation-circle text-2xl text-red-500"></i>
 
-        <h2 class="mt-3 font-semibold text-slate-900 dark:text-white">
-            Impossible de charger les actualités
+        <h2 class="mt-2 mb-1 text-base font-semibold">
+            Chargement impossible
         </h2>
 
-        <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+        <p class="mt-0 mb-3 text-sm text-muted-color">
             {{ errorMessage }}
         </p>
 
@@ -116,174 +97,109 @@
             type="button"
             label="Réessayer"
             icon="pi pi-refresh"
-            class="mt-4"
+            severity="secondary"
+            [outlined]="true"
             (click)="loadActualites()">
         </button>
     </div>
 
-    <!-- Contenu -->
+    <!-- Liste -->
     <ng-container *ngIf="!loading && !errorMessage">
 
-        <ng-container *ngIf="actualites.length > 0; else emptyState">
+        <div
+            *ngIf="actualitesFiltrees.length > 0; else emptyState"
+            class="flex flex-col">
 
-            <div class="grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-5">
+            <a
+                *ngFor="let actualite of actualitesFiltrees; trackBy: trackByActualite; let last = last"
+                [href]="actualite.url || null"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="group flex min-w-0 items-center gap-3 rounded-lg px-2 py-3
+                       text-inherit no-underline transition-colors duration-200
+                       hover:bg-emphasis"
+                [ngClass]="{ 'border-b border-surface': !last }">
 
-                <!-- Actualité principale -->
-                <article
-                    *ngIf="actualitePrincipale as principale"
-                    class="group min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-slate-800 dark:bg-slate-900 lg:col-span-3">
+                <!-- Image -->
+                <div
+                    class="h-[64px] w-[76px] shrink-0 overflow-hidden rounded-lg
+                           bg-surface-100 dark:bg-surface-800 sm:h-[72px] sm:w-[88px]">
 
-                    <div class="relative h-56 overflow-hidden bg-slate-100 sm:h-72">
-                        <img
-                            *ngIf="principale.imageUrl; else featuredPlaceholder"
-                            [src]="principale.imageUrl"
-                            [alt]="principale.titre"
-                            class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy" />
+                    <img
+                        *ngIf="actualite.imageUrl; else articlePlaceholder"
+                        [src]="actualite.imageUrl"
+                        [alt]="actualite.titre"
+                        class="h-full w-full object-cover transition-transform duration-300
+                               group-hover:scale-105"
+                        loading="lazy" />
 
-                        <ng-template #featuredPlaceholder>
-                            <div class="flex h-full items-center justify-center bg-gradient-to-br from-emerald-800 to-slate-950">
-                                <i class="pi pi-chart-line text-6xl text-white/70"></i>
-                            </div>
-                        </ng-template>
-
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
-
-                        <span class="absolute left-4 top-4 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">
-                            À LA UNE
-                        </span>
-
-                        <span class="absolute bottom-4 left-4 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md">
-                            {{ principale.categorie }}
-                        </span>
-                    </div>
-
-                    <div class="p-5 sm:p-6">
-                        <div class="mb-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                            <span>
-                                <i class="pi pi-calendar mr-1"></i>
-                                {{ principale.datePublication | date:'dd MMM yyyy' }}
-                            </span>
-
-                            <span *ngIf="principale.source">
-                                <i class="pi pi-globe mr-1"></i>
-                                {{ principale.source }}
-                            </span>
+                    <ng-template #articlePlaceholder>
+                        <div class="flex h-full items-center justify-center text-primary">
+                            <i class="pi pi-chart-bar text-xl"></i>
                         </div>
+                    </ng-template>
+                </div>
 
-                        <h2 class="text-xl font-bold leading-snug text-slate-900 dark:text-white sm:text-2xl">
-                            {{ principale.titre }}
-                        </h2>
+                <!-- Contenu -->
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
 
-                        <p class="mt-3 line-clamp-3 text-sm leading-6 text-slate-600 dark:text-slate-400">
-                            {{ principale.resume }}
-                        </p>
-
-                        <div class="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-slate-800">
-                            <span class="text-xs text-slate-500 dark:text-slate-400">
-                                Analyse financière
-                            </span>
-
-                            <a
-                                *ngIf="principale.url"
-                                [href]="principale.url"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                class="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                                Lire l'article
-                                <i class="pi pi-arrow-up-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Dernières actualités -->
-                <section class="min-w-0 lg:col-span-2">
-                    <div class="mb-4 flex items-center justify-between gap-3">
-                        <div>
-                            <h2 class="text-lg font-bold text-slate-900 dark:text-white">
-                                Dernières actualités
-                            </h2>
-                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                Les informations récentes
-                            </p>
-                        </div>
-
-                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                            {{ actualites.length }}
+                    <div>
+                        <span
+                            class="inline-flex max-w-full rounded-md px-2 py-0.5
+                                   text-[10px] font-semibold leading-4"
+                            [ngClass]="couleurCategorie(actualite.categorie)">
+                            {{ actualite.categorie }}
                         </span>
                     </div>
 
-                    <div class="space-y-3">
-                        <article
-                            *ngFor="let actualite of actualites; trackBy: trackByActualite"
-                            class="group flex min-w-0 gap-3 rounded-2xl border border-slate-200 bg-white p-3 transition-all hover:border-emerald-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-800">
+                    <h3
+                        class="m-0 line-clamp-2 text-sm font-semibold leading-snug
+                               text-color transition-colors group-hover:text-primary">
+                        {{ actualite.titre }}
+                    </h3>
 
-                            <div class="h-24 w-24 shrink-0 overflow-hidden rounded-xl bg-slate-100 sm:h-28 sm:w-28 dark:bg-slate-800">
-                                <img
-                                    *ngIf="actualite.imageUrl; else articlePlaceholder"
-                                    [src]="actualite.imageUrl"
-                                    [alt]="actualite.titre"
-                                    class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                                    loading="lazy" />
+                    <p class="m-0 line-clamp-2 text-xs leading-relaxed text-muted-color">
+                        {{ actualite.resume }}
+                    </p>
 
-                                <ng-template #articlePlaceholder>
-                                    <div class="flex h-full items-center justify-center bg-gradient-to-br from-emerald-100 to-slate-200 dark:from-emerald-950 dark:to-slate-800">
-                                        <i class="pi pi-chart-bar text-2xl text-emerald-700 dark:text-emerald-400"></i>
-                                    </div>
-                                </ng-template>
-                            </div>
+                    <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1
+                                text-[11px] text-muted-color">
 
-                            <div class="flex min-w-0 flex-1 flex-col">
-                                <div class="mb-2 flex flex-wrap items-center gap-2">
-                                    <span class="text-xs font-semibold text-emerald-600">
-                                        {{ actualite.categorie }}
-                                    </span>
+                        <span class="inline-flex items-center gap-1">
+                            <i class="pi pi-clock text-[10px]"></i>
+                            {{ tempsEcoule(actualite.datePublication) }}
+                        </span>
 
-                                    <span class="text-xs text-slate-400">
-                                        {{ actualite.datePublication | date:'dd/MM/yyyy' }}
-                                    </span>
-                                </div>
-
-                                <h3 class="line-clamp-3 text-sm font-semibold leading-5 text-slate-800 dark:text-slate-100">
-                                    {{ actualite.titre }}
-                                </h3>
-
-                                <div class="mt-auto flex items-center justify-between gap-2 pt-3">
-                                    <span class="truncate text-xs text-slate-500 dark:text-slate-400">
-                                        {{ actualite.source || 'Actualité financière' }}
-                                    </span>
-
-                                    <a
-                                        *ngIf="actualite.url"
-                                        [href]="actualite.url"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        [attr.aria-label]="'Lire : ' + actualite.titre"
-                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-emerald-600 transition-colors hover:bg-emerald-50 dark:hover:bg-emerald-950">
-                                        <i class="pi pi-arrow-up-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </article>
+                        <span *ngIf="actualite.source" class="flex items-center gap-1">
+                            <span aria-hidden="true">·</span>
+                            {{ actualite.source }}
+                        </span>
                     </div>
-                </section>
-            </div>
-        </ng-container>
+                </div>
+
+                <!-- Indicateur -->
+                <i
+                    class="pi pi-chevron-right shrink-0 text-xs text-muted-color
+                           transition-transform duration-200
+                           group-hover:translate-x-0.5 group-hover:text-primary">
+                </i>
+            </a>
+        </div>
 
         <!-- Aucun résultat -->
         <ng-template #emptyState>
-            <div class="flex flex-col items-center rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-14 text-center dark:border-slate-700 dark:bg-slate-900">
-                <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100 dark:bg-slate-800">
-                    <i class="pi pi-inbox text-2xl text-slate-400"></i>
+            <div class="rounded-xl border border-dashed border-surface px-4 py-8 text-center">
+                <div class="mx-auto flex h-12 w-12 items-center justify-center
+                            rounded-full bg-emphasis">
+                    <i class="pi pi-inbox text-xl text-muted-color"></i>
                 </div>
 
-                <h2 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">
+                <h2 class="mt-3 mb-1 text-base font-semibold">
                     Aucune actualité disponible
                 </h2>
 
-                <p class="mt-2 max-w-md text-sm text-slate-500 dark:text-slate-400">
-                    Aucune actualité ne correspond à votre recherche ou à cette catégorie.
+                <p class="mt-0 mb-4 text-sm text-muted-color">
+                    Modifie tes filtres ou ta recherche pour afficher des résultats.
                 </p>
 
                 <button
@@ -293,7 +209,6 @@
                     icon="pi pi-filter-slash"
                     severity="secondary"
                     [outlined]="true"
-                    class="mt-5"
                     (click)="reinitialiserFiltres()">
                 </button>
             </div>

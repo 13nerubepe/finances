@@ -53,12 +53,6 @@ export interface AccessRequestResponse {
     message?: string;
 }
 
-export interface MarketAsset {
-    actifId: number;
-    name: string;
-    symbol: string;
-}
-
 export interface HistoricalPrice {
     date: string;
     open: number;
@@ -82,6 +76,7 @@ export interface Actif {
     currency?: string;
     status?: string;
 }
+
 export interface HistoricalPrice {
     date: string;
     open: number;
