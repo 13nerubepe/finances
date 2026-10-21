@@ -12,7 +12,7 @@ import { Badge } from 'primeng/badge';
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule, TagModule, Badge],
+    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule, TagModule],
     templateUrl: 'profile.html'
     // template: `
     //     <div class="grid grid-cols-12 gap-6">
@@ -113,5 +113,15 @@ export class Profile implements OnInit {
                 this.saving.set(false);
             }
         });
+    }
+
+    cancelChanges(): void {
+        // if (!this.initialValues || this.saving()) {
+        //     return;
+        // }
+        //
+        // this.form.reset(this.initialValues);
+        // this.errorMessage.set(null);
+        // this.saved.set(false);
     }
 }

@@ -1,209 +1,421 @@
 
 <div class="grid grid-cols-12 gap-6">
 
-    <!-- Cadre principal du profil -->
-    <div class="col-span-12 lg:col-span-8 lg:col-start-3">
+    <!-- En-tête de la page -->
+    <div class="col-span-12">
+        <div class="mb-2 flex items-center gap-3">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <i class="pi pi-user-edit text-xl"></i>
+            </div>
 
-        <!-- Contour dégradé identique à la connexion -->
-        <div
-            class="p-1"
-            style="
-                border-radius: 36px;
-                background: linear-gradient(
-                    180deg,
-                    var(--primary-color) 10%,
-                    rgba(33, 150, 243, 0) 45%
-                );
-            "
-        >
+            <div>
+                <h1 class="m-0 text-2xl font-semibold text-surface-900 dark:text-surface-0">
+                    Mon profil
+                </h1>
+                <p class="mt-1 mb-0 text-sm text-surface-500">
+                    Gérez vos informations personnelles et les paramètres de votre compte.
+                </p>
+            </div>
+        </div>
+    </div>
 
-            <!-- Carte du profil -->
-            <div
-                class="w-full bg-surface-0 px-6 py-8 dark:bg-surface-900 sm:px-10 sm:py-10"
-                style="border-radius: 32px"
-            >
+    <!-- Carte d'identité utilisateur -->
+    <div class="col-span-12">
+        <div class="card !mb-0 overflow-hidden !p-0">
 
-                <!-- En-tête -->
-                <div
-                    class="mb-8 flex flex-col gap-4 border-b border-surface-200 pb-6 dark:border-surface-700 sm:flex-row sm:items-center"
-                >
+            <div class="h-2 bg-gradient-to-r from-primary via-blue-500 to-transparent"></div>
 
-                    <div
-                        class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
-                    >
-                        <i class="pi pi-user text-2xl"></i>
+            <div class="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex min-w-0 items-center gap-5">
+
+                    <!-- Avatar -->
+                    <div class="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+                        <i class="pi pi-user text-4xl"></i>
                     </div>
 
+                    <!-- Identité -->
                     <div class="min-w-0">
-                        <h2
-                            class="mb-1 mt-0 text-2xl font-semibold text-surface-900 dark:text-surface-0"
-                        >
-                            Mon profil
+                        <h2 class="mb-1 mt-0 break-words text-xl font-semibold text-surface-900 dark:text-surface-0">
+                            {{
+                                (form.get('first_name')?.value || '') +
+                                (form.get('last_name')?.value
+                                    ? ' ' + form.get('last_name')?.value
+                                    : '')
+                                || 'Mon compte'
+                            }}
                         </h2>
 
-                        <p class="m-0 break-all text-sm text-surface-500">
+                        <p class="mb-3 mt-0 break-all text-sm text-surface-500">
                             {{ actifService.user()?.email }}
                         </p>
-                    </div>
 
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                                <i class="pi pi-id-card"></i>
+                                Espace personnel
+                            </span>
+
+                            <span class="inline-flex items-center gap-2 rounded-full bg-surface-100 px-3 py-1 text-xs text-surface-600 dark:bg-surface-800 dark:text-surface-300">
+                                <i class="pi pi-shield"></i>
+                                Compte utilisateur
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Formulaire du profil -->
-                <form
-                    [formGroup]="form"
-                    (ngSubmit)="save()"
-                    class="flex flex-col gap-7"
-                >
+                <div class="flex shrink-0 flex-col gap-2 sm:items-end">
+                    <span class="text-xs text-surface-500">
+                        <i class="pi pi-lock mr-1"></i>
+                        Informations personnelles
+                    </span>
+                    <span class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                        Modifiables à tout moment
+                    </span>
+                </div>
 
-                    <!-- Informations personnelles -->
-                    <section>
-                        <div class="mb-5">
-                            <h3
-                                class="mb-1 mt-0 text-lg font-semibold text-surface-900 dark:text-surface-0"
-                            >
-                                Informations personnelles
-                            </h3>
+            </div>
+        </div>
+    </div>
 
-                            <p class="m-0 text-sm text-surface-500">
-                                Modifiez les informations associées à votre compte.
-                            </p>
-                        </div>
+    <!-- Colonne principale : formulaire -->
+    <div class="col-span-12 lg:col-span-8">
 
-                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <div class="card !mb-0">
 
-                            <!-- Prénom -->
-                            <div class="flex flex-col gap-2">
-                                <label
-                                    for="first_name"
-                                    class="text-sm font-semibold text-surface-700 dark:text-surface-200"
-                                >
-                                    Prénom
-                                </label>
+            <div class="mb-6 flex items-start gap-3 border-b border-surface-200 pb-5 dark:border-surface-700">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="pi pi-user text-lg"></i>
+                </div>
 
-                                <input
-                                    pInputText
-                                    id="first_name"
-                                    formControlName="first_name"
-                                    maxlength="150"
-                                    autocomplete="given-name"
-                                    placeholder="Votre prénom"
-                                    class="w-full"
-                                />
-                            </div>
+                <div>
+                    <h2 class="mb-1 mt-0 text-lg font-semibold text-surface-900 dark:text-surface-0">
+                        Informations personnelles
+                    </h2>
+                    <p class="m-0 text-sm text-surface-500">
+                        Modifiez les informations associées à votre identité.
+                    </p>
+                </div>
+            </div>
 
-                            <!-- Nom -->
-                            <div class="flex flex-col gap-2">
-                                <label
-                                    for="last_name"
-                                    class="text-sm font-semibold text-surface-700 dark:text-surface-200"
-                                >
-                                    Nom
-                                </label>
+            <form [formGroup]="form" (ngSubmit)="save()" class="flex flex-col gap-6">
 
-                                <input
-                                    pInputText
-                                    id="last_name"
-                                    formControlName="last_name"
-                                    maxlength="150"
-                                    autocomplete="family-name"
-                                    placeholder="Votre nom"
-                                    class="w-full"
-                                />
-                            </div>
+                <!-- Prénom et nom -->
+                <section>
+                    <h3 class="mb-4 mt-0 text-sm font-semibold text-surface-700 dark:text-surface-200">
+                        Identité
+                    </h3>
 
-                        </div>
-                    </section>
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
 
-                    <!-- Préférences linguistiques -->
-                    <section
-                        class="border-t border-surface-200 pt-6 dark:border-surface-700"
-                    >
-                        <div class="mb-5">
-                            <h3
-                                class="mb-1 mt-0 text-lg font-semibold text-surface-900 dark:text-surface-0"
-                            >
-                                Préférences linguistiques
-                            </h3>
+                        <div class="flex flex-col gap-2">
+                            <label for="first_name" class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                                Prénom
+                            </label>
 
-                            <p class="m-0 text-sm text-surface-500">
-                                Personnalisez la langue utilisée par l'assistant juridique.
-                            </p>
+                            <input
+                                pInputText
+                                id="first_name"
+                                formControlName="first_name"
+                                maxlength="150"
+                                autocomplete="given-name"
+                                placeholder="Ex. : Jean"
+                                class="w-full"
+                            />
+
+                            @if (form.get('first_name')?.touched && form.get('first_name')?.invalid) {
+                                <small class="text-red-500">
+                                    Veuillez saisir un prénom valide.
+                                </small>
+                            }
                         </div>
 
                         <div class="flex flex-col gap-2">
-                            <label
-                                for="language"
-                                class="text-sm font-semibold text-surface-700 dark:text-surface-200"
-                            >
-                                Langue
+                            <label for="last_name" class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                                Nom
                             </label>
 
-                            <p-select
-                                inputId="language"
-                                formControlName="language"
-                                [options]="languages"
-                                optionLabel="label"
-                                optionValue="value"
-                                placeholder="Choisir une langue"
-                                styleClass="w-full sm:!w-72"
+                            <input
+                                pInputText
+                                id="last_name"
+                                formControlName="last_name"
+                                maxlength="150"
+                                autocomplete="family-name"
+                                placeholder="Ex. : Dupont"
+                                class="w-full"
                             />
 
-                            <small class="text-surface-500">
-                                Cette préférence concerne les réponses de l'assistant juridique.
-                            </small>
+                            @if (form.get('last_name')?.touched && form.get('last_name')?.invalid) {
+                                <small class="text-red-500">
+                                    Veuillez saisir un nom valide.
+                                </small>
+                            }
                         </div>
-                    </section>
 
-                    <!-- Message d'erreur -->
-                    @if (errorMessage()) {
-                        <div
-                            class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
-                            role="alert"
-                        >
-                            <i class="pi pi-exclamation-circle mt-0.5"></i>
-                            <span class="text-sm">
-                                {{ errorMessage() }}
-                            </span>
+                    </div>
+                </section>
+
+                <!-- Adresse e-mail -->
+                <section class="border-t border-surface-200 pt-5 dark:border-surface-700">
+                    <h3 class="mb-4 mt-0 text-sm font-semibold text-surface-700 dark:text-surface-200">
+                        Coordonnées du compte
+                    </h3>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="profile_email" class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                            Adresse e-mail
+                        </label>
+
+                        <div class="relative">
+                            <i class="pi pi-envelope absolute left-3 top-1/2 -translate-y-1/2 text-surface-400"></i>
+
+                            <input
+                                pInputText
+                                id="profile_email"
+                                type="email"
+                                [value]="actifService.user()?.email || ''"
+                                readonly
+                                class="w-full !pl-10"
+                            />
                         </div>
-                    }
 
-                    <!-- Message de succès -->
-                    @if (saved()) {
-                        <div
-                            class="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
-                            role="status"
-                        >
-                            <i class="pi pi-check-circle mt-0.5"></i>
-                            <span class="text-sm">
-                                Profil enregistré avec succès.
-                            </span>
-                        </div>
-                    }
-
-                    <!-- Bouton d'enregistrement -->
-                    <div
-                        class="flex flex-col gap-4 border-t border-surface-200 pt-6 dark:border-surface-700 sm:flex-row sm:items-center sm:justify-between"
-                    >
-
-                        <p class="m-0 text-xs text-surface-500">
+                        <small class="text-surface-500">
                             <i class="pi pi-info-circle mr-1"></i>
-                            Pensez à enregistrer vos modifications.
+                            L'adresse e-mail est gérée par le service d'authentification.
+                        </small>
+                    </div>
+                </section>
+
+                <!-- Préférences linguistiques -->
+                <section class="border-t border-surface-200 pt-5 dark:border-surface-700">
+                    <div class="mb-4 flex items-start gap-3">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300">
+                            <i class="pi pi-globe"></i>
+                        </div>
+
+                        <div>
+                            <h3 class="mb-1 mt-0 text-sm font-semibold text-surface-900 dark:text-surface-0">
+                                Préférences linguistiques
+                            </h3>
+                            <p class="m-0 text-sm text-surface-500">
+                                Choisissez la langue des réponses de votre assistant juridique.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                        <label for="language" class="text-sm font-medium text-surface-700 dark:text-surface-200">
+                            Langue de l'assistant
+                        </label>
+
+                        <p-select
+                            inputId="language"
+                            formControlName="language"
+                            [options]="languages"
+                            optionLabel="label"
+                            optionValue="value"
+                            placeholder="Choisir une langue"
+                            styleClass="w-full"
+                        />
+
+                        <small class="text-surface-500">
+                            Cette préférence sera appliquée si votre assistant prend en charge la langue sélectionnée.
+                        </small>
+                    </div>
+                </section>
+
+                <!-- Erreur -->
+                @if (errorMessage()) {
+                    <div
+                        class="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"
+                        role="alert"
+                    >
+                        <i class="pi pi-exclamation-circle mt-0.5"></i>
+                        <p class="m-0 text-sm">{{ errorMessage() }}</p>
+                    </div>
+                }
+
+                <!-- Succès -->
+                @if (saved()) {
+                    <div
+                        class="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50 p-4 text-green-700 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300"
+                        role="status"
+                    >
+                        <i class="pi pi-check-circle mt-0.5"></i>
+                        <p class="m-0 text-sm">
+                            Vos modifications ont été enregistrées avec succès.
                         </p>
+                    </div>
+                }
+
+                <!-- Actions -->
+                <div class="flex flex-col-reverse gap-3 border-t border-surface-200 pt-5 dark:border-surface-700 sm:flex-row sm:items-center sm:justify-between">
+
+                    <p class="m-0 text-xs text-surface-500">
+                        <i class="pi pi-lock mr-1"></i>
+                        Vos modifications sont enregistrées sur votre compte.
+                    </p>
+
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <p-button
+                            type="button"
+                            label="Annuler"
+                            icon="pi pi-undo"
+                            severity="secondary"
+                            [outlined]="true"
+                            [disabled]="form.pristine || saving()"
+                            (onClick)="cancelChanges()"
+                        />
 
                         <p-button
                             type="submit"
-                            label="Enregistrer les modifications"
+                            label="Enregistrer"
                             icon="pi pi-check"
                             [loading]="saving()"
                             [disabled]="form.invalid || form.pristine || saving()"
                         />
-
                     </div>
 
-                </form>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Colonne secondaire -->
+    <div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
+
+        <!-- Résumé du compte -->
+        <div class="card !mb-0">
+
+            <div class="mb-5 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <i class="pi pi-id-card text-lg"></i>
+                </div>
+
+                <div>
+                    <h2 class="m-0 text-base font-semibold text-surface-900 dark:text-surface-0">
+                        Mon compte
+                    </h2>
+                    <p class="mb-0 mt-1 text-xs text-surface-500">
+                        Résumé des informations
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-4">
+
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-envelope mt-1 text-surface-400"></i>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 mt-0 text-xs text-surface-500">Adresse e-mail</p>
+                        <p class="m-0 break-all text-sm font-medium text-surface-800 dark:text-surface-100">
+                            {{ actifService.user()?.email || 'Non renseignée' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-user mt-1 text-surface-400"></i>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 mt-0 text-xs text-surface-500">Prénom</p>
+                        <p class="m-0 break-words text-sm font-medium text-surface-800 dark:text-surface-100">
+                            {{ form.get('first_name')?.value || 'Non renseigné' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-user-edit mt-1 text-surface-400"></i>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 mt-0 text-xs text-surface-500">Nom</p>
+                        <p class="m-0 break-words text-sm font-medium text-surface-800 dark:text-surface-100">
+                            {{ form.get('last_name')?.value || 'Non renseigné' }}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-globe mt-1 text-surface-400"></i>
+                    <div class="min-w-0 flex-1">
+                        <p class="mb-1 mt-0 text-xs text-surface-500">Langue préférée</p>
+<!--                        <p class="m-0 text-sm font-medium text-surface-800 dark:text-surface-100">-->
+<!--                            {{-->
+<!--                                languages.find(-->
+<!--                                    l => l.value === form.get('language')?.value-->
+<!--                                    )?.label || 'Non renseignée'-->
+<!--                            }}-->
+<!--                        </p>-->
+                    </div>
+                </div>
 
             </div>
         </div>
+
+        <!-- Sécurité -->
+        <div class="card !mb-0">
+
+            <div class="mb-4 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-100 text-surface-700 dark:bg-surface-800 dark:text-surface-200">
+                    <i class="pi pi-shield text-lg"></i>
+                </div>
+
+                <div>
+                    <h2 class="m-0 text-base font-semibold text-surface-900 dark:text-surface-0">
+                        Sécurité
+                    </h2>
+                    <p class="mb-0 mt-1 text-xs text-surface-500">
+                        Protégez votre compte
+                    </p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-surface-200 p-4 dark:border-surface-700">
+                <div class="mb-2 flex items-center gap-2">
+                    <i class="pi pi-lock text-primary"></i>
+                    <span class="text-sm font-medium text-surface-900 dark:text-surface-0">
+                        Mot de passe
+                    </span>
+                </div>
+
+                <p class="mb-0 mt-0 text-sm leading-6 text-surface-500">
+                    Utilisez un mot de passe robuste et ne le partagez jamais.
+                </p>
+
+                <p class="mb-0 mt-3 text-xs text-surface-500">
+                    <i class="pi pi-info-circle mr-1"></i>
+                    La modification du mot de passe dépend de votre service d'authentification.
+                </p>
+            </div>
+
+            <div class="mt-4 rounded-xl border border-surface-200 p-4 dark:border-surface-700">
+                <div class="flex items-start gap-3">
+                    <i class="pi pi-check-circle mt-0.5 text-primary"></i>
+                    <div>
+                        <p class="mb-1 mt-0 text-sm font-medium text-surface-900 dark:text-surface-0">
+                            Bonnes pratiques
+                        </p>
+                        <p class="m-0 text-sm leading-6 text-surface-500">
+                            Déconnectez-vous après avoir utilisé votre compte sur un appareil partagé.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Aide -->
+        <div class="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+            <div class="mb-3 flex items-center gap-2 text-primary">
+                <i class="pi pi-info-circle text-lg"></i>
+                <h3 class="m-0 text-sm font-semibold">Besoin d'aide ?</h3>
+            </div>
+
+            <p class="mb-0 mt-0 text-sm leading-6 text-surface-600 dark:text-surface-300">
+                Si vous ne parvenez pas à modifier vos informations, contactez l'administrateur de votre plateforme.
+            </p>
+        </div>
+
     </div>
 
 </div>
