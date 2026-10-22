@@ -19,17 +19,19 @@ export const appRoutes: Routes = [
                 loadComponent: () => import('./app/pages/actif/actif').then((c) => c.ActifComponent),
                 data: { breadcrumb: 'Actif' },
             },
-            {
-                path: AppConstantRoute.Detail_Actif_PATH,
-                loadComponent: () => import('./app/pages/detail-actif/detail-actif').then((c) => c.DetailActif),
-                data: { breadcrumb: 'Detail-actif' },
-            },
+            // {
+            //     path: AppConstantRoute.Detail_Actif_PATH,
+            //     loadComponent: () => import('./app/pages/detail-actif/detail-actif').then((c) => c.DetailActif),
+            //     data: { breadcrumb: 'Detail-actif' },
+            // },
 
             {
-                path: AppConstantRoute.Volatile_PATH,
-                loadComponent: () => import('./app/pages/analyse-volatilite/analyse-volatilite').then((c) => c.AnalyseVolatilite),
-                data: { breadcrumb: 'Volatile' },
+                path: `${AppConstantRoute.Detail_Actif_PATH}/:id`,
+                loadComponent: () => import('./app/pages/detail-actif/detail-actif')
+                    .then((c) => c.DetailActif),
+                data: { breadcrumb: 'Detail-actif' }
             },
+
 
             {
                 path: AppConstantRoute.Profil_PATH,

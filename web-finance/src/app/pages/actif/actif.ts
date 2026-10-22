@@ -64,7 +64,9 @@ export class ActifComponent implements OnInit {
     }
 
     voirActif(actif: Actif): void {
-        this.router.navigate(['/detail-actif', actif.actifId]);
         console.log('Actif sélectionné :', actif);
+        console.log('ID de l’actif :', actif.actifId);
+
+        this.router.navigate(['/detail-actif', actif.actifId]);
     }
 }
