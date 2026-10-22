@@ -1,24 +1,46 @@
+// import { Component, inject, OnInit, signal } from '@angular/core';
+// import { IconField } from 'primeng/iconfield';
+// import { InputIcon } from 'primeng/inputicon';
+// import { Table, TableModule } from 'primeng/table';
+// import { FormsModule } from '@angular/forms';
+// import { Select } from 'primeng/select';
+// import { MultiSelect } from 'primeng/multiselect';
+// import { Slider } from 'primeng/slider';
+// import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+// import { Tag } from 'primeng/tag';
+// import { InputText } from 'primeng/inputtext';
+// import { Button, ButtonDirective } from 'primeng/button';
+// import { Actif } from '@/app/models/model';
+// import { ConfirmationService, MessageService } from 'primeng/api';
+// import { Router } from '@angular/router';
+// import { ActifService } from '@/app/pages/service/service/actif-service';
+// import { apiErrorMessage } from '@/app/models/api-errors';
+// import { Toast, ToastModule } from 'primeng/toast';
+// import { Avatar } from 'primeng/avatar';
+// import { ConfirmDialogModule } from 'primeng/confirmdialog';
+// import { AuthService } from '@/app/pages/service/service/auth.service';
+
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { Avatar } from 'primeng/avatar';
+import { Button, ButtonDirective } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
-import { Table, TableModule } from 'primeng/table';
-import { FormsModule } from '@angular/forms';
-import { Select } from 'primeng/select';
-import { MultiSelect } from 'primeng/multiselect';
-import { Slider } from 'primeng/slider';
-import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
-import { Tag } from 'primeng/tag';
 import { InputText } from 'primeng/inputtext';
-import { Button, ButtonDirective } from 'primeng/button';
+import { Select } from 'primeng/select';
+import { Table, TableModule } from 'primeng/table';
+import { Toast } from 'primeng/toast';
+import { Tooltip } from 'primeng/tooltip';
 import { Actif } from '@/app/models/model';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { Router } from '@angular/router';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { apiErrorMessage } from '@/app/models/api-errors';
-import { Toast, ToastModule } from 'primeng/toast';
-import { Avatar } from 'primeng/avatar';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { AuthService } from '@/app/pages/service/service/auth.service';
+import { MultiSelect } from 'primeng/multiselect';
+import { Slider } from 'primeng/slider';
+import { Tag } from 'primeng/tag';
 
 
 @Component({
@@ -28,9 +50,9 @@ import { AuthService } from '@/app/pages/service/service/auth.service';
     templateUrl: './actif.html',
     styleUrl: './actif.scss'
 })
+
 export class ActifComponent implements OnInit {
     private readonly actifService = inject(ActifService);
-    private readonly authService = inject(AuthService);
     private readonly router = inject(Router);
     private readonly confirmationService = inject(ConfirmationService);
     private readonly messageService = inject(MessageService);
@@ -40,7 +62,7 @@ export class ActifComponent implements OnInit {
     readonly loadError = signal('');
     readonly searchValue = signal('');
 
-    // Adaptez les valeurs à celles réellement renvoyées par l'API
+    // Adaptez les valeurs à celles réellement utilisées dans vos données
     statuses = [
         { label: 'Actif', value: 'ACTIVE' },
         { label: 'Inactif', value: 'INACTIVE' },
@@ -59,12 +81,13 @@ export class ActifComponent implements OnInit {
     }
 
     loadActifs(): void {
+        console.log('loadActifs appelée'); // à retirer une fois le problème résolu
         this.loading.set(true);
         this.loadError.set('');
 
         this.actifService.getAssets().subscribe({
             next: (actifs) => {
-                // `trend` sert uniquement au filtre « variation »
+                console.log('actifs reçus :', actifs); // à retirer
                 this.actifs.set(
                     actifs.map((a) => ({
                         ...a,
@@ -74,6 +97,7 @@ export class ActifComponent implements OnInit {
                 this.loading.set(false);
             },
             error: (error) => {
+                console.error(error);
                 this.loading.set(false);
                 this.loadError.set(apiErrorMessage(error));
             },

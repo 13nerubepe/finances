@@ -2326,6 +2326,13 @@
   resolved "https://registry.npmjs.org/@ngtools/webpack/-/webpack-21.2.24.tgz#b54e5931d2973265a933c21dbd5ce662b5d89c9f"
   integrity sha512-9l6pXbXUGQscJgSL1rc960tmw2c0QkNABhWyDysaKTAX3Lu/7cjEckIxZNlGsdoK/TwetC23R2CRZdbMqvGszw==
 
+"@ngx-translate/core@^18.0.0":
+  version "18.0.0"
+  resolved "https://registry.yarnpkg.com/@ngx-translate/core/-/core-18.0.0.tgz#55b0bad702b110d5fcf8c50a6779e6102fdb523c"
+  integrity sha512-Z9u9AXaeuyeHHimivvJQvhal/LJNB+5tlH+FimSU4QQ61FrtRDqgyn6nfFbc6Cb+59NDZdsh4QeTJyPCldFUwA==
+  dependencies:
+    tslib "^2.3.0"
+
 "@noble/hashes@1.8.0":
   version "1.8.0"
   resolved "https://registry.npmjs.org/@noble/hashes/-/hashes-1.8.0.tgz#cee43d801fcef9644b11b8194857695acd5f815a"
@@ -2890,6 +2897,11 @@
   version "1.1.0"
   resolved "https://registry.npmjs.org/@rtsao/scc/-/scc-1.1.0.tgz#927dd2fae9bc3361403ac2c7a00c32ddce9ad7e8"
   integrity sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==
+
+"@scarf/scarf@^1.1.1":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@scarf/scarf/-/scarf-1.4.0.tgz#3bbb984085dbd6d982494538b523be1ce6562972"
+  integrity sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==
 
 "@schematics/angular@21.2.24":
   version "21.2.24"
@@ -7099,6 +7111,14 @@ neo-async@^2.6.2:
   version "2.6.2"
   resolved "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
+
+ngx-lottie@^22.0.0:
+  version "22.0.0"
+  resolved "https://registry.yarnpkg.com/ngx-lottie/-/ngx-lottie-22.0.0.tgz#c3d64e94f9de829e872e439fcccd4eeb32e182fa"
+  integrity sha512-nsKk2fJifG2H4AWNYanF/wfJ3FsWzClkxkcD7KnzD6qpIwDrDU+89Tguv8h9i3Q9rn4r4awxvewYTJkrrIsj1g==
+  dependencies:
+    "@scarf/scarf" "^1.1.1"
+    tslib "^2.3.0"
 
 node-addon-api@^6.1.0:
   version "6.1.0"

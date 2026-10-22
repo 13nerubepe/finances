@@ -1,251 +1,251 @@
-<div class="flex min-h-screen min-w-0 items-center justify-center overflow-x-hidden bg-surface-50 px-4 py-8 dark:bg-surface-950">
-    <div class="flex w-full flex-col items-center justify-center">
+<!--<div class="flex min-h-screen min-w-0 items-center justify-center overflow-x-hidden bg-surface-50 px-4 py-8 dark:bg-surface-950">-->
+<!--    <div class="flex w-full flex-col items-center justify-center">-->
 
-        <!-- Contour dégradé de la carte -->
-        <div
-            class="w-full min-w-0 p-1"
-            style="
-                max-width: 768px;
-                border-radius: 36px;
-                background: linear-gradient(180deg, var(--primary-color) 10%, rgba(33, 150, 243, 0) 45%);
-            "
-        >
-            <div class="w-full bg-surface-0 px-6 py-10 dark:bg-surface-900 sm:px-12 sm:py-14" style="border-radius: 32px">
+<!--        &lt;!&ndash; Contour dégradé de la carte &ndash;&gt;-->
+<!--        <div-->
+<!--            class="w-full min-w-0 p-1"-->
+<!--            style="-->
+<!--                max-width: 768px;-->
+<!--                border-radius: 36px;-->
+<!--                background: linear-gradient(180deg, var(&#45;&#45;primary-color) 10%, rgba(33, 150, 243, 0) 45%);-->
+<!--            "-->
+<!--        >-->
+<!--            <div class="w-full bg-surface-0 px-6 py-10 dark:bg-surface-900 sm:px-12 sm:py-14" style="border-radius: 32px">-->
 
-                <h1 class="mb-8 mt-0 text-3xl font-semibold text-surface-900 dark:text-surface-0">Mon profil</h1>
+<!--                <h1 class="mb-8 mt-0 text-3xl font-semibold text-surface-900 dark:text-surface-0">Mon profil</h1>-->
 
-                <!-- ============ PHOTO ============ -->
-                <section class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
-                    <p-avatar
-                        [image]="avatarUrl() ?? undefined"
-                        [label]="avatarUrl() ? undefined : initials()"
-                        shape="circle"
-                        size="xlarge"
-                        styleClass="!h-24 !w-24 !text-3xl"
-                    />
+<!--                &lt;!&ndash; ============ PHOTO ============ &ndash;&gt;-->
+<!--                <section class="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">-->
+<!--                    <p-avatar-->
+<!--                        [image]="avatarUrl() ?? undefined"-->
+<!--                        [label]="avatarUrl() ? undefined : initials()"-->
+<!--                        shape="circle"-->
+<!--                        size="xlarge"-->
+<!--                        styleClass="!h-24 !w-24 !text-3xl"-->
+<!--                    />-->
 
-                    <div class="flex flex-col items-center gap-2 sm:items-start">
-                        <div class="flex gap-2">
-                            <p-button label="Changer la photo" icon="pi pi-camera" size="small" (onClick)="photoInput.click()" />
-                            @if (avatarUrl()) {
-                                <p-button label="Supprimer" icon="pi pi-trash" severity="secondary" [outlined]="true" size="small" (onClick)="removePhoto()" />
-                            }
-                        </div>
-                        <small class="text-surface-500">JPG, PNG ou WebP. 2 Mo maximum.</small>
-                        @if (photoError()) {
-                            <small class="text-red-500">{{ photoError() }}</small>
-                        }
-                        <input #photoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="onPhotoSelected($event)" />
-                    </div>
-                </section>
+<!--                    <div class="flex flex-col items-center gap-2 sm:items-start">-->
+<!--                        <div class="flex gap-2">-->
+<!--                            <p-button label="Changer la photo" icon="pi pi-camera" size="small" (onClick)="photoInput.click()" />-->
+<!--                            @if (avatarUrl()) {-->
+<!--                                <p-button label="Supprimer" icon="pi pi-trash" severity="secondary" [outlined]="true" size="small" (onClick)="removePhoto()" />-->
+<!--                            }-->
+<!--                        </div>-->
+<!--                        <small class="text-surface-500">JPG, PNG ou WebP. 2 Mo maximum.</small>-->
+<!--                        @if (photoError()) {-->
+<!--                            <small class="text-red-500">{{ photoError() }}</small>-->
+<!--                        }-->
+<!--                        <input #photoInput type="file" accept="image/jpeg,image/png,image/webp" class="hidden" (change)="onPhotoSelected($event)" />-->
+<!--                    </div>-->
+<!--                </section>-->
 
-                <!-- ============ INFORMATIONS ============ -->
-                <section class="mt-10 border-t border-surface-200 pt-8 dark:border-surface-700">
-                    <h2 class="m-0 mb-6 text-xl font-semibold text-surface-900 dark:text-surface-0">Informations personnelles</h2>
+<!--                &lt;!&ndash; ============ INFORMATIONS ============ &ndash;&gt;-->
+<!--                <section class="mt-10 border-t border-surface-200 pt-8 dark:border-surface-700">-->
+<!--                    <h2 class="m-0 mb-6 text-xl font-semibold text-surface-900 dark:text-surface-0">Informations personnelles</h2>-->
 
-                    @if (profileMessage()) {
-                        <div class="mb-5 rounded-xl border p-4 text-sm"
-                             [class]="profileMessage()!.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
-                                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"
-                             role="alert">
-                            {{ profileMessage()!.text }}
-                        </div>
-                    }
+<!--                    @if (profileMessage()) {-->
+<!--                        <div class="mb-5 rounded-xl border p-4 text-sm"-->
+<!--                             [class]="profileMessage()!.type === 'success'-->
+<!--                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'-->
+<!--                                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"-->
+<!--                             role="alert">-->
+<!--                            {{ profileMessage()!.text }}-->
+<!--                        </div>-->
+<!--                    }-->
 
-                    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="flex flex-col gap-5">
+<!--                    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="flex flex-col gap-5">-->
 
-                        <div class="flex flex-col gap-2">
-                            <label [attr.for]="'full_name'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Nom complet</label>
-                            <input pInputText id="full_name" formControlName="full_name" autocomplete="name" class="w-full" [invalid]="isInvalid(profileForm, 'full_name')" />
-                            @if (isInvalid(profileForm, 'full_name')) {
-                                <small class="text-red-500">Le nom complet est obligatoire.</small>
-                            }
-                        </div>
+<!--                        <div class="flex flex-col gap-2">-->
+<!--                            <label [attr.for]="'full_name'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Nom complet</label>-->
+<!--                            <input pInputText id="full_name" formControlName="full_name" autocomplete="name" class="w-full" [invalid]="isInvalid(profileForm, 'full_name')" />-->
+<!--                            @if (isInvalid(profileForm, 'full_name')) {-->
+<!--                                <small class="text-red-500">Le nom complet est obligatoire.</small>-->
+<!--                            }-->
+<!--                        </div>-->
 
-                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <div class="flex flex-col gap-2">
-                                <label [attr.for]="'profile_email'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Adresse e-mail</label>
-                                <input pInputText id="profile_email" type="email" formControlName="email" autocomplete="email" class="w-full" [invalid]="isInvalid(profileForm, 'email')" />
-                                @if (isInvalid(profileForm, 'email')) {
-                                    <small class="text-red-500">Saisissez une adresse e-mail valide.</small>
-                                }
-                            </div>
+<!--                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">-->
+<!--                            <div class="flex flex-col gap-2">-->
+<!--                                <label [attr.for]="'profile_email'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Adresse e-mail</label>-->
+<!--                                <input pInputText id="profile_email" type="email" formControlName="email" autocomplete="email" class="w-full" [invalid]="isInvalid(profileForm, 'email')" />-->
+<!--                                @if (isInvalid(profileForm, 'email')) {-->
+<!--                                    <small class="text-red-500">Saisissez une adresse e-mail valide.</small>-->
+<!--                                }-->
+<!--                            </div>-->
 
-                            <div class="flex flex-col gap-2">
-                                <label [attr.for]="'phone'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Téléphone</label>
-                                <input pInputText id="phone" type="tel" formControlName="phone" autocomplete="tel" placeholder="+237 6 12 34 56 78" class="w-full" [invalid]="isInvalid(profileForm, 'phone')" />
-                                @if (isInvalid(profileForm, 'phone')) {
-                                    <small class="text-red-500">Saisissez un numéro valide (8 à 15 chiffres).</small>
-                                }
-                            </div>
-                        </div>
+<!--                            <div class="flex flex-col gap-2">-->
+<!--                                <label [attr.for]="'phone'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Téléphone</label>-->
+<!--                                <input pInputText id="phone" type="tel" formControlName="phone" autocomplete="tel" placeholder="+237 6 12 34 56 78" class="w-full" [invalid]="isInvalid(profileForm, 'phone')" />-->
+<!--                                @if (isInvalid(profileForm, 'phone')) {-->
+<!--                                    <small class="text-red-500">Saisissez un numéro valide (8 à 15 chiffres).</small>-->
+<!--                                }-->
+<!--                            </div>-->
+<!--                        </div>-->
 
-                        <div class="flex justify-end">
-                            <button pButton type="submit" class="!rounded-xl !px-6 !font-semibold" [disabled]="savingProfile() || profileForm.pristine">
-                                @if (savingProfile()) {
-                                    <i class="pi pi-spin pi-spinner"></i>
-                                    <span>Enregistrement...</span>
-                                } @else {
-                                    <span>Enregistrer</span>
-                                }
-                            </button>
-                        </div>
-                    </form>
-                </section>
+<!--                        <div class="flex justify-end">-->
+<!--                            <button pButton type="submit" class="!rounded-xl !px-6 !font-semibold" [disabled]="savingProfile() || profileForm.pristine">-->
+<!--                                @if (savingProfile()) {-->
+<!--                                    <i class="pi pi-spin pi-spinner"></i>-->
+<!--                                    <span>Enregistrement...</span>-->
+<!--                                } @else {-->
+<!--                                    <span>Enregistrer</span>-->
+<!--                                }-->
+<!--                            </button>-->
+<!--                        </div>-->
+<!--                    </form>-->
+<!--                </section>-->
 
-                <!-- ============ MOT DE PASSE ============ -->
-                <section class="mt-10 border-t border-surface-200 pt-8 dark:border-surface-700">
-                    <h2 class="m-0 mb-6 text-xl font-semibold text-surface-900 dark:text-surface-0">Changer le mot de passe</h2>
+<!--                &lt;!&ndash; ============ MOT DE PASSE ============ &ndash;&gt;-->
+<!--                <section class="mt-10 border-t border-surface-200 pt-8 dark:border-surface-700">-->
+<!--                    <h2 class="m-0 mb-6 text-xl font-semibold text-surface-900 dark:text-surface-0">Changer le mot de passe</h2>-->
 
-                    @if (passwordMessage()) {
-                        <div class="mb-5 rounded-xl border p-4 text-sm"
-                             [class]="passwordMessage()!.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
-                                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"
-                             role="alert">
-                            {{ passwordMessage()!.text }}
-                        </div>
-                    }
+<!--                    @if (passwordMessage()) {-->
+<!--                        <div class="mb-5 rounded-xl border p-4 text-sm"-->
+<!--                             [class]="passwordMessage()!.type === 'success'-->
+<!--                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'-->
+<!--                                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"-->
+<!--                             role="alert">-->
+<!--                            {{ passwordMessage()!.text }}-->
+<!--                        </div>-->
+<!--                    }-->
 
-                    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="flex flex-col gap-5">
+<!--                    <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="flex flex-col gap-5">-->
 
-                        <div class="flex flex-col gap-2">
-                            <label [attr.for]="'current_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Mot de passe actuel</label>
-                            <p-password formControlName="current_password" inputId="current_password" autocomplete="current-password" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'current_password')" />
-                            @if (isInvalid(passwordForm, 'current_password')) {
-                                <small class="text-red-500">Le mot de passe actuel est obligatoire.</small>
-                            }
-                        </div>
+<!--                        <div class="flex flex-col gap-2">-->
+<!--                            <label [attr.for]="'current_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Mot de passe actuel</label>-->
+<!--                            <p-password formControlName="current_password" inputId="current_password" autocomplete="current-password" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'current_password')" />-->
+<!--                            @if (isInvalid(passwordForm, 'current_password')) {-->
+<!--                                <small class="text-red-500">Le mot de passe actuel est obligatoire.</small>-->
+<!--                            }-->
+<!--                        </div>-->
 
-                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                            <div class="flex flex-col gap-2">
-                                <label [attr.for]="'new_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Nouveau mot de passe</label>
-                                <p-password formControlName="new_password" inputId="new_password" autocomplete="new-password" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'new_password')" />
-                                <small class="text-surface-500">8 caractères minimum, pas uniquement des chiffres.</small>
-                            </div>
+<!--                        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">-->
+<!--                            <div class="flex flex-col gap-2">-->
+<!--                                <label [attr.for]="'new_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Nouveau mot de passe</label>-->
+<!--                                <p-password formControlName="new_password" inputId="new_password" autocomplete="new-password" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'new_password')" />-->
+<!--                                <small class="text-surface-500">8 caractères minimum, pas uniquement des chiffres.</small>-->
+<!--                            </div>-->
 
-                            <div class="flex flex-col gap-2">
-                                <label [attr.for]="'confirm_new_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Confirmer</label>
-                                <p-password formControlName="confirm_new_password" inputId="confirm_new_password" autocomplete="new-password" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'confirm_new_password') || passwordMismatch()" />
-                                @if (passwordMismatch()) {
-                                    <small class="text-red-500">Les mots de passe ne correspondent pas.</small>
-                                }
-                            </div>
-                        </div>
+<!--                            <div class="flex flex-col gap-2">-->
+<!--                                <label [attr.for]="'confirm_new_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Confirmer</label>-->
+<!--                                <p-password formControlName="confirm_new_password" inputId="confirm_new_password" autocomplete="new-password" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'confirm_new_password') || passwordMismatch()" />-->
+<!--                                @if (passwordMismatch()) {-->
+<!--                                    <small class="text-red-500">Les mots de passe ne correspondent pas.</small>-->
+<!--                                }-->
+<!--                            </div>-->
+<!--                        </div>-->
 
-                        <div class="flex justify-end">
-                            <button pButton type="submit" class="!rounded-xl !px-6 !font-semibold" [disabled]="savingPassword()">
-                                @if (savingPassword()) {
-                                    <i class="pi pi-spin pi-spinner"></i>
-                                    <span>Modification...</span>
-                                } @else {
-                                    <span>Modifier le mot de passe</span>
-                                }
-                            </button>
-                        </div>
-                    </form>
-                </section>
+<!--                        <div class="flex justify-end">-->
+<!--                            <button pButton type="submit" class="!rounded-xl !px-6 !font-semibold" [disabled]="savingPassword()">-->
+<!--                                @if (savingPassword()) {-->
+<!--                                    <i class="pi pi-spin pi-spinner"></i>-->
+<!--                                    <span>Modification...</span>-->
+<!--                                } @else {-->
+<!--                                    <span>Modifier le mot de passe</span>-->
+<!--                                }-->
+<!--                            </button>-->
+<!--                        </div>-->
+<!--                    </form>-->
+<!--                </section>-->
 
-                <!-- ============ DOUBLE AUTHENTIFICATION ============ -->
-                <section class="mt-10 border-t border-surface-200 pt-8 dark:border-surface-700">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <h2 class="m-0 text-xl font-semibold text-surface-900 dark:text-surface-0">Authentification à deux facteurs</h2>
-                            <p class="mb-0 mt-2 text-sm text-surface-500">
-                                Ajoutez une couche de sécurité : un code à 6 chiffres généré par une application
-                                (Google Authenticator, Authy, Microsoft Authenticator) sera demandé à chaque connexion.
-                            </p>
-                        </div>
+<!--                &lt;!&ndash; ============ DOUBLE AUTHENTIFICATION ============ &ndash;&gt;-->
+<!--                <section class="mt-10 border-t border-surface-200 pt-8 dark:border-surface-700">-->
+<!--                    <div class="flex items-start justify-between gap-4">-->
+<!--                        <div>-->
+<!--                            <h2 class="m-0 text-xl font-semibold text-surface-900 dark:text-surface-0">Authentification à deux facteurs</h2>-->
+<!--                            <p class="mb-0 mt-2 text-sm text-surface-500">-->
+<!--                                Ajoutez une couche de sécurité : un code à 6 chiffres généré par une application-->
+<!--                                (Google Authenticator, Authy, Microsoft Authenticator) sera demandé à chaque connexion.-->
+<!--                            </p>-->
+<!--                        </div>-->
 
-                        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
-                              [class]="twoFactorEnabled()
-                                ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-                                : 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'">
-                            {{ twoFactorEnabled() ? 'Activée' : 'Désactivée' }}
-                        </span>
-                    </div>
+<!--                        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold"-->
+<!--                              [class]="twoFactorEnabled()-->
+<!--                                ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'-->
+<!--                                : 'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-300'">-->
+<!--                            {{ twoFactorEnabled() ? 'Activée' : 'Désactivée' }}-->
+<!--                        </span>-->
+<!--                    </div>-->
 
-                    @if (twoFactorMessage()) {
-                        <div class="mt-5 rounded-xl border p-4 text-sm"
-                             [class]="twoFactorMessage()!.type === 'success'
-                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
-                                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"
-                             role="alert">
-                            {{ twoFactorMessage()!.text }}
-                        </div>
-                    }
+<!--                    @if (twoFactorMessage()) {-->
+<!--                        <div class="mt-5 rounded-xl border p-4 text-sm"-->
+<!--                             [class]="twoFactorMessage()!.type === 'success'-->
+<!--                                ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'-->
+<!--                                : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"-->
+<!--                             role="alert">-->
+<!--                            {{ twoFactorMessage()!.text }}-->
+<!--                        </div>-->
+<!--                    }-->
 
-                    <!-- État : désactivée, pas de configuration en cours -->
-                    @if (!twoFactorEnabled() && !twoFactorSetup()) {
-                        <div class="mt-5">
-                            <p-button label="Activer la double authentification" icon="pi pi-shield" [loading]="twoFactorLoading()" (onClick)="startTwoFactorSetup()" />
-                        </div>
-                    }
+<!--                    &lt;!&ndash; État : désactivée, pas de configuration en cours &ndash;&gt;-->
+<!--                    @if (!twoFactorEnabled() && !twoFactorSetup()) {-->
+<!--                        <div class="mt-5">-->
+<!--                            <p-button label="Activer la double authentification" icon="pi pi-shield" [loading]="twoFactorLoading()" (onClick)="startTwoFactorSetup()" />-->
+<!--                        </div>-->
+<!--                    }-->
 
-                    <!-- État : configuration en cours -->
-                    @if (twoFactorSetup(); as setup) {
-                        <div class="mt-6 flex flex-col gap-6 rounded-2xl border border-surface-200 p-5 dark:border-surface-700 sm:flex-row">
-                            <img [src]="setup.qrCode" alt="QR code à scanner" class="mx-auto h-40 w-40 shrink-0 rounded-lg bg-white p-2 sm:mx-0" />
+<!--                    &lt;!&ndash; État : configuration en cours &ndash;&gt;-->
+<!--                    @if (twoFactorSetup(); as setup) {-->
+<!--                        <div class="mt-6 flex flex-col gap-6 rounded-2xl border border-surface-200 p-5 dark:border-surface-700 sm:flex-row">-->
+<!--                            <img [src]="setup.qrCode" alt="QR code à scanner" class="mx-auto h-40 w-40 shrink-0 rounded-lg bg-white p-2 sm:mx-0" />-->
 
-                            <div class="flex min-w-0 flex-1 flex-col gap-4">
-                                <ol class="m-0 list-decimal pl-5 text-sm text-surface-700 dark:text-surface-200">
-                                    <li>Scannez le QR code avec votre application d'authentification.</li>
-                                    <li>Saisissez le code à 6 chiffres affiché pour confirmer.</li>
-                                </ol>
+<!--                            <div class="flex min-w-0 flex-1 flex-col gap-4">-->
+<!--                                <ol class="m-0 list-decimal pl-5 text-sm text-surface-700 dark:text-surface-200">-->
+<!--                                    <li>Scannez le QR code avec votre application d'authentification.</li>-->
+<!--                                    <li>Saisissez le code à 6 chiffres affiché pour confirmer.</li>-->
+<!--                                </ol>-->
 
-                                <div class="text-xs text-surface-500">
-                                    Impossible de scanner ? Clé manuelle :
-                                    <code class="break-all font-semibold">{{ setup.secret }}</code>
-                                </div>
+<!--                                <div class="text-xs text-surface-500">-->
+<!--                                    Impossible de scanner ? Clé manuelle :-->
+<!--                                    <code class="break-all font-semibold">{{ setup.secret }}</code>-->
+<!--                                </div>-->
 
-                                <p-inputotp [formControl]="twoFactorCode" [length]="6" [integerOnly]="true" />
+<!--                                <p-inputotp [formControl]="twoFactorCode" [length]="6" [integerOnly]="true" />-->
 
-                                <div class="flex gap-2">
-                                    <p-button label="Confirmer" [loading]="twoFactorLoading()" [disabled]="twoFactorCode.invalid" (onClick)="confirmTwoFactor()" />
-                                    <p-button label="Annuler" severity="secondary" [outlined]="true" (onClick)="cancelTwoFactorSetup()" />
-                                </div>
-                            </div>
-                        </div>
-                    }
+<!--                                <div class="flex gap-2">-->
+<!--                                    <p-button label="Confirmer" [loading]="twoFactorLoading()" [disabled]="twoFactorCode.invalid" (onClick)="confirmTwoFactor()" />-->
+<!--                                    <p-button label="Annuler" severity="secondary" [outlined]="true" (onClick)="cancelTwoFactorSetup()" />-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    }-->
 
-                    <!-- État : activée -->
-                    @if (twoFactorEnabled()) {
-                        <div class="mt-5 flex flex-col gap-4">
-                            @if (backupCodes().length) {
-                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">
-                                    <p class="m-0 mb-3 text-sm font-semibold text-amber-800 dark:text-amber-200">
-                                        Conservez ces codes de secours en lieu sûr. Ils ne seront plus affichés.
-                                    </p>
-                                    <div class="grid grid-cols-2 gap-2 font-mono text-sm sm:grid-cols-4">
-                                        @for (code of backupCodes(); track code) {
-                                            <span>{{ code }}</span>
-                                        }
-                                    </div>
-                                </div>
-                            }
+<!--                    &lt;!&ndash; État : activée &ndash;&gt;-->
+<!--                    @if (twoFactorEnabled()) {-->
+<!--                        <div class="mt-5 flex flex-col gap-4">-->
+<!--                            @if (backupCodes().length) {-->
+<!--                                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950">-->
+<!--                                    <p class="m-0 mb-3 text-sm font-semibold text-amber-800 dark:text-amber-200">-->
+<!--                                        Conservez ces codes de secours en lieu sûr. Ils ne seront plus affichés.-->
+<!--                                    </p>-->
+<!--                                    <div class="grid grid-cols-2 gap-2 font-mono text-sm sm:grid-cols-4">-->
+<!--                                        @for (code of backupCodes(); track code) {-->
+<!--                                            <span>{{ code }}</span>-->
+<!--                                        }-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            }-->
 
-                            @if (confirmingDisable()) {
-                                <div class="flex flex-col gap-3">
-                                    <p class="m-0 text-sm text-surface-700 dark:text-surface-200">
-                                        Saisissez un code de votre application pour désactiver la protection.
-                                    </p>
-                                    <p-inputotp [formControl]="twoFactorCode" [length]="6" [integerOnly]="true" />
-                                    <div class="flex gap-2">
-                                        <p-button label="Désactiver" severity="danger" [loading]="twoFactorLoading()" [disabled]="twoFactorCode.invalid" (onClick)="disableTwoFactor()" />
-                                        <p-button label="Annuler" severity="secondary" [outlined]="true" (onClick)="confirmingDisable.set(false)" />
-                                    </div>
-                                </div>
-                            } @else {
-                                <div>
-                                    <p-button label="Désactiver la double authentification" icon="pi pi-lock-open" severity="danger" [outlined]="true" (onClick)="confirmingDisable.set(true)" />
-                                </div>
-                            }
-                        </div>
-                    }
-                </section>
+<!--                            @if (confirmingDisable()) {-->
+<!--                                <div class="flex flex-col gap-3">-->
+<!--                                    <p class="m-0 text-sm text-surface-700 dark:text-surface-200">-->
+<!--                                        Saisissez un code de votre application pour désactiver la protection.-->
+<!--                                    </p>-->
+<!--                                    <p-inputotp [formControl]="twoFactorCode" [length]="6" [integerOnly]="true" />-->
+<!--                                    <div class="flex gap-2">-->
+<!--                                        <p-button label="Désactiver" severity="danger" [loading]="twoFactorLoading()" [disabled]="twoFactorCode.invalid" (onClick)="disableTwoFactor()" />-->
+<!--                                        <p-button label="Annuler" severity="secondary" [outlined]="true" (onClick)="confirmingDisable.set(false)" />-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            } @else {-->
+<!--                                <div>-->
+<!--                                    <p-button label="Désactiver la double authentification" icon="pi pi-lock-open" severity="danger" [outlined]="true" (onClick)="confirmingDisable.set(true)" />-->
+<!--                                </div>-->
+<!--                            }-->
+<!--                        </div>-->
+<!--                    }-->
+<!--                </section>-->
 
-            </div>
-        </div>
-    </div>
-</div>
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+<!--</div>-->
