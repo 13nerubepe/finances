@@ -9,6 +9,7 @@ import { RippleModule } from 'primeng/ripple';
 import { AppFloatingConfigurator } from '../../layout/component/app.floatingconfigurator';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { apiErrorMessage } from '@/app/models/api-errors';
+import { AuthService } from '@/app/pages/service/service/auth.service';
 
 
 const REMEMBERED_EMAIL_KEY = 'remembered_email';
@@ -81,6 +82,7 @@ export class Login implements OnInit{
     private readonly router = inject(Router);
     private readonly route = inject(ActivatedRoute);
     private readonly actifService = inject(ActifService);
+    private readonly authService = inject(AuthService);
 
 
     loginForm = this.fb.nonNullable.group({
@@ -120,7 +122,7 @@ export class Login implements OnInit{
 
         const { email, password, rememberMe } = this.loginForm.getRawValue();
 
-        this.actifService.login(email, password).subscribe({
+        this.authService.login(email, password).subscribe({
             next: () => {
                 this.saveRememberedEmail(email, rememberMe);
                 // Back to the page that required the login, if any.
