@@ -1,5 +1,12 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import {
+    AbstractControl,
+    FormBuilder, FormControl, FormGroup,
+    ReactiveFormsModule,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
 import { SelectModule } from 'primeng/select';
@@ -7,12 +14,29 @@ import { TagModule } from 'primeng/tag';
 import { apiErrorMessage } from '@/app/models/api-errors';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Badge } from 'primeng/badge';
+import { Avatar } from 'primeng/avatar';
+import { Password } from 'primeng/password';
+
+
+type Feedback = { type: 'success' | 'error'; text: string } | null;
+
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2 Mo
+const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const newPasswordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+    const password = group.get('new_password')?.value;
+    const confirm = group.get('confirm_new_password')?.value;
+
+    return password && confirm && password !== confirm ? { passwordMismatch: true } : null;
+};
+
+
 
 /** Current user: name and language (GET/PATCH /auth/me/), companies and roles. */
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule, TagModule],
+    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule, TagModule, Avatar, Password],
     templateUrl: 'profile.html'
     // template: `
     //     <div class="grid grid-cols-12 gap-6">
@@ -74,54 +98,228 @@ import { Badge } from 'primeng/badge';
 })
 export class Profile implements OnInit {
     private readonly fb = inject(FormBuilder);
-    protected readonly actifService = inject(ActifService);
+    private readonly actifService = inject(ActifService);
 
-    readonly saving = signal(false);
-    readonly saved = signal(false);
-    readonly errorMessage = signal('');
+    // ---------- Photo ----------
+    readonly avatarUrl = signal<string | null>(null);
+    readonly photoError = signal('');
 
-    languages = [
-        { label: 'Français', value: 'fr' as const },
-        { label: 'English', value: 'en' as const }
-    ];
+    // ---------- Profil ----------
+    readonly savingProfile = signal(false);
+    readonly profileMessage = signal<Feedback>(null);
 
-    form = this.fb.nonNullable.group({
-        first_name: [''],
-        last_name: [''],
-        language: ['fr' as 'fr' | 'en']
+    readonly profileForm = this.fb.nonNullable.group({
+        full_name: ['', Validators.required],
+        email: ['', [Validators.required, Validators.email]],
+        phone: ['', [Validators.pattern(/^\+?[0-9\s]{8,15}$/)]],
+    });
+
+    readonly initials = computed(() => {
+        const name = this.fullName();
+        return name
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0].toUpperCase())
+            .join('');
+    });
+    private readonly fullName = signal('');
+
+    // ---------- Mot de passe ----------
+    readonly savingPassword = signal(false);
+    readonly passwordMessage = signal<Feedback>(null);
+
+    readonly passwordForm = this.fb.nonNullable.group(
+        {
+            current_password: ['', Validators.required],
+            new_password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?!\d+$).+$/)]],
+            confirm_new_password: ['', Validators.required],
+        },
+        { validators: newPasswordsMatch },
+    );
+
+    // ---------- Double authentification ----------
+    readonly twoFactorEnabled = signal(false);
+    readonly twoFactorSetup = signal<{ qrCode: string; secret: string } | null>(null);
+    readonly twoFactorLoading = signal(false);
+    readonly twoFactorMessage = signal<Feedback>(null);
+    readonly backupCodes = signal<string[]>([]);
+    readonly confirmingDisable = signal(false);
+
+    readonly twoFactorCode = new FormControl('', {
+        nonNullable: true,
+        validators: [Validators.required, Validators.pattern(/^\d{6}$/)],
     });
 
     ngOnInit(): void {
-        const user = this.actifService.user();
-        if (user) {
-            this.form.reset({ first_name: user.first_name, last_name: user.last_name, language: user.language });
-        }
-    }
-
-    save(): void {
-        this.saving.set(true);
-        this.saved.set(false);
-        this.errorMessage.set('');
-        this.actifService.updateProfile(this.form.getRawValue()).subscribe({
+        this.actifService.getProfile().subscribe({
             next: (user) => {
-                this.form.reset({ first_name: user.first_name, last_name: user.last_name, language: user.language });
-                this.saving.set(false);
-                this.saved.set(true);
+                this.profileForm.reset({
+                    full_name: user.full_name,
+                    email: user.email,
+                    phone: user.phone ?? '',
+                });
+                this.fullName.set(user.full_name);
+                this.avatarUrl.set(user.avatar_url ?? null);
+                this.twoFactorEnabled.set(!!user.two_factor_enabled);
             },
-            error: (error) => {
-                this.errorMessage.set(apiErrorMessage(error));
-                this.saving.set(false);
-            }
+            error: (error) => this.profileMessage.set({ type: 'error', text: apiErrorMessage(error) }),
         });
     }
 
-    cancelChanges(): void {
-        // if (!this.initialValues || this.saving()) {
-        //     return;
-        // }
-        //
-        // this.form.reset(this.initialValues);
-        // this.errorMessage.set(null);
-        // this.saved.set(false);
+    isInvalid(form: FormGroup, controlName: string): boolean {
+        const control = form.get(controlName);
+        return !!control && control.invalid && (control.touched || control.dirty);
+    }
+
+    passwordMismatch(): boolean {
+        return this.passwordForm.hasError('passwordMismatch') && !!this.passwordForm.get('confirm_new_password')?.touched;
+    }
+
+    // ---------- Photo ----------
+    onPhotoSelected(event: Event): void {
+        const input = event.target as HTMLInputElement;
+        const file = input.files?.[0];
+        input.value = ''; // permet de re-sélectionner le même fichier
+
+        if (!file) return;
+
+        this.photoError.set('');
+
+        if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+            this.photoError.set('Format non supporté. Utilisez JPG, PNG ou WebP.');
+            return;
+        }
+        if (file.size > MAX_PHOTO_SIZE) {
+            this.photoError.set('La photo dépasse 2 Mo.');
+            return;
+        }
+
+        this.actifService.uploadAvatar(file).subscribe({
+            next: (res) => this.avatarUrl.set(res.avatar_url),
+            error: (error) => this.photoError.set(apiErrorMessage(error)),
+        });
+    }
+
+    removePhoto(): void {
+        this.actifService.deleteAvatar().subscribe({
+            next: () => this.avatarUrl.set(null),
+            error: (error) => this.photoError.set(apiErrorMessage(error)),
+        });
+    }
+
+    // ---------- Profil ----------
+    saveProfile(): void {
+        this.profileMessage.set(null);
+
+        if (this.profileForm.invalid) {
+            this.profileForm.markAllAsTouched();
+            return;
+        }
+
+        this.savingProfile.set(true);
+
+        this.actifService.updateProfile(this.profileForm.getRawValue()).subscribe({
+            next: (user) => {
+                this.savingProfile.set(false);
+                this.fullName.set(user.full_name);
+                this.profileForm.markAsPristine();
+                this.profileMessage.set({ type: 'success', text: 'Profil mis à jour.' });
+            },
+            error: (error) => {
+                this.savingProfile.set(false);
+                this.profileMessage.set({ type: 'error', text: apiErrorMessage(error) });
+            },
+        });
+    }
+
+    // ---------- Mot de passe ----------
+    changePassword(): void {
+        this.passwordMessage.set(null);
+
+        if (this.passwordForm.invalid) {
+            this.passwordForm.markAllAsTouched();
+            return;
+        }
+
+        this.savingPassword.set(true);
+        const { current_password, new_password } = this.passwordForm.getRawValue();
+
+        this.actifService.changePassword({ current_password, new_password }).subscribe({
+            next: () => {
+                this.savingPassword.set(false);
+                this.passwordForm.reset();
+                this.passwordMessage.set({ type: 'success', text: 'Mot de passe modifié.' });
+            },
+            error: (error) => {
+                this.savingPassword.set(false);
+                this.passwordMessage.set({ type: 'error', text: apiErrorMessage(error) });
+            },
+        });
+    }
+
+    // ---------- Double authentification ----------
+    startTwoFactorSetup(): void {
+        this.twoFactorMessage.set(null);
+        this.twoFactorLoading.set(true);
+
+        this.actifService.twoFactorSetup().subscribe({
+            next: (setup) => {
+                this.twoFactorLoading.set(false);
+                this.twoFactorCode.reset();
+                this.twoFactorSetup.set({ qrCode: setup.qr_code, secret: setup.secret });
+            },
+            error: (error) => {
+                this.twoFactorLoading.set(false);
+                this.twoFactorMessage.set({ type: 'error', text: apiErrorMessage(error) });
+            },
+        });
+    }
+
+    cancelTwoFactorSetup(): void {
+        this.twoFactorSetup.set(null);
+        this.twoFactorCode.reset();
+    }
+
+    confirmTwoFactor(): void {
+        if (this.twoFactorCode.invalid) return;
+
+        this.twoFactorLoading.set(true);
+
+        this.actifService.twoFactorEnable(this.twoFactorCode.value).subscribe({
+            next: (res) => {
+                this.twoFactorLoading.set(false);
+                this.twoFactorEnabled.set(true);
+                this.twoFactorSetup.set(null);
+                this.backupCodes.set(res.backup_codes ?? []);
+                this.twoFactorCode.reset();
+                this.twoFactorMessage.set({ type: 'success', text: 'Double authentification activée.' });
+            },
+            error: (error) => {
+                this.twoFactorLoading.set(false);
+                this.twoFactorMessage.set({ type: 'error', text: apiErrorMessage(error) });
+            },
+        });
+    }
+
+    disableTwoFactor(): void {
+        if (this.twoFactorCode.invalid) return;
+
+        this.twoFactorLoading.set(true);
+
+        this.actifService.twoFactorDisable(this.twoFactorCode.value).subscribe({
+            next: () => {
+                this.twoFactorLoading.set(false);
+                this.twoFactorEnabled.set(false);
+                this.confirmingDisable.set(false);
+                this.backupCodes.set([]);
+                this.twoFactorCode.reset();
+                this.twoFactorMessage.set({ type: 'success', text: 'Double authentification désactivée.' });
+            },
+            error: (error) => {
+                this.twoFactorLoading.set(false);
+                this.twoFactorMessage.set({ type: 'error', text: apiErrorMessage(error) });
+            },
+        });
     }
 }

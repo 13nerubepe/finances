@@ -1,5 +1,5 @@
 
-<app-floating-configurator />
+<!--<app-floating-configurator />-->
 
 <div
     class="flex min-h-screen min-w-0 items-center justify-center overflow-x-hidden bg-surface-50 px-4 py-8 dark:bg-surface-950"
@@ -146,6 +146,32 @@
 
                     </div>
 
+                    <!-- Se souvenir de moi / Mot de passe oublié -->
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+
+                        <div class="flex items-center gap-2">
+                            <p-checkbox
+                                formControlName="rememberMe"
+                                inputId="rememberMe"
+                                [binary]="true"
+                            />
+                            <label
+                                for="rememberMe"
+                                class="cursor-pointer text-sm text-surface-700 dark:text-surface-200"
+                            >
+                                Se souvenir de moi
+                            </label>
+                        </div>
+
+                        <a
+                            routerLink="/forgot-password"
+                            class="cursor-pointer text-sm font-semibold text-primary no-underline hover:underline"
+                        >
+                            Mot de passe oublié ?
+                        </a>
+
+                    </div>
+
                     <!-- Bouton de connexion -->
                     <button
                         pButton
@@ -163,6 +189,17 @@
                     </button>
 
                 </form>
+
+                <!-- Lien d'inscription -->
+                <p class="mb-0 mt-12 text-center text-sm text-surface-500">
+                    Vous n'avez pas de compte ?
+                    <a
+                        routerLink="/register"
+                        class="cursor-pointer font-semibold text-primary no-underline hover:underline"
+                    >
+                        S'inscrire
+                    </a>
+                </p>
 
             </div>
         </div>

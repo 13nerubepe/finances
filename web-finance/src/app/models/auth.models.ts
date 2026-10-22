@@ -27,9 +27,9 @@ export interface RegisterPayload {
     password: string;
     first_name?: string;
     last_name?: string;
-    language?: 'fr' | 'en';
-    company_name: string;
-    country?: string;
+    // language?: 'fr' | 'en';
+    // company_name: string;
+    // country?: string;
 }
 
 /** Error body returned by the API: `detail` + stable `code`, or per-field messages. */

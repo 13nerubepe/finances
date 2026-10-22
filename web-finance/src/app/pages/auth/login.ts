@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormsModule, NgForm, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
@@ -10,10 +10,13 @@ import { AppFloatingConfigurator } from '../../layout/component/app.floatingconf
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { apiErrorMessage } from '@/app/models/api-errors';
 
+
+const REMEMBERED_EMAIL_KEY = 'remembered_email';
+
 @Component({
     selector: 'app-login',
     standalone: true,
-    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, AppFloatingConfigurator, ReactiveFormsModule],
+    imports: [ButtonModule, CheckboxModule, InputTextModule, PasswordModule, FormsModule, RouterModule, RippleModule, ReactiveFormsModule],
     templateUrl: 'login.html'
     // template: `
     //     <app-floating-configurator />
@@ -65,12 +68,12 @@ import { apiErrorMessage } from '@/app/models/api-errors';
     //     </div>
     // `
 })
-export class Login {
+export class Login implements OnInit{
     // email: string = '';
     //
     // password: string = '';
     //
-    checked: boolean = false;
+    // checked: boolean = false;
 
     private readonly fb = inject(FormBuilder);
     readonly loading = signal(false);
@@ -79,10 +82,25 @@ export class Login {
     private readonly route = inject(ActivatedRoute);
     private readonly actifService = inject(ActifService);
 
+
     loginForm = this.fb.nonNullable.group({
         email: ['', [Validators.required, Validators.email]],
-        password: ['', Validators.required]
+        password: ['', Validators.required],
+        rememberMe: [false],
     });
+
+    ngOnInit(): void {
+        const savedEmail = localStorage.getItem(REMEMBERED_EMAIL_KEY);
+
+        if (savedEmail) {
+            this.loginForm.patchValue({
+                email: savedEmail,
+                rememberMe: true,
+            });
+        }
+    }
+
+
 
     isInvalid(controlName: 'email' | 'password'): boolean {
         const control = this.loginForm.controls[controlName];
@@ -99,9 +117,12 @@ export class Login {
         }
 
         this.loading.set(true);
-        const { email, password } = this.loginForm.getRawValue();
+
+        const { email, password, rememberMe } = this.loginForm.getRawValue();
+
         this.actifService.login(email, password).subscribe({
             next: () => {
+                this.saveRememberedEmail(email, rememberMe);
                 // Back to the page that required the login, if any.
                 const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/';
                 this.router.navigateByUrl(returnUrl);
@@ -113,29 +134,14 @@ export class Login {
         });
     }
 
-
-
-
-
-
-
-    user = { nom: '', prenom: '', email: '', role: '', password: '' };
-    roles = [
-        { label: 'Administrateur', value: 'ADMIN' },
-        { label: 'Responsable RH', value: 'RH' },
-        { label: 'Employé', value: 'EMPLOYEE' }
-    ];
-    successMessage = '';
-    createUser(form: NgForm): void {
-        if (form.invalid) {
-            return;
+    private saveRememberedEmail(email: string, rememberMe: boolean): void {
+        if (rememberMe) {
+            localStorage.setItem(REMEMBERED_EMAIL_KEY, email);
+        } else {
+            localStorage.removeItem(REMEMBERED_EMAIL_KEY);
         }
-        // Démonstration uniquement : aucun utilisateur n'est enregistré.
-        console.log('Utilisateur à créer :', { ...this.user, password: '[masqué]' });
-        this.successMessage = 'Formulaire validé. Connectez le service API pour enregistrer l’utilisateur.';
     }
-    resetForm(form: NgForm): void {
-        form.resetForm({ nom: '', prenom: '', email: '', role: '', password: '' });
-        this.successMessage = '';
-    }
+
+
+
 }

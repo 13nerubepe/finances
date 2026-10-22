@@ -1,5 +1,12 @@
 import { Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+    AbstractControl,
+    FormBuilder,
+    ReactiveFormsModule,
+    ValidationErrors,
+    ValidatorFn,
+    Validators
+} from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { switchMap } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
@@ -8,12 +15,22 @@ import { PasswordModule } from 'primeng/password';
 import { SelectModule } from 'primeng/select';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { apiErrorMessage } from '@/app/models/api-errors';
+import { Checkbox } from 'primeng/checkbox';
+
+
+/** Vérifie que « mot de passe » et « confirmation » sont identiques. */
+const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
+    const password = group.get('password')?.value;
+    const confirm = group.get('confirm_password')?.value;
+
+    return password && confirm && password !== confirm ? { passwordMismatch: true } : null;
+};
 
 
 @Component({
     selector: 'app-register',
     standalone: true,
-    imports: [ReactiveFormsModule, RouterModule, ButtonModule, InputTextModule, PasswordModule, SelectModule],
+    imports: [ReactiveFormsModule, RouterModule, ButtonModule, InputTextModule, PasswordModule, SelectModule, Checkbox],
     templateUrl: './register.html',
     // template: `
     //     <div class="flex min-h-screen items-center justify-center bg-surface-100 p-4 dark:bg-surface-950 md:p-8">
@@ -91,45 +108,50 @@ export class Register {
     readonly loading = signal(false);
     readonly errorMessage = signal('');
 
-    countries = [
-        { label: 'Cameroun', value: 'CM' },
-        { label: "Côte d'Ivoire", value: 'CI' },
-        { label: 'Sénégal', value: 'SN' },
-        { label: 'Gabon', value: 'GA' },
-        { label: 'France', value: 'FR' }
-    ];
+    form = this.fb.nonNullable.group(
+        {
+            first_name: ['', Validators.required],
+            last_name: ['', Validators.required],
+            email: ['', [Validators.required, Validators.email]],
+            password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?!\d+$).+$/)]],
+            confirm_password: ['', Validators.required],
+            acceptTerms: [false, Validators.requiredTrue],
+        },
+        { validators: passwordsMatch },
+    );
 
-    form = this.fb.nonNullable.group({
-        first_name: [''],
-        last_name: [''],
-        email: ['', [Validators.required, Validators.email]],
-        password: ['', [Validators.required, Validators.minLength(8)]],
-        company_name: ['', Validators.required],
-        country: ['CM', Validators.required]
-    });
+    isInvalid(controlName: string): boolean {
+        const control: AbstractControl | null = this.form.get(controlName);
 
-    isInvalid(name: 'email' | 'password' | 'company_name'): boolean {
-        const control = this.form.controls[name];
-        return control.invalid && (control.touched || control.dirty);
+        return !!control && control.invalid && (control.touched || control.dirty);
+    }
+
+    passwordMismatch(): boolean {
+        return this.form.hasError('passwordMismatch') && !!this.form.get('confirm_password')?.touched;
     }
 
     onSubmit(): void {
         this.errorMessage.set('');
+
         if (this.form.invalid) {
             this.form.markAllAsTouched();
             return;
         }
+
         this.loading.set(true);
-        const payload = this.form.getRawValue();
-        this.actifService
-            .register(payload)
-            .pipe(switchMap(() => this.actifService.login(payload.email, payload.password)))
-            .subscribe({
-                next: () => this.router.navigateByUrl('/'),
-                error: (error) => {
-                    this.loading.set(false);
-                    this.errorMessage.set(apiErrorMessage(error));
-                }
-            });
+
+        // On n'envoie pas à l'API les champs qui ne servent qu'au front.
+        const { confirm_password, acceptTerms, ...payload } = this.form.getRawValue();
+
+        this.actifService.register(payload).subscribe({
+            next: () => {
+                this.loading.set(false);
+                this.router.navigateByUrl('/auth/login');
+            },
+            error: (error) => {
+                this.loading.set(false);
+                this.errorMessage.set(apiErrorMessage(error));
+            },
+        });
     }
 }

@@ -3,10 +3,10 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, switchMap, tap } from 'rxjs';
 import {
     Actif, ActifOption,
-    Actualite, AnalyseVolatiliteParams,
+    Actualite, AnalyseVolatiliteParams, ChangePasswordPayload,
     HistoricalPrice,
     PortfolioDistributionResponse, ProfileUpdate, ResultatAnalyseVolatilite,
-    TopMoversResponse
+    TopMoversResponse, TwoFactorEnableResponse, TwoFactorSetupResponse, UpdateProfilePayload, UserProfile
 } from '@/app/models/model';
 import { environment } from '@/environments/environment';
 import { ACTIFS_MOCK, COURS_HISTORIQUES_MOCK } from '@/app/DATA/marche-mock.data.ts';
@@ -26,15 +26,55 @@ export class ActifService {
     private readonly apiUrl = `${environment.apiUrl}/`;
     private readonly useMockData = true;
 
-    /**
-     * Connexion et récupération des tokens JWT.
-     */
-    login(email: string, password: string): Observable<User> {
-        return this.http.post<AccessToken>(`${this.apiUrl}/login/`, { email, password }, { withCredentials: true }).pipe(
-            tap(({ access }) => this.accessToken.set(access)),
-            switchMap(() => this.loadCurrentUser())
-        );
+
+    // ---------- Profil ----------
+    getProfile(): Observable<UserProfile> {
+        return this.http.get<UserProfile>(`${this.apiUrl}/profile`);
     }
+
+    updateProfile(payload: UpdateProfilePayload): Observable<UserProfile> {
+        return this.http.patch<UserProfile>(`${this.apiUrl}/profile`, payload);
+    }
+
+// ---------- Photo ----------
+    uploadAvatar(file: File): Observable<{ avatar_url: string }> {
+        const formData = new FormData();
+        formData.append('avatar', file);
+
+        return this.http.post<{ avatar_url: string }>(`${this.apiUrl}/profile/avatar`, formData);
+    }
+
+    deleteAvatar(): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/profile/avatar`);
+    }
+
+// ---------- Mot de passe ----------
+    changePassword(payload: ChangePasswordPayload): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}/profile/change-password`, payload);
+    }
+
+// ---------- Double authentification ----------
+    twoFactorSetup(): Observable<TwoFactorSetupResponse> {
+        return this.http.post<TwoFactorSetupResponse>(`${this.apiUrl}/2fa/setup`, {});
+    }
+
+    twoFactorEnable(code: string): Observable<TwoFactorEnableResponse> {
+        return this.http.post<TwoFactorEnableResponse>(`${this.apiUrl}/2fa/enable`, { code });
+    }
+
+    twoFactorDisable(code: string): Observable<void> {
+        return this.http.post<void>(`${this.apiUrl}/2fa/disable`, { code });
+    }
+
+    /**
+     * Connexion et récupération des tokens JWT
+     */
+    // login(email: string, password: string): Observable<User> {
+    //     return this.http.post<AccessToken>(`${this.apiUrl}/login/`, { email, password }, { withCredentials: true }).pipe(
+    //         tap(({ access }) => this.accessToken.set(access)),
+    //         switchMap(() => this.loadCurrentUser())
+    //     );
+    // }
 
     /**
      * Récupération du profil connecté.
@@ -49,10 +89,10 @@ export class ActifService {
     register(payload: RegisterPayload): Observable<User> {
         return this.http.post<User>(`${this.apiUrl}/register/`, payload);
     }
-    /** Name and language. The language also sets the language of agent answers. */
-    updateProfile(changes: ProfileUpdate): Observable<User> {
-        return this.http.patch<User>(`${this.apiUrl}/me/`, changes).pipe(tap((user) => this.user.set(user)));
-    }
+    // /** Name and language. The language also sets the language of agent answers. */
+    // updateProfile(changes: ProfileUpdate): Observable<User> {
+    //     return this.http.patch<User>(`${this.apiUrl}/me/`, changes).pipe(tap((user) => this.user.set(user)));
+    // }
 
 
 
@@ -64,6 +104,9 @@ export class ActifService {
     getAssets(): Observable<Actif[]> {
         // return this.http.get<Actif[]>(`${this.apiUrl}/actifs/`);
         return of(ACTIFS_MOCK);
+    }
+    deleteActif(actifId: number): Observable<void> {
+        return this.http.delete<void>(`${this.apiUrl}/actifs/${actifId}`);
     }
 
     // Récupérer l'historique des cours d'un actif
@@ -177,62 +220,62 @@ export class ActifService {
      *
      * GET /api/volatilite/historique?actif=...&periode=...
      */
-    getHistorique(
-        actif: string,
-        periode: number
-    ): Observable<ResultatAnalyseVolatilite['donnees']> {
-
-        const httpParams = new HttpParams()
-            .set('actif', actif)
-            .set('periode', periode);
-
-        return this.http.get<ResultatAnalyseVolatilite['donnees']>(
-            `${this.apiUrl}/historique`,
-            { params: httpParams }
-        );
-    }
+    // getHistorique(
+    //     actif: string,
+    //     periode: number
+    // ): Observable<ResultatAnalyseVolatilite['donnees']> {
+    //
+    //     const httpParams = new HttpParams()
+    //         .set('actif', actif)
+    //         .set('periode', periode);
+    //
+    //     return this.http.get<ResultatAnalyseVolatilite['donnees']>(
+    //         `${this.apiUrl}/historique`,
+    //         { params: httpParams }
+    //     );
+    // }
 
     /**
      * Récupérer les corrélations entre plusieurs actifs.
      *
      * GET /api/volatilite/correlations?actifs=...&periode=...
      */
-    getCorrelations(
-        actifs: string[],
-        periode: number
-    ): Observable<ResultatAnalyseVolatilite['correlations']> {
+    // getCorrelations(
+    //     actifs: string[],
+    //     periode: number
+    // ): Observable<ResultatAnalyseVolatilite['correlations']> {
+    //
+    //     const httpParams = new HttpParams()
+    //         .set('actifs', actifs.join(','))
+    //         .set('periode', periode);
+    //
+    //     return this.http.get<ResultatAnalyseVolatilite['correlations']>(
+    //         `${this.apiUrl}/correlations`,
+    //         { params: httpParams }
+    //     );
+    // }
 
-        const httpParams = new HttpParams()
-            .set('actifs', actifs.join(','))
-            .set('periode', periode);
-
-        return this.http.get<ResultatAnalyseVolatilite['correlations']>(
-            `${this.apiUrl}/correlations`,
-            { params: httpParams }
-        );
-    }
-
-    /**
-     * Récupérer les mouvements inhabituels détectés.
-     *
-     * GET /api/volatilite/mouvements-inhabituels
-     */
-    getMouvementsInhabituels(
-        actifs: string[],
-        periode: number
-    ): Observable<ResultatAnalyseVolatilite['mouvementsInhabituels']> {
-
-        const httpParams = new HttpParams()
-            .set('actifs', actifs.join(','))
-            .set('periode', periode);
-
-        return this.http.get<
-            ResultatAnalyseVolatilite['mouvementsInhabituels']
-        >(
-            `${this.apiUrl}/mouvements-inhabituels`,
-            { params: httpParams }
-        );
-    }
+    // /**
+    //  * Récupérer les mouvements inhabituels détectés.
+    //  *
+    //  * GET /api/volatilite/mouvements-inhabituels
+    //  */
+    // getMouvementsInhabituels(
+    //     actifs: string[],
+    //     periode: number
+    // ): Observable<ResultatAnalyseVolatilite['mouvementsInhabituels']> {
+    //
+    //     const httpParams = new HttpParams()
+    //         .set('actifs', actifs.join(','))
+    //         .set('periode', periode);
+    //
+    //     return this.http.get<
+    //         ResultatAnalyseVolatilite['mouvementsInhabituels']
+    //     >(
+    //         `${this.apiUrl}/mouvements-inhabituels`,
+    //         { params: httpParams }
+    //     );
+    // }
 
 
 }

@@ -1,65 +1,255 @@
-<div class="flex min-h-screen items-center justify-center bg-surface-100 p-4 dark:bg-surface-950 md:p-8">
-    <div class="w-full max-w-lg rounded-3xl border border-surface-200 bg-white p-6 shadow-xl dark:border-surface-700 dark:bg-surface-900 sm:p-10">
-        <h2 class="m-0 text-3xl font-bold tracking-tight text-surface-900 dark:text-surface-0">Créer votre espace</h2>
-        <p class="mb-8 mt-3 text-sm text-surface-500 dark:text-surface-400">Un compte fondateur et votre entreprise, en une étape.</p>
+<div
+    class="flex min-h-screen min-w-0 items-center justify-center overflow-x-hidden bg-surface-50 px-4 py-8 dark:bg-surface-950"
+>
+    <div class="flex w-full flex-col items-center justify-center">
 
-        @if (errorMessage()) {
-            <div class="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300" role="alert">
-                <i class="pi pi-exclamation-circle mt-0.5"></i>
-                <span>{{ errorMessage() }}</span>
-            </div>
-        }
+        <!-- Contour dégradé de la carte -->
+        <div
+            class="w-full min-w-0 p-1"
+            style="
+                max-width: 568px;
+                border-radius: 36px;
+                background: linear-gradient(
+                    180deg,
+                    var(--primary-color) 10%,
+                    rgba(33, 150, 243, 0) 45%
+                );
+            "
+        >
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-5">
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <div class="flex flex-col gap-2">
-                    <label for="first_name" class="text-sm font-semibold">Prénom</label>
-                    <input pInputText id="first_name" formControlName="first_name" autocomplete="given-name" />
+            <!-- Carte d'inscription -->
+            <div
+                class="w-full bg-surface-0 px-6 py-10 dark:bg-surface-900 sm:px-12 sm:py-14"
+                style="border-radius: 32px"
+            >
+
+                <!-- En-tête -->
+                <div class="mb-8 text-center">
+
+                    <!-- (SVG du logo : collez ici le même SVG que sur la page de login) -->
+
+                    <h1 class="mb-2 mt-0 text-3xl font-semibold text-surface-900 dark:text-surface-0">
+                        Créer un compte
+                    </h1>
+
+                    <p class="m-0 text-sm text-surface-500">
+                        Renseignez vos informations pour commencer.
+                    </p>
+
                 </div>
-                <div class="flex flex-col gap-2">
-                    <label for="last_name" class="text-sm font-semibold">Nom</label>
-                    <input pInputText id="last_name" formControlName="last_name" autocomplete="family-name" />
-                </div>
-            </div>
 
-            <div class="flex flex-col gap-2">
-                <label for="email" class="text-sm font-semibold">Adresse e-mail</label>
-                <input pInputText id="email" type="email" formControlName="email" autocomplete="username" placeholder="nom@entreprise.com" [invalid]="isInvalid('email')" />
-                @if (isInvalid('email')) {
-                    <small class="text-red-500">Saisissez une adresse e-mail valide.</small>
+                @if (errorMessage()) {
+                    <div
+                        class="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+                        role="alert"
+                    >
+                        <i class="pi pi-exclamation-circle mt-0.5"></i>
+                        <span>{{ errorMessage() }}</span>
+                    </div>
                 }
+
+                <!-- Formulaire d'inscription -->
+                <form
+                    [formGroup]="form"
+                    (ngSubmit)="onSubmit()"
+                    class="flex flex-col gap-5"
+                >
+
+                    <!-- Prénom / Nom -->
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                        <div class="flex flex-col gap-2">
+                            <label
+                                for="first_name"
+                                class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                            >
+                                Prénom
+                            </label>
+                            <input
+                                pInputText
+                                id="first_name"
+                                formControlName="first_name"
+                                autocomplete="given-name"
+                                class="w-full"
+                                [invalid]="isInvalid('first_name')"
+                            />
+                        </div>
+
+                        <div class="flex flex-col gap-2">
+                            <label
+                                for="last_name"
+                                class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                            >
+                                Nom
+                            </label>
+                            <input
+                                pInputText
+                                id="last_name"
+                                formControlName="last_name"
+                                autocomplete="family-name"
+                                class="w-full"
+                                [invalid]="isInvalid('last_name')"
+                            />
+                        </div>
+
+                    </div>
+
+                    <!-- Adresse e-mail -->
+                    <div class="flex flex-col gap-2">
+
+                        <label
+                            for="email"
+                            class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                        >
+                            Adresse e-mail
+                        </label>
+
+                        <input
+                            pInputText
+                            id="email"
+                            type="email"
+                            formControlName="email"
+                            autocomplete="username"
+                            placeholder="nom@entreprise.com"
+                            class="w-full"
+                            [invalid]="isInvalid('email')"
+                        />
+
+                        @if (isInvalid('email')) {
+                            <small class="text-red-500">
+                                Saisissez une adresse e-mail valide.
+                            </small>
+                        }
+
+                    </div>
+
+                    <!-- Mot de passe -->
+                    <div class="flex flex-col gap-2">
+
+                        <label
+                            [attr.for]="'password'"
+                            class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                        >
+                            Mot de passe
+                        </label>
+
+                        <p-password
+                            formControlName="password"
+                            inputId="password"
+                            autocomplete="new-password"
+                            placeholder="Entrez votre mot de passe"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            [fluid]="true"
+                            [invalid]="isInvalid('password')"
+                            styleClass="w-full"
+                            inputStyleClass="w-full"
+                        />
+
+                        <small class="text-surface-500">
+                            8 caractères minimum, pas uniquement des chiffres.
+                        </small>
+
+                    </div>
+
+                    <!-- Confirmation du mot de passe -->
+                    <div class="flex flex-col gap-2">
+
+                        <label
+                            [attr.for]="'confirm_password'"
+                            class="text-sm font-semibold text-surface-700 dark:text-surface-200"
+                        >
+                            Confirmer le mot de passe
+                        </label>
+
+                        <p-password
+                            formControlName="confirm_password"
+                            inputId="confirm_password"
+                            autocomplete="new-password"
+                            placeholder="Confirmez votre mot de passe"
+                            [feedback]="false"
+                            [toggleMask]="true"
+                            [fluid]="true"
+                            [invalid]="isInvalid('confirm_password') || passwordMismatch()"
+                            styleClass="w-full"
+                            inputStyleClass="w-full"
+                        />
+
+                        @if (passwordMismatch()) {
+                            <small class="text-red-500">
+                                Les mots de passe ne correspondent pas.
+                            </small>
+                        }
+
+                    </div>
+
+                    <!-- Conditions d'utilisation -->
+                    <div class="flex flex-col gap-2">
+
+                        <div class="flex items-start gap-2">
+                            <p-checkbox
+                                formControlName="acceptTerms"
+                                inputId="acceptTerms"
+                                [binary]="true"
+                                class="mt-0.5"
+                            />
+                            <label
+                                [attr.for]="'acceptTerms'"
+                                class="cursor-pointer text-sm text-surface-700 dark:text-surface-200"
+                            >
+                                J'accepte les
+                                <a
+                                    routerLink="/terms"
+                                    target="_blank"
+                                    class="font-semibold text-primary no-underline hover:underline"
+                                >conditions d'utilisation</a>
+                                et la
+                                <a
+                                    routerLink="/privacy"
+                                    target="_blank"
+                                    class="font-semibold text-primary no-underline hover:underline"
+                                >politique de confidentialité</a>.
+                            </label>
+                        </div>
+
+                        @if (isInvalid('acceptTerms')) {
+                            <small class="text-red-500">
+                                Vous devez accepter les conditions pour continuer.
+                            </small>
+                        }
+
+                    </div>
+
+                    <!-- Bouton d'inscription -->
+                    <button
+                        pButton
+                        type="submit"
+                        class="mt-2 !w-full !justify-center !rounded-xl !py-3 !font-semibold"
+                        [disabled]="loading()"
+                    >
+                        @if (loading()) {
+                            <i class="pi pi-spin pi-spinner"></i>
+                            <span>Inscription en cours...</span>
+                        } @else {
+                            <span>S'inscrire</span>
+                            <i class="pi pi-arrow-right"></i>
+                        }
+                    </button>
+
+                </form>
+
+                <!-- Lien de connexion -->
+                <p class="mb-0 mt-8 text-center text-sm text-surface-500">
+                    Vous avez déjà un compte ?
+                    <a
+                        routerLink="/auth/login"
+                        class="cursor-pointer font-semibold text-primary no-underline hover:underline"
+                    >
+                        Connexion
+                    </a>
+                </p>
+
             </div>
-
-            <div class="flex flex-col gap-2">
-                <label for="password" class="text-sm font-semibold">Mot de passe</label>
-                <p-password formControlName="password" inputId="password" autocomplete="new-password" [toggleMask]="true" [feedback]="false" [fluid]="true" [invalid]="isInvalid('password')" />
-                <small class="text-surface-500">8 caractères minimum, pas uniquement des chiffres.</small>
-            </div>
-
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
-                <div class="flex flex-col gap-2 sm:col-span-2">
-                    <label for="company_name" class="text-sm font-semibold">Entreprise</label>
-                    <input pInputText id="company_name" formControlName="company_name" autocomplete="organization" [invalid]="isInvalid('company_name')" />
-                </div>
-                <div class="flex flex-col gap-2">
-                    <label for="country" class="text-sm font-semibold">Pays</label>
-                    <p-select inputId="country" formControlName="country" [options]="countries" optionLabel="label" optionValue="value" [fluid]="true" />
-                </div>
-            </div>
-
-            <button pButton type="submit" class="!mt-2 !w-full !justify-center !rounded-xl !py-3 !font-semibold" [disabled]="loading()">
-                @if (loading()) {
-                    <i class="pi pi-spin pi-spinner"></i>
-                    <span>Création en cours...</span>
-                } @else {
-                    <span>Créer mon compte</span>
-                }
-            </button>
-        </form>
-
-        <p class="mb-0 mt-6 text-center text-sm text-surface-500">
-            Déjà inscrit ?
-            <a routerLink="/auth/login" class="font-medium text-primary">Se connecter</a>
-        </p>
+        </div>
     </div>
 </div>

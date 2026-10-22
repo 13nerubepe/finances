@@ -25,29 +25,35 @@ export interface AccessRequestPayload {
     reason: string;
 }
 
-export interface LoginPayload {
+export interface UserProfile {
+    full_name: string;
     email: string;
-    password: string;
+    phone: string | null;
+    avatar_url: string | null;
+    two_factor_enabled: boolean;
 }
 
-export interface AuthResponse {
-    access: string;
-    refresh: string;
+export interface UpdateProfilePayload {
+    full_name: string;
+    email: string;
+    phone: string;
 }
 
-export interface Country {
-    label: string;
-    value: string;
+export interface ChangePasswordPayload {
+    current_password: string;
+    new_password: string;
 }
 
-export interface RecentActivity {
-    title: string;
-    description: string;
-    date: string;
-    icon: string;
-    color: string;
-    bg: string;
+export interface TwoFactorSetupResponse {
+    qr_code: string; // data URL de l'image, ex. "data:image/png;base64,..."
+    secret: string;
 }
+
+export interface TwoFactorEnableResponse {
+    backup_codes: string[];
+}
+
+
 
 export interface AccessRequestResponse {
     message?: string;
@@ -75,6 +81,10 @@ export interface Actif {
     variation: number;
     currency?: string;
     status?: string;
+    // Pas encore fournis par l'API : colonnes masquées tant qu'ils sont absents
+    volume?: number;
+    logo?: string;
+    trend?: 'up' | 'down'; // calculé côté front pour le filtre
 }
 
 export interface HistoricalPrice {

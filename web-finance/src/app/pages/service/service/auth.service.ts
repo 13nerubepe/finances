@@ -50,7 +50,9 @@ export class AuthService {
      * Connexion et récupération des tokens JWT.
      */
     login(email: string, password: string): Observable<User> {
-        return this.http.post<AccessToken>(`${AUTH_URL}/login/`, { email, password }, { withCredentials: true }).pipe(
+        return this.http.post<AccessToken>(`${AUTH_URL}/login/`, { email, password }, {
+            // withCredentials: true
+        }).pipe(
             tap(({ access }) => this.accessToken.set(access)),
             switchMap(() => this.loadCurrentUser())
         );
@@ -70,6 +72,11 @@ export class AuthService {
         return this.http.get<User>(`${AUTH_URL}/me/`).pipe(tap((user) => this.user.set(user)));
     }
 
+
+
+
+
+
     // /** Name and language. The language also sets the language of agent answers. */
     // updateProfile(changes: ProfileUpdate): Observable<User> {
     //     return this.http.patch<User>(`${AUTH_URL}/me/`, changes).pipe(tap((user) => this.user.set(user)));
@@ -80,7 +87,9 @@ export class AuthService {
      * Récupération d'un nouveau token depuis le cookie de rafraîchissement.
      */
     refresh(): Observable<string> {
-        this.refreshInFlight ??= this.http.post<AccessToken>(`${AUTH_URL}/refresh/`, {}, { withCredentials: true }).pipe(
+        this.refreshInFlight ??= this.http.post<AccessToken>(`${AUTH_URL}/refresh/`, {}, {
+            // withCredentials: true
+        }).pipe(
             map(({ access }) => access),
             tap((access) => this.accessToken.set(access)),
             finalize(() => (this.refreshInFlight = null)),
@@ -106,7 +115,9 @@ export class AuthService {
      */
     logout(): void {
         this.http
-            .post(`${AUTH_URL}/logout/`, {}, { withCredentials: true })
+            .post(`${AUTH_URL}/logout/`, {}, {
+                // withCredentials: true
+            })
             .pipe(catchError(() => of(null)))
             .subscribe(() => {
                 this.clear();

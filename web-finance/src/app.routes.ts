@@ -22,7 +22,7 @@ export const appRoutes: Routes = [
             {
                 path: AppConstantRoute.Profil_PATH,
                 loadComponent: () => import('./app/pages/auth/profile').then((c) => c.Profile),
-                data: { breadcrumb: 'Actif' },
+                data: { breadcrumb: 'Profile' },
             },
             {
                 path: AppConstantRoute.Actualite_PATH,
@@ -42,6 +42,11 @@ export const appRoutes: Routes = [
     },
     { path: 'landing', component: Landing },
     { path: 'notfound', component: Notfound },
+    {
+        path: AppConstantRoute.Register_PATH,
+        loadComponent: () => import('./app/pages/auth/register').then((c) => c.Register),
+        data: { breadcrumb: 'Register' },
+    },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
     { path: '**', redirectTo: '/notfound' }
 ];
