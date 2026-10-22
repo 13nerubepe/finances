@@ -96,6 +96,11 @@ export interface HistoricalPrice {
     volume: number;
 }
 
+export interface OngletVolatilite {
+    id: string;
+    label: string;
+}
+
 export interface PortfolioDistributionItem {
     actifId: number;
     name: string;

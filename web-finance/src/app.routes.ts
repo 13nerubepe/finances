@@ -20,9 +20,21 @@ export const appRoutes: Routes = [
                 data: { breadcrumb: 'Actif' },
             },
             {
+                path: AppConstantRoute.Detail_Actif_PATH,
+                loadComponent: () => import('./app/pages/detail-actif/detail-actif').then((c) => c.DetailActif),
+                data: { breadcrumb: 'Detail-actif' },
+            },
+
+            {
+                path: AppConstantRoute.Volatile_PATH,
+                loadComponent: () => import('./app/pages/analyse-volatilite/analyse-volatilite').then((c) => c.AnalyseVolatilite),
+                data: { breadcrumb: 'Volatile' },
+            },
+
+            {
                 path: AppConstantRoute.Profil_PATH,
                 loadComponent: () => import('./app/pages/auth/profile').then((c) => c.Profile),
-                data: { breadcrumb: 'Profile' },
+                data: { breadcrumb: 'Profil' },
             },
             {
                 path: AppConstantRoute.Actualite_PATH,

@@ -4,6 +4,8 @@ export const AppConstantRoute = {
     ComparaisonActif_PATH: 'comparaison',
     Profil_PATH: 'profil',
     Register_PATH: 'register',
+    Volatile_PATH: 'volatile',
+    Detail_Actif_PATH: 'detail-actif',
 
 }
 

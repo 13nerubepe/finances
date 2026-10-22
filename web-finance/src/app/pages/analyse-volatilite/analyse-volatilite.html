@@ -1,15 +1,13 @@
-
-<div class="min-h-screen bg-slate-50 p-4 dark:bg-slate-950 md:p-6">
+<div class="flex min-w-0 flex-col gap-4">
 
     <!-- En-tête de la page -->
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Analyse de la volatilité
-        </h1>
-    </div>
+    <header>
+        <h1 class="m-0 text-2xl font-semibold">Analyse de volatilité</h1>
 
-    <!-- 1. Filtres et lancement de l'analyse -->
-    <section class="mb-6">
+    </header>
+
+    <!-- 1. Filtres : actif(s), période, bouton Analyser -->
+    <section>
         <app-header-volatile
             [actifsDisponibles]="actifsDisponibles"
             [actifsSelectionnes]="actifsSelectionnes"
@@ -19,70 +17,6 @@
         </app-header-volatile>
     </section>
 
-    <!-- Chargement -->
-    <div
-        *ngIf="chargement"
-        class="mb-6 rounded-xl border border-slate-200 bg-white p-6
-           text-center text-sm text-slate-500 dark:border-slate-800
-           dark:bg-slate-900">
-        Analyse des données en cours...
-    </div>
 
-    <!-- Résultats -->
-    <ng-container *ngIf="!chargement && resultatAnalyse">
-
-        <!-- 2. Indicateurs clés -->
-        <section class="mb-6">
-            <app-indicateurs-volatile
-                [indicateurs]="resultatAnalyse.indicateurs">
-            </app-indicateurs-volatile>
-        </section>
-
-        <!-- 3. Graphique principal -->
-        <section class="mb-6">
-            <app-graph-volatile
-                [donnees]="resultatAnalyse.donnees"
-                [days]="periodeSelectionnee">
-            </app-graph-volatile>
-        </section>
-
-        <!-- 4 et 5. Corrélations et anomalies -->
-        <div class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-
-            <section class="min-w-0">
-                <app-correlations-actifs
-                    [correlations]="resultatAnalyse.correlations">
-                </app-correlations-actifs>
-            </section>
-
-            <section class="min-w-0">
-                <app-mouvements-inhabituels
-                    [mouvements]="resultatAnalyse.mouvementsInhabituels">
-                </app-mouvements-inhabituels>
-            </section>
-
-        </div>
-
-    </ng-container>
-
-    <!-- État initial -->
-    <div
-        *ngIf="!chargement && !resultatAnalyse"
-        class="rounded-xl border border-dashed border-slate-300
-           bg-white p-10 text-center dark:border-slate-700
-           dark:bg-slate-900">
-
-        <div class="mb-3 flex justify-center">
-            <i class="pi pi-chart-line text-3xl text-blue-600"></i>
-        </div>
-
-        <h2 class="font-semibold text-slate-800 dark:text-white">
-            Aucune analyse disponible
-        </h2>
-
-        <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
-            Sélectionnez vos actifs et une période, puis cliquez sur Analyser.
-        </p>
-    </div>
 
 </div>

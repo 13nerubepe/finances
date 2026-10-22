@@ -16,6 +16,8 @@ import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Badge } from 'primeng/badge';
 import { Avatar } from 'primeng/avatar';
 import { Password } from 'primeng/password';
+import { InputOtp } from 'primeng/inputotp';
+import { NgClass } from '@angular/common';
 
 
 type Feedback = { type: 'success' | 'error'; text: string } | null;
@@ -36,7 +38,7 @@ const newPasswordsMatch: ValidatorFn = (group: AbstractControl): ValidationError
 @Component({
     selector: 'app-profile',
     standalone: true,
-    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule, TagModule, Avatar, Password],
+    imports: [ReactiveFormsModule, ButtonModule, InputTextModule, SelectModule, TagModule, Avatar, Password, InputOtp, NgClass],
     templateUrl: 'profile.html'
     // template: `
     //     <div class="grid grid-cols-12 gap-6">
@@ -111,8 +113,14 @@ export class Profile implements OnInit {
     readonly profileForm = this.fb.nonNullable.group({
         full_name: ['', Validators.required],
         email: ['', [Validators.required, Validators.email]],
-        phone: ['', [Validators.pattern(/^\+?[0-9\s]{8,15}$/)]],
+        phone: ['', [Validators.pattern(/^\+?[0-9\s]{8,15}$/)]]
     });
+
+    // Navigation entre les deux étapes
+    activeStep = signal<number>(1);
+    goToStep(step: number): void {
+        this.activeStep.set(step);
+    }
 
     readonly initials = computed(() => {
         const name = this.fullName();
@@ -133,9 +141,9 @@ export class Profile implements OnInit {
         {
             current_password: ['', Validators.required],
             new_password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?!\d+$).+$/)]],
-            confirm_new_password: ['', Validators.required],
+            confirm_new_password: ['', Validators.required]
         },
-        { validators: newPasswordsMatch },
+        { validators: newPasswordsMatch }
     );
 
     // ---------- Double authentification ----------
@@ -148,7 +156,7 @@ export class Profile implements OnInit {
 
     readonly twoFactorCode = new FormControl('', {
         nonNullable: true,
-        validators: [Validators.required, Validators.pattern(/^\d{6}$/)],
+        validators: [Validators.required, Validators.pattern(/^\d{6}$/)]
     });
 
     ngOnInit(): void {
@@ -157,13 +165,13 @@ export class Profile implements OnInit {
                 this.profileForm.reset({
                     full_name: user.full_name,
                     email: user.email,
-                    phone: user.phone ?? '',
+                    phone: user.phone ?? ''
                 });
                 this.fullName.set(user.full_name);
                 this.avatarUrl.set(user.avatar_url ?? null);
                 this.twoFactorEnabled.set(!!user.two_factor_enabled);
             },
-            error: (error) => this.profileMessage.set({ type: 'error', text: apiErrorMessage(error) }),
+            error: (error) => this.profileMessage.set({ type: 'error', text: apiErrorMessage(error) })
         });
     }
 
@@ -197,14 +205,14 @@ export class Profile implements OnInit {
 
         this.actifService.uploadAvatar(file).subscribe({
             next: (res) => this.avatarUrl.set(res.avatar_url),
-            error: (error) => this.photoError.set(apiErrorMessage(error)),
+            error: (error) => this.photoError.set(apiErrorMessage(error))
         });
     }
 
     removePhoto(): void {
         this.actifService.deleteAvatar().subscribe({
             next: () => this.avatarUrl.set(null),
-            error: (error) => this.photoError.set(apiErrorMessage(error)),
+            error: (error) => this.photoError.set(apiErrorMessage(error))
         });
     }
 
@@ -229,7 +237,7 @@ export class Profile implements OnInit {
             error: (error) => {
                 this.savingProfile.set(false);
                 this.profileMessage.set({ type: 'error', text: apiErrorMessage(error) });
-            },
+            }
         });
     }
 
@@ -254,7 +262,7 @@ export class Profile implements OnInit {
             error: (error) => {
                 this.savingPassword.set(false);
                 this.passwordMessage.set({ type: 'error', text: apiErrorMessage(error) });
-            },
+            }
         });
     }
 
@@ -272,7 +280,7 @@ export class Profile implements OnInit {
             error: (error) => {
                 this.twoFactorLoading.set(false);
                 this.twoFactorMessage.set({ type: 'error', text: apiErrorMessage(error) });
-            },
+            }
         });
     }
 
@@ -298,7 +306,7 @@ export class Profile implements OnInit {
             error: (error) => {
                 this.twoFactorLoading.set(false);
                 this.twoFactorMessage.set({ type: 'error', text: apiErrorMessage(error) });
-            },
+            }
         });
     }
 
@@ -319,7 +327,7 @@ export class Profile implements OnInit {
             error: (error) => {
                 this.twoFactorLoading.set(false);
                 this.twoFactorMessage.set({ type: 'error', text: apiErrorMessage(error) });
-            },
+            }
         });
     }
 }

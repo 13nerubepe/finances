@@ -1,181 +1,260 @@
-<p-toast />
-<p-confirmdialog></p-confirmdialog>
 
-<div class="rounded-3xl border border-surface-200 bg-surface-0 p-4 shadow-sm dark:border-surface-700 dark:bg-surface-900 sm:p-6">
+<div class="card !mb-0">
 
     <!-- En-tête -->
-    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-3 mb-5 sm:flex-row
+                sm:items-center sm:justify-between">
+
         <div>
-            <h2 class="m-0 text-2xl font-semibold text-surface-900 dark:text-surface-0">Actifs</h2>
-            <p class="m-0 mt-1 text-sm text-surface-500">Suivez les prix et variations de vos actifs.</p>
+            <h2 class="text-xl font-semibold m-0">
+                Actifs financiers
+            </h2>
+            <p class="text-sm text-surface-500 mt-2 mb-0">
+                Consultez les informations et les performances des actifs.
+            </p>
         </div>
-        <p-button label="Ajouter un actif" icon="pi pi-plus" styleClass="!rounded-xl !font-semibold" (onClick)="addActif()" />
+
+        <p-button
+            icon="pi pi-refresh"
+            severity="secondary"
+            [outlined]="true"
+            [rounded]="true"
+            pTooltip="Actualiser la liste"
+            (onClick)="chargerActifs()">
+        </p-button>
     </div>
 
-    @if (loadError()) {
-        <div class="mb-4 flex items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300" role="alert">
-            <span>{{ loadError() }}</span>
-            <p-button label="Réessayer" size="small" severity="danger" [outlined]="true" (onClick)="loadActifs()" />
-        </div>
-    }
-
+    <!-- Tableau -->
     <p-table
         #dt
-        dataKey="actifId"
-        [value]="actifs()"
+        [value]="actifs"
+        [loading]="loading"
+        dataKey="id"
+        [paginator]="true"
+        [alwaysShowPaginator]="actifs.length > 0"
         [rows]="10"
         [rowsPerPageOptions]="[10, 25, 50]"
-        [paginator]="true"
-        [loading]="loading()"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} actifs"
+        [globalFilterFields]="[
+            'name',
+            'symbol',
+            'type',
+            'category',
+            'status'
+        ]"
         [rowHover]="true"
-        [stripedRows]="true"
-        [globalFilterFields]="['name', 'symbol', 'status']"
         responsiveLayout="scroll"
-        styleClass="modern-table"
-    >
-        <!-- Barre d'outils -->
-        <ng-template #caption>
-            <div class="flex flex-col gap-3 lg:flex-row lg:items-center">
+        styleClass="p-datatable-sm">
 
-                <p-iconfield iconPosition="left" class="w-full lg:max-w-sm">
-                    <p-inputicon class="pi pi-search" />
+        <!-- Recherche -->
+        <ng-template #caption>
+            <div class="flex flex-col gap-3 mb-3
+                        sm:flex-row sm:items-center
+                        sm:justify-between">
+
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-chart-line text-primary text-xl"></i>
+                    <span class="font-semibold">Liste des actifs</span>
+
+                    <p-tag
+                        [value]="actifs.length + ' actif(s)'"
+                        severity="secondary">
+                    </p-tag>
+                </div>
+
+                <p-iconfield class="w-full sm:w-80">
+                    <p-inputicon class="pi pi-search"></p-inputicon>
                     <input
                         pInputText
                         type="text"
-                        class="w-full !rounded-xl"
-                        placeholder="Rechercher un actif ou un symbole..."
-                        [ngModel]="searchValue()"
-                        (ngModelChange)="onSearch(dt, $event)"
-                    />
+                        class="w-full"
+                        placeholder="Rechercher un actif..."
+                        (input)="dt.filterGlobal(
+                            $any($event.target).value,
+                            'contains'
+                        )">
                 </p-iconfield>
-
-                <div class="flex flex-1 flex-col gap-3 sm:flex-row sm:items-center lg:justify-end">
-                    <p-select
-                        [options]="statuses"
-                        [(ngModel)]="selectedStatus"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Tous les statuts"
-                        [showClear]="true"
-                        (onChange)="dt.filter($event.value, 'status', 'equals')"
-                        styleClass="w-full sm:w-48"
-                    />
-
-                    <p-select
-                        [options]="trends"
-                        [(ngModel)]="selectedTrend"
-                        optionLabel="label"
-                        optionValue="value"
-                        placeholder="Toutes les variations"
-                        [showClear]="true"
-                        (onChange)="dt.filter($event.value, 'trend', 'equals')"
-                        styleClass="w-full sm:w-52"
-                    >
-                        <ng-template #selectedItem let-option>
-                            <span class="flex items-center gap-2">
-                                <i [class]="option.icon"></i>{{ option.label }}
-                            </span>
-                        </ng-template>
-                        <ng-template let-option #item>
-                            <span class="flex items-center gap-2">
-                                <i [class]="option.icon"></i>{{ option.label }}
-                            </span>
-                        </ng-template>
-                    </p-select>
-
-                    <p-button
-                        label="Réinitialiser"
-                        icon="pi pi-filter-slash"
-                        severity="secondary"
-                        [outlined]="true"
-                        styleClass="!rounded-xl"
-                        (onClick)="clearFilters(dt)"
-                    />
-                </div>
             </div>
         </ng-template>
 
         <!-- En-têtes -->
         <ng-template #header>
             <tr>
-                <th pSortableColumn="name" style="min-width: 16rem">Actif <p-sortIcon field="name" /></th>
-                <th pSortableColumn="symbol" style="min-width: 8rem">Symbole <p-sortIcon field="symbol" /></th>
-                <th pSortableColumn="currentPrice" style="min-width: 10rem" class="text-right">Prix <p-sortIcon field="currentPrice" /></th>
-                <th pSortableColumn="previousPrice" style="min-width: 10rem" class="text-right">Prix précédent <p-sortIcon field="previousPrice" /></th>
-                <th pSortableColumn="variation" style="min-width: 10rem" class="text-right">Variation <p-sortIcon field="variation" /></th>
-                <th style="width: 8rem" class="text-center">Actions</th>
+                <th pSortableColumn="name" class="white-space-nowrap">
+                    <div class="flex items-center gap-2">
+                        Nom de l'actif
+                        <p-sortIcon field="name"></p-sortIcon>
+                    </div>
+                </th>
+
+                <th pSortableColumn="symbol" class="white-space-nowrap">
+                    <div class="flex items-center gap-2">
+                        Symbole
+                        <p-sortIcon field="symbol"></p-sortIcon>
+                    </div>
+                </th>
+
+                <th pSortableColumn="type" class="white-space-nowrap">
+                    <div class="flex items-center gap-2">
+                        Type
+                        <p-sortIcon field="type"></p-sortIcon>
+                    </div>
+                </th>
+
+                <th pSortableColumn="price" class="white-space-nowrap">
+                    <div class="flex items-center gap-2">
+                        Prix actuel
+                        <p-sortIcon field="price"></p-sortIcon>
+                    </div>
+                </th>
+
+                <th pSortableColumn="changePercent"
+                    class="white-space-nowrap">
+                    <div class="flex items-center gap-2">
+                        Variation
+                        <p-sortIcon field="changePercent"></p-sortIcon>
+                    </div>
+                </th>
+
+                <th pSortableColumn="status" class="white-space-nowrap">
+                    <div class="flex items-center gap-2">
+                        Statut
+                        <p-sortIcon field="status"></p-sortIcon>
+                    </div>
+                </th>
+
+                <th class="text-center white-space-nowrap">
+                    Actions
+                </th>
             </tr>
         </ng-template>
 
-        <!-- Lignes -->
+        <!-- Corps du tableau -->
         <ng-template #body let-actif>
             <tr>
+
+                <!-- Nom en premier -->
                 <td>
-                    <div class="flex items-center gap-3">
-                        <p-avatar
-                            [image]="actif.logo || undefined"
-                            [label]="actif.logo ? undefined : actif.symbol?.[0]"
-                            shape="circle"
-                            size="large"
-                            styleClass="!bg-primary-50 !text-primary dark:!bg-primary-950"
-                        />
-                        <div class="flex flex-col">
-                            <span class="font-semibold text-surface-900 dark:text-surface-0">{{ actif.name }}</span>
-                            @if (actif.status) {
-                                <span class="text-xs text-surface-500">{{ actif.status }}</span>
-                            }
+                    <div class="flex flex-col gap-1">
+                        <span class="font-semibold">
+                            {{ actif.name }}
+                        </span>
+
+                        <span class="text-sm text-surface-500">
+                            {{ actif.description || 'Aucune description' }}
+                        </span>
+                    </div>
+                </td>
+
+                <!-- Symbole en deuxième -->
+                <td>
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center justify-center
+                                    rounded-lg bg-surface-100
+                                    dark:bg-surface-800 w-9 h-9 shrink-0">
+                            <i class="pi pi-chart-line text-primary"></i>
                         </div>
+
+                        <span class="font-medium">
+                            {{ actif.symbol }}
+                        </span>
                     </div>
                 </td>
 
+                <!-- Type -->
                 <td>
-                    <span class="rounded-lg bg-surface-100 px-2.5 py-1 font-mono text-xs font-semibold tracking-wide text-surface-700 dark:bg-surface-800 dark:text-surface-200">
-                        {{ actif.symbol }}
+                    <p-tag
+                        [value]="actif.type || actif.category || 'Non défini'"
+                        severity="info">
+                    </p-tag>
+                </td>
+
+                <!-- Prix -->
+                <td>
+                    <span class="font-semibold whitespace-nowrap">
+                        {{ actif.price | number:'1.2-2' }}
+                        {{ actif.currency || '' }}
                     </span>
                 </td>
 
-                <td class="text-right font-semibold">
-                    {{ actif.currentPrice | currency: (actif.currency || 'USD') : 'symbol' : '1.2-2' }}
-                </td>
-
-                <td class="text-right text-surface-600 dark:text-surface-300">
-                    {{ actif.previousPrice | currency: (actif.currency || 'USD') : 'symbol' : '1.2-2' }}
-                </td>
-
-                <td class="text-right">
-                    <span
-                        class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold"
-                        [class]="actif.variation >= 0
-                            ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-                            : 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'"
-                    >
-                        <i class="text-[0.65rem]" [class]="actif.variation >= 0 ? 'pi pi-arrow-up-right' : 'pi pi-arrow-down-right'"></i>
-                        {{ actif.variation >= 0 ? '+' : '' }}{{ actif.variation | number: '1.2-2' }} %
-                    </span>
-                </td>
-
+                <!-- Variation -->
                 <td>
-                    <div class="flex items-center justify-center gap-1">
-                        <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="secondary" pTooltip="Modifier" tooltipPosition="top" ariaLabel="Modifier" (onClick)="editActif(actif)" />
-                        <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" pTooltip="Supprimer" tooltipPosition="top" ariaLabel="Supprimer" (onClick)="deleteActif(actif)" />
+                    <div class="flex items-center gap-1"
+                         [ngClass]="{
+                            'text-green-600': (actif.changePercent ?? 0) > 0,
+                            'text-red-600': (actif.changePercent ?? 0) < 0,
+                            'text-surface-500': (actif.changePercent ?? 0) === 0
+                         }">
+
+                        <i
+                            class="pi"
+                            [ngClass]="
+                                (actif.changePercent ?? 0) > 0
+                                    ? 'pi-arrow-up-right'
+                                    : (actif.changePercent ?? 0) < 0
+                                        ? 'pi-arrow-down-right'
+                                        : 'pi-minus'
+                            ">
+                        </i>
+
+                        <span class="font-medium whitespace-nowrap">
+                            {{ (actif.changePercent ?? 0) > 0 ? '+' : '' }}{{ actif.changePercent ?? 0 }} %
+                        </span>
                     </div>
                 </td>
+
+                <!-- Statut -->
+                <td>
+                    <p-tag
+                        [value]="actif.status || 'Non défini'"
+                        [severity]="
+                            actif.status === 'Actif'
+                                ? 'success'
+                                : actif.status === 'Inactif'
+                                    ? 'danger'
+                                    : 'secondary'
+                        ">
+                    </p-tag>
+                </td>
+
+                <!-- Actions -->
+                <td>
+                    <div class="flex items-center justify-center">
+                        <p-button
+                            icon="pi pi-eye"
+                            severity="secondary"
+                            [text]="true"
+                            [rounded]="true"
+                            pTooltip="Consulter les détails"
+                            (onClick)="voirActif(actif)">
+                        </p-button>
+                    </div>
+                </td>
+
             </tr>
         </ng-template>
 
+        <!-- Aucun résultat -->
         <ng-template #emptymessage>
             <tr>
-                <td colspan="6" class="!py-10 text-center text-surface-500">
-                    <i class="pi pi-inbox mb-2 block text-3xl"></i>
-                    Aucun actif trouvé.
+                <td colspan="7">
+                    <div class="flex flex-col items-center
+                                justify-center gap-3 py-10">
+
+                        <i class="pi pi-chart-bar text-4xl text-surface-400"></i>
+
+                        <span class="font-semibold">
+                            Aucun actif financier disponible
+                        </span>
+
+                        <span class="text-sm text-surface-500">
+                            Vérifiez les données ou modifiez votre recherche.
+                        </span>
+                    </div>
                 </td>
             </tr>
         </ng-template>
 
-        <ng-template #loadingbody>
-            <tr>
-                <td colspan="6" class="!py-10 text-center text-surface-500">Chargement des actifs...</td>
-            </tr>
-        </ng-template>
     </p-table>
 </div>

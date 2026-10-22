@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { CorrelationActif } from '@/app/models/model';
 
 @Component({
     selector: 'app-correlations-actifs',
@@ -6,4 +7,6 @@ import { Component } from '@angular/core';
     templateUrl: './correlations-actifs.html',
     styleUrl: './correlations-actifs.scss'
 })
-export class CorrelationsActifs {}
+export class CorrelationsActifs {
+    @Input() correlations!: CorrelationActif[];
+}

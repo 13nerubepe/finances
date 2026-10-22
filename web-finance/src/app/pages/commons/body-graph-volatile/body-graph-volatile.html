@@ -1,0 +1,65 @@
+
+<div class="card !mb-0 flex h-full min-w-0 flex-col">
+
+    <!-- En-tête -->
+    <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
+            <h2 class="m-0 text-base font-semibold">
+                Volatilité des derniers jours
+            </h2>
+
+            <p class="mb-0 mt-1 text-xs text-muted-color">
+                Volatilité sur les {{ jours() }} derniers jours
+            </p>
+        </div>
+
+        <p-selectButton
+            [options]="periodes"
+            [ngModel]="jours()"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            (onChange)="joursChange.emit($event.value)"
+            styleClass="text-xs">
+        </p-selectButton>
+    </div>
+
+    <!-- Légende -->
+    @if (legende().length > 0) {
+        <div class="mb-3 flex flex-wrap items-center gap-4">
+            @for (item of legende(); track item.symbole) {
+                <span class="inline-flex items-center gap-2 text-xs font-medium">
+                    <span
+                        class="h-2.5 w-2.5 rounded-full"
+                        [style.background-color]="item.couleur">
+                    </span>
+
+                    {{ item.symbole }}
+                </span>
+            }
+        </div>
+    }
+
+    <!-- Graphique -->
+    <div class="relative min-h-[260px] w-full min-w-0 flex-1">
+
+        @if (chargement()) {
+            <div class="absolute inset-0 flex items-center justify-center gap-2 text-sm text-muted-color">
+                <i class="pi pi-spin pi-spinner"></i>
+                Chargement du graphique...
+            </div>
+        } @else if (donneesGraphique().datasets.length > 0) {
+            <p-chart
+                type="line"
+                [data]="donneesGraphique()"
+                [options]="optionsGraphique()"
+                styleClass="absolute inset-0 block h-full w-full">
+            </p-chart>
+        } @else {
+            <div class="absolute inset-0 flex items-center justify-center text-sm text-muted-color">
+                Aucune donnée de volatilité disponible.
+            </div>
+        }
+
+    </div>
+</div>

@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { MouvementInhabituel } from '@/app/models/model';
 
 @Component({
     selector: 'app-mouvements-inhabituels',
@@ -6,4 +7,6 @@ import { Component } from '@angular/core';
     templateUrl: './mouvements-inhabituels.html',
     styleUrl: './mouvements-inhabituels.scss'
 })
-export class MouvementsInhabituels {}
+export class MouvementsInhabituels {
+    @Input() mouvements!: MouvementInhabituel[];
+}

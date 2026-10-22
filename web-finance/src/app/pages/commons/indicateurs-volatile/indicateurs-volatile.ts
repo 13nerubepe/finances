@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { IndicateursVolatilite } from '@/app/models/model';
 
 @Component({
     selector: 'app-indicateurs-volatile',
@@ -6,4 +7,6 @@ import { Component } from '@angular/core';
     templateUrl: './indicateurs-volatile.html',
     styleUrl: './indicateurs-volatile.scss'
 })
-export class IndicateursVolatile {}
+export class IndicateursVolatile {
+    @Input() indicateurs!: IndicateursVolatilite;
+}

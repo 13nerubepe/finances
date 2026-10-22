@@ -1,6 +1,6 @@
-import { Component, EventEmitter, OnChanges, Output, Input, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, OnChanges, Output, Input, SimpleChanges, input, output } from '@angular/core';
 
-import { ActifOption, AnalyseVolatiliteParams } from '@/app/models/model';
+import { ActifOption, AnalyseVolatiliteParams, OngletVolatilite } from '@/app/models/model';
 import { MultiSelect } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
 import { PrimeTemplate } from 'primeng/api';
@@ -10,11 +10,33 @@ import { Button } from 'primeng/button';
 @Component({
     selector: 'app-header-volatile',
     standalone: true,
-    imports: [MultiSelect, FormsModule, PrimeTemplate, Select, Button],
+    imports: [FormsModule],
     templateUrl: './header-volatile.html',
     styleUrl: './header-volatile.scss'
 })
 export class HeaderVolatile implements OnChanges {
+
+    // Onglet actuellement mis en avant (fourni par la page)
+    ongletActif = input<string>('volatilite');
+
+    // Émis quand l'utilisateur clique sur un onglet
+    ongletChange = output<string>();
+
+    readonly onglets: OngletVolatilite[] = [
+        { id: 'volatilite', label: 'Volatilité des derniers jours' },
+        { id: 'indicateurs', label: 'Indicateurs' },
+        { id: 'correlations', label: 'Corrélation entre actifs' },
+        { id: 'mouvements', label: 'Mouvements inhabituels' }
+    ];
+
+    selectionner(id: string): void {
+        this.ongletChange.emit(id);
+    }
+
+
+
+
+
     @Input() actifsDisponibles: ActifOption[] = [];
 
     @Input() actifsSelectionnes: string[] = [];
