@@ -1,4 +1,4 @@
-import { Actif, HistoricalPrice} from '@/app/models/model';
+import { Actif, HistoricalPrice} from '@/app/models/actif-model';
 
 
 export const ACTIFS_MOCK: Actif[] = [
@@ -10,7 +10,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 240.20,
         variation: 2.21,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 2,
@@ -20,7 +19,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 518.60,
         variation: -1.22,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 3,
@@ -30,7 +28,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 176.40,
         variation: 3.60,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 4,
@@ -40,7 +37,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 355.00,
         variation: -1.72,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 5,
@@ -50,7 +46,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 223.10,
         variation: 1.48,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 6,
@@ -60,7 +55,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 190.50,
         variation: 1.21,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 7,
@@ -70,7 +64,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 692.40,
         variation: -1.04,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 8,
@@ -80,7 +73,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 1160.00,
         variation: 2.16,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 9,
@@ -90,7 +82,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 482.30,
         variation: 0.68,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 10,
@@ -100,7 +91,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 301.20,
         variation: -0.93,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 11,
@@ -110,7 +100,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 351.20,
         variation: 1.28,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 12,
@@ -120,7 +109,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 568.00,
         variation: 0.85,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 13,
@@ -130,7 +118,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 70.90,
         variation: 0.49,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 14,
@@ -140,7 +127,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 144.10,
         variation: -1.04,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 15,
@@ -150,7 +136,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 102.40,
         variation: 1.37,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 16,
@@ -160,7 +145,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 113.90,
         variation: 1.32,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 17,
@@ -170,7 +154,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 160.00,
         variation: -1.06,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 18,
@@ -180,7 +163,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 209.80,
         variation: 2.24,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 19,
@@ -190,7 +172,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 391.50,
         variation: -1.61,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 20,
@@ -200,7 +181,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 288.60,
         variation: 1.42,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 21,
@@ -210,7 +190,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 158.20,
         variation: 2.65,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 22,
@@ -220,7 +199,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 25.30,
         variation: -1.98,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 23,
@@ -230,7 +208,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 290.40,
         variation: 1.32,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 24,
@@ -240,7 +217,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 290.40,
         variation: 0.59,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 25,
@@ -250,7 +226,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 69.10,
         variation: -0.94,
         currency: 'USD',
-        status: 'ACTIVE'
     },
     {
         actifId: 26,
@@ -260,7 +235,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 170.20,
         variation: 1.41,
         currency: 'EUR',
-        status: 'ACTIVE'
     },
     {
         actifId: 27,
@@ -270,7 +244,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 491.80,
         variation: -1.32,
         currency: 'EUR',
-        status: 'ACTIVE'
     },
     {
         actifId: 28,
@@ -280,7 +253,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 54.10,
         variation: 1.29,
         currency: 'EUR',
-        status: 'ACTIVE'
     },
     {
         actifId: 29,
@@ -290,7 +262,6 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 225.60,
         variation: 1.24,
         currency: 'EUR',
-        status: 'ACTIVE'
     },
     {
         actifId: 30,
@@ -300,113 +271,14 @@ export const ACTIFS_MOCK: Actif[] = [
         previousPrice: 261.40,
         variation: -1.03,
         currency: 'EUR',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 31,
-        name: 'Toyota Motor',
-        symbol: 'TM',
-        currentPrice: 185.60,
-        previousPrice: 183.90,
-        variation: 0.92,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 32,
-        name: 'Alibaba Group',
-        symbol: 'BABA',
-        currentPrice: 126.80,
-        previousPrice: 123.40,
-        variation: 2.76,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 33,
-        name: 'Tencent Holdings',
-        symbol: '0700.HK',
-        currentPrice: 518.00,
-        previousPrice: 525.50,
-        variation: -1.43,
-        currency: 'HKD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 34,
-        name: 'Samsung Electronics',
-        symbol: '005930.KS',
-        currentPrice: 69500,
-        previousPrice: 68800,
-        variation: 1.02,
-        currency: 'KRW',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 35,
-        name: 'Sony Group',
-        symbol: 'SONY',
-        currentPrice: 25.40,
-        previousPrice: 25.10,
-        variation: 1.20,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 36,
-        name: 'Shopify Inc.',
-        symbol: 'SHOP',
-        currentPrice: 118.30,
-        previousPrice: 120.50,
-        variation: -1.83,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 37,
-        name: 'Palantir Technologies',
-        symbol: 'PLTR',
-        currentPrice: 145.70,
-        previousPrice: 139.20,
-        variation: 4.67,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 38,
-        name: 'Uber Technologies',
-        symbol: 'UBER',
-        currentPrice: 92.60,
-        previousPrice: 90.80,
-        variation: 1.98,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 39,
-        name: 'Spotify Technology',
-        symbol: 'SPOT',
-        currentPrice: 612.40,
-        previousPrice: 620.10,
-        variation: -1.24,
-        currency: 'USD',
-        status: 'ACTIVE'
-    },
-    {
-        actifId: 40,
-        name: 'McDonald’s Corporation',
-        symbol: 'MCD',
-        currentPrice: 309.80,
-        previousPrice: 307.50,
-        variation: 0.75,
-        currency: 'USD',
-        status: 'ACTIVE'
     }
 ];
 
 export const COURS_HISTORIQUES_MOCK: Record<number, HistoricalPrice[]> = {
     1: [
         {
+            id: 1,
+            actifId: 1,
             date: '2026-10-01',
             open: 248,
             high: 253,
@@ -415,6 +287,8 @@ export const COURS_HISTORIQUES_MOCK: Record<number, HistoricalPrice[]> = {
             volume: 1200000
         },
         {
+            id: 2,
+            actifId: 1,
             date: '2026-10-05',
             open: 250,
             high: 256,
@@ -423,6 +297,8 @@ export const COURS_HISTORIQUES_MOCK: Record<number, HistoricalPrice[]> = {
             volume: 1350000
         },
         {
+            id: 3,
+            actifId: 1,
             date: '2026-10-09',
             open: 255,
             high: 257,
@@ -431,6 +307,8 @@ export const COURS_HISTORIQUES_MOCK: Record<number, HistoricalPrice[]> = {
             volume: 1100000
         },
         {
+            id: 4,
+            actifId: 1,
             date: '2026-10-13',
             open: 252,
             high: 260,
@@ -439,6 +317,8 @@ export const COURS_HISTORIQUES_MOCK: Record<number, HistoricalPrice[]> = {
             volume: 1450000
         },
         {
+            id: 5,
+            actifId: 1,
             date: '2026-10-16',
             open: 258,
             high: 259,
@@ -447,6 +327,8 @@ export const COURS_HISTORIQUES_MOCK: Record<number, HistoricalPrice[]> = {
             volume: 1250000
         },
         {
+            id: 6,
+            actifId: 1,
             date: '2026-10-20',
             open: 256,
             high: 266,

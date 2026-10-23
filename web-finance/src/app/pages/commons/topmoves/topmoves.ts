@@ -1,6 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { ActifService } from '@/app/pages/service/service/actif-service';
-import { TopMover, TopMoversResponse } from '@/app/models/model';
+import { TopMover, TopMoversResponse } from '@/app/models/actif-model';
 
 @Component({
     selector: 'app-topmoves',
@@ -36,11 +36,11 @@ export class Topmoves implements OnInit {
 
         this.actifService.getTopMovers().subscribe({
             next: (response: TopMoversResponse) => {
-                this.topGagnants = [...(response.topGagnants ?? [])]
-                    .sort((a, b) => b.variation - a.variation);
-
-                this.topPerdants = [...(response.topPerdants ?? [])]
-                    .sort((a, b) => a.variation - b.variation);
+                // this.topGagnants = [...(response.topGagnants ?? [])]
+                //     .sort((a, b) => b.variation - a.variation);
+                //
+                // this.topPerdants = [...(response.topPerdants ?? [])]
+                //     .sort((a, b) => a.variation - b.variation);
 
                 this.loading = false;
             },
@@ -65,7 +65,7 @@ export class Topmoves implements OnInit {
         return `${value > 0 ? '+' : ''}${value.toFixed(2)} %`;
     }
 
-    trackByActifId(index: number, item: TopMover): number {
-        return item.actifId;
-    }
+    // trackByActifId(index: number, item: TopMover): number {
+    //     // return item.actifId;
+    // }
 }

@@ -1,5 +1,5 @@
 
-<div class="card !mb-0">
+<div class="card !mb-0 min-h-[650px]">
 
     <!-- En-tête -->
     <div class="flex flex-col gap-3 mb-5 sm:flex-row
@@ -9,19 +9,16 @@
             <h2 class="text-xl font-semibold m-0">
                 Actifs financiers
             </h2>
-            <p class="text-sm text-surface-500 mt-2 mb-0">
-                Consultez les informations et les performances des actifs.
-            </p>
         </div>
 
-        <p-button
-            icon="pi pi-refresh"
-            severity="secondary"
-            [outlined]="true"
-            [rounded]="true"
-            pTooltip="Actualiser la liste"
-            (onClick)="chargerActifs()">
-        </p-button>
+<!--        <p-button-->
+<!--            icon="pi pi-refresh"-->
+<!--            severity="secondary"-->
+<!--            [outlined]="true"-->
+<!--            [rounded]="true"-->
+<!--            pTooltip="Actualiser la liste"-->
+<!--            (onClick)="chargerActifs()">-->
+<!--        </p-button>-->
     </div>
 
     <!-- Tableau -->
@@ -29,33 +26,30 @@
         #dt
         [value]="actifs"
         [loading]="loading"
-        dataKey="id"
+        dataKey="actifId"
         [paginator]="true"
         [alwaysShowPaginator]="actifs.length > 0"
-        [rows]="10"
+        [rows]="12"
         [rowsPerPageOptions]="[10, 25, 50]"
         [showCurrentPageReport]="true"
         currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} actifs"
-        [globalFilterFields]="[
-            'name',
-            'symbol',
-            'type',
-            'category',
-            'status'
-        ]"
+        [globalFilterFields]="['name', 'symbol', 'currency']"
         [rowHover]="true"
         responsiveLayout="scroll"
+        [tableStyle]="{ 'min-width': '52rem' }"
         styleClass="p-datatable-sm">
 
-        <!-- Recherche -->
+        <!-- Recherche et compteur -->
         <ng-template #caption>
             <div class="flex flex-col gap-3 mb-3
-                        sm:flex-row sm:items-center
-                        sm:justify-between">
+                        sm:flex-row sm:items-center sm:justify-between">
 
                 <div class="flex items-center gap-2">
                     <i class="pi pi-chart-line text-primary text-xl"></i>
-                    <span class="font-semibold">Liste des actifs</span>
+
+                    <span class="font-semibold">
+                        Liste des actifs
+                    </span>
 
                     <p-tag
                         [value]="actifs.length + ' actif(s)'"
@@ -65,6 +59,7 @@
 
                 <p-iconfield class="w-full sm:w-80">
                     <p-inputicon class="pi pi-search"></p-inputicon>
+
                     <input
                         pInputText
                         type="text"
@@ -81,50 +76,31 @@
         <!-- En-têtes -->
         <ng-template #header>
             <tr>
-                <th pSortableColumn="name" class="white-space-nowrap">
-                    <div class="flex items-center gap-2">
-                        Nom de l'actif
-                        <p-sortIcon field="name"></p-sortIcon>
-                    </div>
+                <th pSortableColumn="name">
+                    Actif
+                    <p-sortIcon field="name"></p-sortIcon>
                 </th>
 
-                <th pSortableColumn="symbol" class="white-space-nowrap">
-                    <div class="flex items-center gap-2">
-                        Symbole
-                        <p-sortIcon field="symbol"></p-sortIcon>
-                    </div>
+                <th pSortableColumn="currentPrice" class="text-right">
+                    Prix actuel
+                    <p-sortIcon field="currentPrice"></p-sortIcon>
                 </th>
 
-                <th pSortableColumn="type" class="white-space-nowrap">
-                    <div class="flex items-center gap-2">
-                        Type
-                        <p-sortIcon field="type"></p-sortIcon>
-                    </div>
+                <th pSortableColumn="variation" class="text-right">
+                    Variation
+                    <p-sortIcon field="variation"></p-sortIcon>
                 </th>
 
-                <th pSortableColumn="price" class="white-space-nowrap">
-                    <div class="flex items-center gap-2">
-                        Prix actuel
-                        <p-sortIcon field="price"></p-sortIcon>
-                    </div>
+                <th style="width: 16rem">
+                    Performance
                 </th>
 
-                <th pSortableColumn="changePercent"
-                    class="white-space-nowrap">
-                    <div class="flex items-center gap-2">
-                        Variation
-                        <p-sortIcon field="changePercent"></p-sortIcon>
-                    </div>
+                <th pSortableColumn="trend" class="text-center">
+                    Tendance
+                    <p-sortIcon field="trend"></p-sortIcon>
                 </th>
 
-                <th pSortableColumn="status" class="white-space-nowrap">
-                    <div class="flex items-center gap-2">
-                        Statut
-                        <p-sortIcon field="status"></p-sortIcon>
-                    </div>
-                </th>
-
-                <th class="text-center white-space-nowrap">
+                <th class="text-center" style="width: 5rem">
                     Actions
                 </th>
             </tr>
@@ -134,84 +110,112 @@
         <ng-template #body let-actif>
             <tr>
 
-                <!-- Nom en premier -->
+                <!-- Actif : nom, symbole et icône -->
                 <td>
-                    <div class="flex flex-col gap-1">
-                        <span class="font-semibold">
-                            {{ actif.name }}
+                    <div class="flex items-center gap-3">
+
+                        <span
+                            class="w-10 h-10 rounded-full flex items-center
+                                   justify-center text-xs font-bold
+                                   text-primary bg-surface-100
+                                   dark:bg-surface-800 shrink-0">
+                            {{ actif.symbol?.slice(0, 2) || 'NA' }}
                         </span>
 
-                        <span class="text-sm text-surface-500">
-                            {{ actif.description || 'Aucune description' }}
-                        </span>
-                    </div>
-                </td>
+                        <div class="flex flex-col gap-1 min-w-0">
+                            <span class="font-semibold">
+                                {{ actif.name }}
+                            </span>
 
-                <!-- Symbole en deuxième -->
-                <td>
-                    <div class="flex items-center gap-2">
-                        <div class="flex items-center justify-center
-                                    rounded-lg bg-surface-100
-                                    dark:bg-surface-800 w-9 h-9 shrink-0">
-                            <i class="pi pi-chart-line text-primary"></i>
+                            <span class="text-xs text-surface-500">
+                                {{ actif.symbol }}
+                            </span>
                         </div>
 
-                        <span class="font-medium">
-                            {{ actif.symbol }}
-                        </span>
                     </div>
                 </td>
 
-                <!-- Type -->
-                <td>
-                    <p-tag
-                        [value]="actif.type || actif.category || 'Non défini'"
-                        severity="info">
-                    </p-tag>
+                <!-- Prix actuel -->
+                <td class="text-right font-medium whitespace-nowrap">
+                    {{ actif.currentPrice | number:'1.2-2' }}
+                    {{ actif.currency || '' }}
                 </td>
 
-                <!-- Prix -->
-                <td>
-                    <span class="font-semibold whitespace-nowrap">
-                        {{ actif.price | number:'1.2-2' }}
-                        {{ actif.currency || '' }}
-                    </span>
+                <!-- Variation en pourcentage -->
+                <td
+                    class="text-right font-medium whitespace-nowrap"
+                    [ngClass]="{
+                        'text-green-600': (actif.variation ?? 0) > 0,
+                        'text-red-500': (actif.variation ?? 0) < 0,
+                        'text-surface-500': (actif.variation ?? 0) === 0
+                    }">
+
+                    <i
+                        class="pi mr-1"
+                        [ngClass]="{
+                            'pi-arrow-up-right': (actif.variation ?? 0) > 0,
+                            'pi-arrow-down-right': (actif.variation ?? 0) < 0,
+                            'pi-minus': (actif.variation ?? 0) === 0
+                        }">
+                    </i>
+
+                    {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
                 </td>
 
-                <!-- Variation -->
+                <!-- Barre de performance -->
                 <td>
-                    <div class="flex items-center gap-1"
-                         [ngClass]="{
-                            'text-green-600': (actif.changePercent ?? 0) > 0,
-                            'text-red-600': (actif.changePercent ?? 0) < 0,
-                            'text-surface-500': (actif.changePercent ?? 0) === 0
-                         }">
+                    <div class="flex items-center gap-3">
 
-                        <i
-                            class="pi"
+                        <div
+                            class="relative flex-1 h-2 rounded-full
+                                   bg-surface-100 dark:bg-surface-800">
+
+                            <!-- Axe central -->
+                            <span
+                                class="absolute left-1/2 top-[-2px] bottom-[-2px]
+                                       w-px bg-surface-300 dark:bg-surface-600">
+                            </span>
+
+                            <!-- Barre positive ou négative -->
+                            <span
+                                class="absolute top-0 h-2 rounded-full"
+                                [ngClass]="
+                                    (actif.variation ?? 0) >= 0
+                                        ? 'left-1/2 bg-green-500'
+                                        : 'right-1/2 bg-red-500'
+                                "
+                                [style.width.%]="largeurPerformance(actif)">
+                            </span>
+
+                        </div>
+
+                        <span
+                            class="w-16 text-right font-semibold text-sm"
                             [ngClass]="
-                                (actif.changePercent ?? 0) > 0
-                                    ? 'pi-arrow-up-right'
-                                    : (actif.changePercent ?? 0) < 0
-                                        ? 'pi-arrow-down-right'
-                                        : 'pi-minus'
+                                (actif.variation ?? 0) >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-500'
                             ">
-                        </i>
-
-                        <span class="font-medium whitespace-nowrap">
-                            {{ (actif.changePercent ?? 0) > 0 ? '+' : '' }}{{ actif.changePercent ?? 0 }} %
+                            {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
                         </span>
+
                     </div>
                 </td>
 
-                <!-- Statut -->
-                <td>
+                <!-- Tendance -->
+                <td class="text-center">
                     <p-tag
-                        [value]="actif.status || 'Non défini'"
+                        [value]="
+                            actif.trend === 'up'
+                                ? 'Hausse'
+                                : actif.trend === 'down'
+                                    ? 'Baisse'
+                                    : 'Stable'
+                        "
                         [severity]="
-                            actif.status === 'Actif'
+                            actif.trend === 'up'
                                 ? 'success'
-                                : actif.status === 'Inactif'
+                                : actif.trend === 'down'
                                     ? 'danger'
                                     : 'secondary'
                         ">
@@ -238,7 +242,7 @@
         <!-- Aucun résultat -->
         <ng-template #emptymessage>
             <tr>
-                <td colspan="7">
+                <td colspan="6">
                     <div class="flex flex-col items-center
                                 justify-center gap-3 py-10">
 
@@ -251,6 +255,7 @@
                         <span class="text-sm text-surface-500">
                             Vérifiez les données ou modifiez votre recherche.
                         </span>
+
                     </div>
                 </td>
             </tr>

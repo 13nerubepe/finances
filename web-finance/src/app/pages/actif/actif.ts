@@ -17,7 +17,7 @@ import type { Table } from 'primeng/table';
 import { Toast } from 'primeng/toast';
 import { Tooltip } from 'primeng/tooltip';
 
-import { Actif } from '@/app/models/model';
+import { Actif } from '@/app/models/actif-model';
 import { TranslatePipe } from '@ngx-translate/core';
 import { Paginator } from 'primeng/paginator';
 import { ActifService } from '@/app/pages/service/service/actif-service';
@@ -47,6 +47,15 @@ export class ActifComponent implements OnInit {
     ngOnInit(): void {
         this.chargerActifs();
     }
+
+
+    largeurPerformance(actif: Actif): number {
+    const variation = actif.variation ?? 0;
+
+    // Une variation de 10 % remplit la moitié de la barre.
+    return Math.min(Math.abs(variation) / 10, 1) * 50;
+}
+
 
     chargerActifs(): void {
         this.loading = true;

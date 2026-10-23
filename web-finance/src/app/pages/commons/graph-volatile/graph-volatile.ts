@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { DonneeVolatilite } from '@/app/models/model';
+import { DonneeVolatilite } from '@/app/models/actif-model';
 
 @Component({
     selector: 'app-graph-volatile',

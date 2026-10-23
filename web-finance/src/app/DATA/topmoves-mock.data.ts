@@ -1,90 +1,80 @@
 
-import { TopMoversResponse } from '@/app/models/model';
+import { TopMoversResponse } from '@/app/models/actif-model';
 
 export const TOP_MOVERS_MOCK: TopMoversResponse = {
-    topGagnants: [
+    gainers: [
         {
-            actifId: 1,
-            name: 'Afriland First Bank',
             symbol: 'AFB',
-            currentPrice: 12500,
-            previousPrice: 11525,
-            variation: 8.46
+            name: 'Afriland First Bank',
+            price: 12500,
+            change: 975,
+            changePercent: 8.46
         },
         {
-            actifId: 2,
-            name: 'Socapalm',
             symbol: 'PALM',
-            currentPrice: 28500,
-            previousPrice: 26700,
-            variation: 6.74
+            name: 'Socapalm',
+            price: 28500,
+            change: 1800,
+            changePercent: 6.74
         },
         {
-            actifId: 3,
-            name: 'Semc',
             symbol: 'SEM',
-            currentPrice: 9200,
-            previousPrice: 8775,
-            variation: 4.84
+            name: 'Semc',
+            price: 9200,
+            change: 425,
+            changePercent: 4.84
         },
         {
-            actifId: 4,
-            name: 'Safacam',
             symbol: 'SAFA',
-            currentPrice: 18750,
-            previousPrice: 18150,
-            variation: 3.31
+            name: 'Safacam',
+            price: 18750,
+            change: 600,
+            changePercent: 3.31
         },
         {
-            actifId: 5,
-            name: 'Tradex',
             symbol: 'TRDX',
-            currentPrice: 15000,
-            previousPrice: 14700,
-            variation: 2.04
+            name: 'Tradex',
+            price: 15000,
+            change: 300,
+            changePercent: 2.04
         }
     ],
 
-    topPerdants: [
+    losers: [
         {
-            actifId: 6,
-            name: 'Le Belier',
             symbol: 'BEL',
-            currentPrice: 7400,
-            previousPrice: 7987,
-            variation: -7.35
+            name: 'Le Belier',
+            price: 7400,
+            change: -587,
+            changePercent: -7.35
         },
         {
-            actifId: 7,
-            name: 'Eneo',
             symbol: 'ENEO',
-            currentPrice: 11200,
-            previousPrice: 11866,
-            variation: -5.61
+            name: 'Eneo',
+            price: 11200,
+            change: -666,
+            changePercent: -5.61
         },
         {
-            actifId: 8,
-            name: 'Socarto',
             symbol: 'SCAR',
-            currentPrice: 6500,
-            previousPrice: 6784,
-            variation: -4.18
+            name: 'Socarto',
+            price: 6500,
+            change: -284,
+            changePercent: -4.18
         },
         {
-            actifId: 9,
-            name: 'Société Générale Cameroun',
             symbol: 'SGC',
-            currentPrice: 21500,
-            previousPrice: 22105,
-            variation: -2.74
+            name: 'Société Générale Cameroun',
+            price: 21500,
+            change: -605,
+            changePercent: -2.74
         },
         {
-            actifId: 10,
-            name: 'Cimencam',
             symbol: 'CIM',
-            currentPrice: 9800,
-            previousPrice: 9955,
-            variation: -1.56
+            name: 'Cimencam',
+            price: 9800,
+            change: -155,
+            changePercent: -1.56
         }
     ]
 };

@@ -8,7 +8,7 @@ import { Tag } from 'primeng/tag';
 import { Tooltip } from 'primeng/tooltip';
 import { Divider } from 'primeng/divider';
 
-import { Actif } from '@/app/models/model';
+import { Actif } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 
 @Component({

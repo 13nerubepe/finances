@@ -3,8 +3,6 @@ import { ChartData, ChartOptions } from 'chart.js';
 import { DecimalPipe } from '@angular/common';
 import { UIChart } from 'primeng/chart';
 import { ActifService } from '@/app/pages/service/service/actif-service';
-import { PortfolioDistributionItem, PortfolioDistributionResponse, TopMoversResponse } from '@/app/models/model';
-import { Observable } from 'rxjs';
 
 @Component({
     selector: 'app-portofolio-distribution',
@@ -22,7 +20,7 @@ export class PortofolioDistribution {
     errorMessage = '';
     totalValue = 0;
 
-    distribution: PortfolioDistributionItem[] = [];
+    // distribution: PortfolioDistributionItem[] = [];
 
     private readonly colors = [
         '#3B82F6',
@@ -79,36 +77,36 @@ export class PortofolioDistribution {
         this.loading = true;
         this.errorMessage = '';
 
-        this.actifService.getPortfolioDistribution().subscribe({
-            next: (response: PortfolioDistributionResponse) => {
-                this.totalValue = response.totalValue ?? 0;
-                this.distribution = response.distribution ?? [];
-
-                this.chartData = {
-                    labels: this.distribution.map(item => item.symbol),
-                    datasets: [{
-                        data: this.distribution.map(item =>
-                            this.getPercentage(item.totalValue)
-                        ),
-                        backgroundColor: this.distribution.map(
-                            (_, index) =>
-                                this.colors[index % this.colors.length]
-                        ),
-                        borderColor: '#ffffff',
-                        borderWidth: 3,
-                        hoverOffset: 8
-                    }]
-                };
-
-                this.loading = false;
-            },
-            error: (error: unknown) => {
-                console.error('Erreur de chargement', error);
-                this.errorMessage =
-                    'Impossible de charger la répartition du portefeuille.';
-                this.loading = false;
-            }
-        });
+        // this.actifService.getPortfolioDistribution().subscribe({
+        //     next: (response: PortfolioDistributionResponse) => {
+        //         this.totalValue = response.totalValue ?? 0;
+        //         this.distribution = response.distribution ?? [];
+        //
+        //         this.chartData = {
+        //             labels: this.distribution.map(item => item.symbol),
+        //             datasets: [{
+        //                 data: this.distribution.map(item =>
+        //                     this.getPercentage(item.totalValue)
+        //                 ),
+        //                 backgroundColor: this.distribution.map(
+        //                     (_, index) =>
+        //                         this.colors[index % this.colors.length]
+        //                 ),
+        //                 borderColor: '#ffffff',
+        //                 borderWidth: 3,
+        //                 hoverOffset: 8
+        //             }]
+        //         };
+        //
+        //         this.loading = false;
+        //     },
+        //     error: (error: unknown) => {
+        //         console.error('Erreur de chargement', error);
+        //         this.errorMessage =
+        //             'Impossible de charger la répartition du portefeuille.';
+        //         this.loading = false;
+        //     }
+        // });
     }
 
     formatCurrency(value: number): string {

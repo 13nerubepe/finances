@@ -4,7 +4,7 @@ import { ChartModule } from 'primeng/chart';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { FormsModule } from '@angular/forms';
 import { finalize } from 'rxjs';
-import { Actif, HistoricalPrice, PeriodOption } from '@/app/models/model';
+import { Actif} from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Select } from 'primeng/select';
 
@@ -30,13 +30,13 @@ export class MarketEvolutionWidget {
 
     loading = false;
 
-    periods: PeriodOption[] = [
-        { label: '1J', value: '1D' },
-        { label: '1S', value: '1W' },
-        { label: '1M', value: '1M' },
-        { label: '6M', value: '6M' },
-        { label: '1A', value: '1Y' }
-    ];
+    // periods: PeriodOption[] = [
+    //     { label: '1J', value: '1D' },
+    //     { label: '1S', value: '1W' },
+    //     { label: '1M', value: '1M' },
+    //     { label: '6M', value: '6M' },
+    //     { label: '1A', value: '1Y' }
+    // ];
 
     chartData: any = {
         labels: [],
@@ -147,44 +147,44 @@ export class MarketEvolutionWidget {
         this.errorMessage = '';
 
         this.actifService
-            .getAssetHistory(this.selectedAsset.actifId, this.selectedPeriod)
-            .pipe(
-                finalize(() => {
-                    this.loadingChart = false;
-                })
-            )
-            .subscribe({
-                next: (history: HistoricalPrice[]) => {
-                    const rows = [...(history ?? [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                    this.chartData = {
-                        labels: rows.map((item) => new Date(item.date).toLocaleDateString('fr-FR')),
-                        datasets: [
-                            {
-                                label: `Cours de ${this.selectedAsset?.symbol ?? ''}`,
-                                data: rows.map((item) => Number(item.close)),
-                                borderColor: '#048216',
-                                backgroundColor: 'rgba(4, 130, 22, 0.10)',
-                                fill: true,
-                                tension: 0.35,
-                                borderWidth: 2,
-                                pointRadius: 2,
-                                pointHoverRadius: 5
-                            }
-                        ]
-                    };
-
-                    if (rows.length === 0) {
-                        this.errorMessage = 'Aucune donnée historique pour cette période.';
-                    }
-                },
-                error: (error) => {
-                    console.error('Erreur lors du chargement de l’historique :', error);
-
-                    this.clearChart();
-                    this.errorMessage = 'Impossible de charger les données du graphique.';
-                }
-            });
+            // .getAssetHistory(this.selectedAsset.actifId, this.selectedPeriod)
+            // .pipe(
+            //     finalize(() => {
+            //         this.loadingChart = false;
+            //     })
+            // )
+            // .subscribe({
+            //     next: (history: HistoricalPrice[]) => {
+            //         const rows = [...(history ?? [])].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            //
+            //         this.chartData = {
+            //             labels: rows.map((item) => new Date(item.date).toLocaleDateString('fr-FR')),
+            //             datasets: [
+            //                 {
+            //                     label: `Cours de ${this.selectedAsset?.symbol ?? ''}`,
+            //                     data: rows.map((item) => Number(item.close)),
+            //                     borderColor: '#048216',
+            //                     backgroundColor: 'rgba(4, 130, 22, 0.10)',
+            //                     fill: true,
+            //                     tension: 0.35,
+            //                     borderWidth: 2,
+            //                     pointRadius: 2,
+            //                     pointHoverRadius: 5
+            //                 }
+            //             ]
+            //         };
+            //
+            //         if (rows.length === 0) {
+            //             this.errorMessage = 'Aucune donnée historique pour cette période.';
+            //         }
+            //     },
+            //     // error: (error) => {
+            //     //     console.error('Erreur lors du chargement de l’historique :', error);
+            //     //
+            //     //     this.clearChart();
+            //     //     this.errorMessage = 'Impossible de charger les données du graphique.';
+            //     // }
+            // });
     }
 
     /**

@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { IndicateursVolatilite } from '@/app/models/model';
+import { IndicateursVolatilite } from '@/app/models/actif-model';
 
 @Component({
     selector: 'app-indicateurs-volatile',

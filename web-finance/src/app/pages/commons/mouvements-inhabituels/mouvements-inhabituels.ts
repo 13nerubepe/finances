@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { MouvementInhabituel } from '@/app/models/model';
+import { MouvementInhabituel } from '@/app/models/actif-model';
 
 @Component({
     selector: 'app-mouvements-inhabituels',

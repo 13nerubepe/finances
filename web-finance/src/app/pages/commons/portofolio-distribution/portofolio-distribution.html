@@ -46,73 +46,75 @@
                     Réessayer
                 </button>
             </div>
-        } @else if (distribution.length === 0) {
-            <div class="flex flex-1 flex-col items-center justify-center text-center">
-                <i class="pi pi-chart-pie mb-2 text-2xl text-slate-300 dark:text-slate-600"></i>
-                <p class="m-0 text-sm font-medium text-slate-700 dark:text-slate-200">Aucune donnée disponible</p>
-                <p class="mb-0 mt-1 text-xs text-slate-500 dark:text-slate-400">Ajoutez des actifs à votre portefeuille.</p>
-            </div>
-        } @else {
-
-            <!-- Valeur totale -->
-            <div class="mb-3 flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">
-                <div class="min-w-0">
-                    <p class="m-0 text-[11px] text-slate-500 dark:text-slate-400">Valeur totale</p>
-                    <p class="mb-0 mt-0.5 truncate text-base font-bold tracking-tight text-slate-900 dark:text-white">
-                        {{ formatCurrency(totalValue) }}
-                    </p>
-                </div>
-                <span class="inline-flex shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                    {{ distribution.length }} actif(s)
-                </span>
-            </div>
-
-            <!-- Anneau + légende : centrés verticalement dans l'espace restant -->
-            <div class="flex flex-1 flex-col items-center justify-center gap-5 xl:flex-row">
-
-                <div class="relative h-[170px] w-[170px] shrink-0">
-                    <p-chart
-                        type="doughnut"
-                        [data]="chartData"
-                        [options]="chartOptions"
-                        width="170px"
-                        height="170px"
-                        styleClass="block h-full w-full">
-                    </p-chart>
-                </div>
-
-                <div class="w-full min-w-0 flex-1 space-y-3">
-                    @for (item of distribution; track item.actifId; let i = $index) {
-                        <div class="min-w-0">
-                            <div class="flex items-center justify-between gap-2">
-
-                                <div class="flex min-w-0 items-center gap-2">
-                                    <span class="h-2 w-2 shrink-0 rounded-full" [style.backgroundColor]="getColor(i)"></span>
-                                    <span class="truncate text-xs font-medium text-slate-700 dark:text-slate-200">{{ item.name }}</span>
-                                    <span class="text-[10px] text-slate-400">{{ item.symbol }}</span>
-                                </div>
-
-                                <div class="flex shrink-0 items-baseline gap-2">
-                                    <span class="text-[10px] text-slate-500 dark:text-slate-400">
-                                        {{ formatCurrency(item.totalValue) }}
-                                    </span>
-                                    <span class="w-11 text-right text-xs font-semibold text-slate-800 dark:text-white">
-                                        {{ getPercentage(item.totalValue) | number:'1.1-1' }}%
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="mt-1 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                                <div
-                                    class="h-full rounded-full transition-all duration-300"
-                                    [style.width.%]="getPercentage(item.totalValue)"
-                                    [style.backgroundColor]="getColor(i)">
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
         }
+<!--        @else if (distribution.length === 0) {-->
+<!--            <div class="flex flex-1 flex-col items-center justify-center text-center">-->
+<!--                <i class="pi pi-chart-pie mb-2 text-2xl text-slate-300 dark:text-slate-600"></i>-->
+<!--                <p class="m-0 text-sm font-medium text-slate-700 dark:text-slate-200">Aucune donnée disponible</p>-->
+<!--                <p class="mb-0 mt-1 text-xs text-slate-500 dark:text-slate-400">Ajoutez des actifs à votre portefeuille.</p>-->
+<!--            </div>-->
+<!--        } -->
+<!--        @else {-->
+
+<!--            &lt;!&ndash; Valeur totale &ndash;&gt;-->
+<!--            <div class="mb-3 flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">-->
+<!--                <div class="min-w-0">-->
+<!--                    <p class="m-0 text-[11px] text-slate-500 dark:text-slate-400">Valeur totale</p>-->
+<!--                    <p class="mb-0 mt-0.5 truncate text-base font-bold tracking-tight text-slate-900 dark:text-white">-->
+<!--                        {{ formatCurrency(totalValue) }}-->
+<!--                    </p>-->
+<!--                </div>-->
+<!--                <span class="inline-flex shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">-->
+<!--                    {{ distribution.length }} actif(s)-->
+<!--                </span>-->
+<!--            </div>-->
+
+<!--            &lt;!&ndash; Anneau + légende : centrés verticalement dans l'espace restant &ndash;&gt;-->
+<!--            <div class="flex flex-1 flex-col items-center justify-center gap-5 xl:flex-row">-->
+
+<!--                <div class="relative h-[170px] w-[170px] shrink-0">-->
+<!--                    <p-chart-->
+<!--                        type="doughnut"-->
+<!--                        [data]="chartData"-->
+<!--                        [options]="chartOptions"-->
+<!--                        width="170px"-->
+<!--                        height="170px"-->
+<!--                        styleClass="block h-full w-full">-->
+<!--                    </p-chart>-->
+<!--                </div>-->
+
+<!--                <div class="w-full min-w-0 flex-1 space-y-3">-->
+<!--                    @for (item of distribution; track item.actifId; let i = $index) {-->
+<!--                        <div class="min-w-0">-->
+<!--                            <div class="flex items-center justify-between gap-2">-->
+
+<!--                                <div class="flex min-w-0 items-center gap-2">-->
+<!--                                    <span class="h-2 w-2 shrink-0 rounded-full" [style.backgroundColor]="getColor(i)"></span>-->
+<!--                                    <span class="truncate text-xs font-medium text-slate-700 dark:text-slate-200">{{ item.name }}</span>-->
+<!--                                    <span class="text-[10px] text-slate-400">{{ item.symbol }}</span>-->
+<!--                                </div>-->
+
+<!--                                <div class="flex shrink-0 items-baseline gap-2">-->
+<!--                                    <span class="text-[10px] text-slate-500 dark:text-slate-400">-->
+<!--                                        {{ formatCurrency(item.totalValue) }}-->
+<!--                                    </span>-->
+<!--                                    <span class="w-11 text-right text-xs font-semibold text-slate-800 dark:text-white">-->
+<!--                                        {{ getPercentage(item.totalValue) | number:'1.1-1' }}%-->
+<!--                                    </span>-->
+<!--                                </div>-->
+<!--                            </div>-->
+
+<!--                            <div class="mt-1 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">-->
+<!--                                <div-->
+<!--                                    class="h-full rounded-full transition-all duration-300"-->
+<!--                                    [style.width.%]="getPercentage(item.totalValue)"-->
+<!--                                    [style.backgroundColor]="getColor(i)">-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    }-->
+<!--                </div>-->
+<!--            </div>-->
+<!--        }-->
     </div>
 </div>

@@ -75,49 +75,49 @@
             </div>
         } @else {
             <div class="divide-y divide-slate-100 dark:divide-slate-800">
-                @for (actif of currentList; track trackByActifId($index, actif)) {
-                    <div class="flex min-w-0 items-center justify-between gap-3 px-1 py-2.5">
+<!--                @for (actif of currentList ) {-->
+<!--                    <div class="flex min-w-0 items-center justify-between gap-3 px-1 py-2.5">-->
 
-                        <!-- Actif -->
-                        <div class="flex min-w-0 items-center gap-2.5">
-                            <div
-                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                                [class]="activeTab === 'gagnants'
-                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'">
-                                {{ actif.symbol.slice(0, 2) }}
-                            </div>
+<!--                        &lt;!&ndash; Actif &ndash;&gt;-->
+<!--                        <div class="flex min-w-0 items-center gap-2.5">-->
+<!--                            <div-->
+<!--                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"-->
+<!--                                [class]="activeTab === 'gagnants'-->
+<!--                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'-->
+<!--                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'">-->
+<!--                                {{ actif.symbol.slice(0, 2) }}-->
+<!--                            </div>-->
 
-                            <div class="min-w-0">
-                                <p class="m-0 truncate text-sm font-semibold text-slate-800 dark:text-white">
-                                    {{ actif.name }}
-                                </p>
-                                <p class="m-0 text-xs text-slate-500 dark:text-slate-400">
-                                    {{ actif.symbol }}
-                                </p>
-                            </div>
-                        </div>
+<!--                            <div class="min-w-0">-->
+<!--                                <p class="m-0 truncate text-sm font-semibold text-slate-800 dark:text-white">-->
+<!--                                    {{ actif.name }}-->
+<!--                                </p>-->
+<!--                                <p class="m-0 text-xs text-slate-500 dark:text-slate-400">-->
+<!--                                    {{ actif.symbol }}-->
+<!--                                </p>-->
+<!--                            </div>-->
+<!--                        </div>-->
 
-                        <!-- Prix + variation -->
-                        <div class="flex shrink-0 items-center gap-3">
-                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">
-                                {{ formatCurrency(actif.currentPrice) }}
-                            </span>
+<!--                        &lt;!&ndash; Prix + variation &ndash;&gt;-->
+<!--                        <div class="flex shrink-0 items-center gap-3">-->
+<!--                            <span class="text-sm font-medium text-slate-700 dark:text-slate-200">-->
+<!--                                {{ formatCurrency }}-->
+<!--                            </span>-->
 
-                            <span
-                                class="inline-flex min-w-[70px] items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"
-                                [class]="activeTab === 'gagnants'
-                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'
-                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'">
-                                <i class="pi text-[10px]"
-                                   [class.pi-arrow-up-right]="activeTab === 'gagnants'"
-                                   [class.pi-arrow-down-right]="activeTab === 'perdants'"></i>
-                                {{ formatVariation(actif.variation) }}
-                            </span>
-                        </div>
+<!--                            <span-->
+<!--                                class="inline-flex min-w-[70px] items-center justify-center gap-1 rounded-md px-2 py-1 text-xs font-semibold"-->
+<!--                                [class]="activeTab === 'gagnants'-->
+<!--                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400'-->
+<!--                                    : 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400'">-->
+<!--                                <i class="pi text-[10px]"-->
+<!--                                   [class.pi-arrow-up-right]="activeTab === 'gagnants'"-->
+<!--                                   [class.pi-arrow-down-right]="activeTab === 'perdants'"></i>-->
+<!--                                {{ formatVariation }}-->
+<!--                            </span>-->
+<!--                        </div>-->
 
-                    </div>
-                }
+<!--                    </div>-->
+<!--                }-->
             </div>
         }
     </div>

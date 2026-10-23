@@ -1,6 +1,6 @@
 import { Component, EventEmitter, OnChanges, Output, Input, SimpleChanges, input, output } from '@angular/core';
 
-import { ActifOption, AnalyseVolatiliteParams, OngletVolatilite } from '@/app/models/model';
+import { ActifOption, AnalyseVolatiliteParams, OngletVolatilite } from '@/app/models/actif-model';
 import { MultiSelect } from 'primeng/multiselect';
 import { FormsModule } from '@angular/forms';
 import { PrimeTemplate } from 'primeng/api';

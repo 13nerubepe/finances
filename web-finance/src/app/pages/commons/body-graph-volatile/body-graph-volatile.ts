@@ -11,7 +11,7 @@ import {
     Actif, ActifOption, AnalyseVolatiliteParams,
     HistoricalPrice,
     PeriodOption
-} from '@/app/models/model';
+} from '@/app/models/actif-model';
 
 import { ActifService } from '@/app/pages/service/service/actif-service';
 

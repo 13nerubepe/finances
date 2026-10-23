@@ -97,6 +97,7 @@ export const appConfig: ApplicationConfig = {
         provideRouter(appRoutes, withInMemoryScrolling({ anchorScrolling: 'enabled', scrollPositionRestoration: 'enabled' }), withEnabledBlockingInitialNavigation()),
         provideHttpClient(withFetch()),
         provideZonelessChangeDetection(),
+        provideHttpClient(),
         // providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } })
         providePrimeNG({ theme: { preset: AppPreset, options: { darkModeSelector: '.app-dark' } } })
     ]

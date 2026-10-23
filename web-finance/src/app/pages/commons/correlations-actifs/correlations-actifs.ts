@@ -1,5 +1,5 @@
 import { Component, Input } from '@angular/core';
-import { CorrelationActif } from '@/app/models/model';
+import { CorrelationActif } from '@/app/models/actif-model';
 
 @Component({
     selector: 'app-correlations-actifs',

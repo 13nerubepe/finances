@@ -4,7 +4,7 @@ import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 
 import { ActifService } from '@/app/pages/service/service/actif-service';
-import { Actualite } from '@/app/models/model';
+import { Actualite } from '@/app/models/actif-model';
 import { Tag } from 'primeng/tag';
 import { Button, ButtonDirective } from 'primeng/button';
 import { Divider } from 'primeng/divider';

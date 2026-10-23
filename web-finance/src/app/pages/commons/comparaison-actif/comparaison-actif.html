@@ -107,7 +107,8 @@
             <h2 class="text-lg font-semibold">Indicateurs de performance</h2>
         </div>
 
-        <p-table [value]="selection" [tableStyle]="{ 'min-width': '44rem' }">
+        <p-table [value]="selection"
+                 [tableStyle]="{ 'min-width': '44rem' }">
             <ng-template #header>
                 <tr>
                     <th>Actif</th>
@@ -120,20 +121,31 @@
 
             <ng-template #body let-a>
                 <tr>
-                    <td>
-                        <div class="flex items-center gap-3">
-                            <span
-                                class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                                [style.background]="a.color"
-                            >
-                                {{ a.symbol.slice(0, 2) }}
-                            </span>
-                            <div class="flex flex-col leading-tight">
-                                <span class="font-semibold">{{ a.name }}</span>
-                                <span class="text-xs text-surface-500">{{ a.symbol }}</span>
-                            </div>
-                        </div>
-                    </td>
+<!--                    <td>-->
+<!--                        <div class="flex items-center gap-3">-->
+<!--                            <span-->
+<!--                                class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"-->
+<!--                                [style.background]="a.color"-->
+<!--                            >-->
+<!--                                {{ a.symbol.slice(0, 2) }}-->
+<!--                            </span>-->
+<!--                            <div class="flex flex-col leading-tight">-->
+<!--                                <span class="font-semibold">{{ a.name }}</span>-->
+<!--                                <span class="text-xs text-surface-500">{{ a.symbol }}</span>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </td>-->
+<!--                    <td>-->
+<!--                        <div class="flex flex-col gap-1">-->
+<!--                        <span class="font-semibold">-->
+<!--                            {{ actif.name }}-->
+<!--                        </span>-->
+
+<!--                            <span class="text-sm text-surface-500">-->
+<!--                            {{ actif.description || 'Aucune description' }}-->
+<!--                        </span>-->
+<!--                        </div>-->
+<!--                    </td>-->
 
 <!--                    <td class="text-right font-medium">-->
 <!--                        {{ a.price | number: '1.2-2' }} {{ a.currency }}-->
