@@ -1,86 +1,98 @@
-import { Component, OnInit } from '@angular/core';
+
+import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+
+
+import { Button } from 'primeng/button';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { IconField } from 'primeng/iconfield';
 import { InputIcon } from 'primeng/inputicon';
-import { TableModule } from 'primeng/table';
-import { FormsModule } from '@angular/forms';
-import { Select } from 'primeng/select';
-import { MultiSelect } from 'primeng/multiselect';
-import { Slider } from 'primeng/slider';
-import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Tag } from 'primeng/tag';
 import { InputText } from 'primeng/inputtext';
-import { ButtonDirective } from 'primeng/button';
+import { TableModule } from 'primeng/table';
 
+import { Tooltip } from 'primeng/tooltip';
+
+import { Actif } from '@/app/models/actif-model';
+
+import { ActifService } from '@/app/pages/service/service/actif-service';
+import { Tag } from 'primeng/tag';
+
+type Trend = 'up' | 'down';
+
+type ActifAvecTendance = Actif & {
+    trend: Trend;
+};
 
 @Component({
     selector: 'app-actif',
     standalone: true,
-    imports: [TableModule, IconField, InputIcon, FormsModule, MultiSelect, Select, Slider, Tag, DatePipe, CurrencyPipe, InputText, ButtonDirective],
+    imports: [CommonModule, FormsModule, TableModule, IconField, InputIcon, InputText, Button, Tooltip, ConfirmDialogModule, Tag],
     templateUrl: './actif.html',
     styleUrl: './actif.scss'
 })
 export class ActifComponent implements OnInit {
-    statuses: any[] = [];
+    actifs: Actif[] = [];
+    loading = false;
 
-    activityValues: number[] = [0, 100];
+    vue: 'tous' | 'mes' = 'tous';
+    actifsSelectionnes: Actif[] = [];
 
-    isExpanded: boolean = false;
+    constructor(
+        private router: Router,
+        private assetService: ActifService) {}
 
-    balanceFrozen: boolean = false;
-
-    loading: boolean = true;
-
-    constructor() {}
-
-    ngOnInit() {
-        this.statuses = [
-            { label: 'Unqualified', value: 'unqualified' },
-            { label: 'Qualified', value: 'qualified' },
-            { label: 'New', value: 'new' },
-            { label: 'Negotiation', value: 'negotiation' },
-            { label: 'Renewal', value: 'renewal' },
-            { label: 'Proposal', value: 'proposal' }
-        ];
+    ngOnInit(): void {
+        this.chargerActifs();
     }
 
-    formatCurrency(value: number) {
-        return value.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    largeurPerformance(actif: Actif): number {
+        const variation = actif.variation ?? 0;
+
+        return Math.min(Math.abs(variation), 50);
     }
 
-    // onGlobalFilter(table: Table, event: Event) {
-    //     // table.filterGlobal((event.target as HTMLInputElement).value, 'contains');
-    // }
+    get actifsAffiches(): Actif[] {
+        return this.vue === 'tous' ? this.actifs : this.actifsSelectionnes;
+    }
 
-    // clear(table: Table) {
-    //     table.clear();
-    //     this.filter.nativeElement.value = '';
-    // }
+    estSelectionne(actif: Actif): boolean {
+        return this.actifsSelectionnes.some(a => a.actifId === actif.actifId);
+    }
 
-    getSeverity(status: string) {
-        switch (status) {
-            case 'qualified':
-            case 'instock':
-            case 'INSTOCK':
-            case 'DELIVERED':
-            case 'delivered':
-                return 'success';
-
-            case 'negotiation':
-            case 'lowstock':
-            case 'LOWSTOCK':
-            case 'PENDING':
-            case 'pending':
-                return 'warn';
-
-            case 'unqualified':
-            case 'outofstock':
-            case 'OUTOFSTOCK':
-            case 'CANCELLED':
-            case 'cancelled':
-                return 'danger';
-
-            default:
-                return 'info';
+    basculerSelection(actif: Actif): void {
+        if (this.estSelectionne(actif)) {
+            this.actifsSelectionnes = this.actifsSelectionnes.filter(
+                a => a.actifId !== actif.actifId
+            );
+            // this.actifService.retirerActif(actif.actifId).subscribe();
+        } else {
+            this.actifsSelectionnes = [...this.actifsSelectionnes, actif];
+            // this.actifService.ajouterActif(actif.actifId).subscribe();
         }
+    }
+
+
+    chargerActifs(): void {
+        this.loading = true;
+
+        this.assetService.getAssets().subscribe({
+            next: (data: Actif[]) => {
+                this.actifs = data;
+                this.loading = false;
+            },
+            error: (error) => {
+                console.error('Erreur lors du chargement des actifs :', error);
+                this.loading = false;
+            }
+        });
+    }
+
+    voirActif(actif: Actif): void {
+        console.log('Actif sélectionné :', actif);
+        console.log('ID de l’actif :', actif.actifId);
+
+        this.router.navigate(['/detail-actif', actif.actifId]);
     }
 }

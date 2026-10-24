@@ -19,14 +19,33 @@ export const appRoutes: Routes = [
                 loadComponent: () => import('./app/pages/actif/actif').then((c) => c.ActifComponent),
                 data: { breadcrumb: 'Actif' },
             },
+            // {
+            //     path: AppConstantRoute.Detail_Actif_PATH,
+            //     loadComponent: () => import('./app/pages/detail-actif/detail-actif').then((c) => c.DetailActif),
+            //     data: { breadcrumb: 'Detail-actif' },
+            // },
+
+            {
+                path: `${AppConstantRoute.Detail_Actif_PATH}/:id`,
+                loadComponent: () => import('./app/pages/detail-actif/detail-actif')
+                    .then((c) => c.DetailActif),
+                data: { breadcrumb: 'Detail-actif' }
+            },
+
+
+            {
+                path: AppConstantRoute.Profil_PATH,
+                loadComponent: () => import('./app/pages/auth/profile').then((c) => c.Profile),
+                data: { breadcrumb: 'Profil' },
+            },
             {
                 path: AppConstantRoute.Actualite_PATH,
-                loadComponent: () => import('./app/pages/actualites/actualites').then((c) => c.ActualitesComponent),
+                loadComponent: () => import('@/app/pages/commons/actualites/actualites').then((c) => c.ActualitesComponent),
                 data: { breadcrumb: 'Actualité' },
             },
             {
                 path: AppConstantRoute.ComparaisonActif_PATH,
-                loadComponent: () => import('./app/pages/comparaison-actif/comparaison-actif').then((c) => c.ComparaisonActifComponent),
+                loadComponent: () => import('@/app/pages/commons/comparaison-actif/comparaison-actif').then((c) => c.ComparaisonActifComponent),
                 data: { breadcrumb: 'ComparairéActifs' },
             },
 
@@ -37,6 +56,11 @@ export const appRoutes: Routes = [
     },
     { path: 'landing', component: Landing },
     { path: 'notfound', component: Notfound },
+    {
+        path: AppConstantRoute.Register_PATH,
+        loadComponent: () => import('./app/pages/auth/register').then((c) => c.Register),
+        data: { breadcrumb: 'Register' },
+    },
     { path: 'auth', loadChildren: () => import('./app/pages/auth/auth.routes') },
     { path: '**', redirectTo: '/notfound' }
 ];

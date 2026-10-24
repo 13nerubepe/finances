@@ -1,155 +1,292 @@
-<div class="card">
-    <div class="font-semibold text-xl mb-4">Filtering</div>
+<div class="card !mb-0 min-h-[650px]">
+
+    <!-- En-tête -->
+    <div class="flex flex-col gap-3 mb-5 sm:flex-row
+                sm:items-center sm:justify-between">
+
+        <div>
+            <h2 class="text-xl font-semibold m-0">
+                Actifs financiers
+            </h2>
+        </div>
+
+    </div>
+
+    <!-- Boutons de vue -->
+    <div class="flex gap-2 mb-4">
+        <p-button
+            label="Tous les actifs"
+            icon="pi pi-list"
+            [severity]="vue === 'tous' ? 'primary' : 'secondary'"
+            [outlined]="vue !== 'tous'"
+            (onClick)="vue = 'tous'">
+        </p-button>
+
+        <p-button
+            [label]="'Mes actifs (' + actifsSelectionnes.length + ')'"
+            icon="pi pi-star"
+            [severity]="vue === 'mes' ? 'primary' : 'secondary'"
+            [outlined]="vue !== 'mes'"
+            (onClick)="vue = 'mes'">
+        </p-button>
+    </div>
+
+    <!-- Tableau -->
     <p-table
-        #dt1
-        dataKey="id"
-        [rows]="10"
+        #dt
+        [value]="actifsAffiches"
         [loading]="loading"
-        [rowHover]="true"
-        [showGridlines]="true"
+        dataKey="actifId"
         [paginator]="true"
-        [globalFilterFields]="['name', 'country.name', 'representative.name', 'status']"
+        [alwaysShowPaginator]="actifsAffiches.length > 0"
+        [rows]="12"
+        [rowsPerPageOptions]="[10, 25, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} actifs"
+        [globalFilterFields]="['name', 'symbol', 'currency']"
+        [rowHover]="true"
         responsiveLayout="scroll"
-    >
+        [tableStyle]="{ 'min-width': '52rem' }"
+        styleClass="p-datatable-sm">
+
+        <!-- Recherche et compteur -->
         <ng-template #caption>
-            <div class="flex justify-between items-center flex-column sm:flex-row">
-                <button pButton label="Clear" class="p-button-outlined mb-2" icon="pi pi-filter-slash" ></button>
-                <p-iconfield iconPosition="left" class="ml-auto">
-                    <p-inputicon>
-                        <i class="pi pi-search"></i>
-                    </p-inputicon>
-                    <input pInputText type="text" placeholder="Search keyword" />
+            <div class="flex flex-col gap-3 mb-3
+                        sm:flex-row sm:items-center sm:justify-between">
+
+                <div class="flex items-center gap-2">
+                    <i class="pi pi-chart-line text-primary text-xl"></i>
+
+                    <span class="font-semibold">
+                        {{ vue === 'mes' ? 'Mes actifs' : 'Liste des actifs' }}
+                    </span>
+
+                    <p-tag
+                        [value]="actifsAffiches.length + ' actif(s)'"
+                        severity="secondary">
+                    </p-tag>
+                </div>
+
+                <p-iconfield class="w-full sm:w-80">
+                    <p-inputicon class="pi pi-search"></p-inputicon>
+
+                    <input
+                        pInputText
+                        type="text"
+                        class="w-full"
+                        placeholder="Rechercher un actif..."
+                        (input)="dt.filterGlobal(
+                            $any($event.target).value,
+                            'contains'
+                        )">
                 </p-iconfield>
             </div>
         </ng-template>
+
+        <!-- En-têtes -->
         <ng-template #header>
             <tr>
-                <th style="min-width: 12rem">
-                    <div class="flex justify-between items-center">
-                        Name
-                        <p-columnFilter type="text" field="name" display="menu" placeholder="Search by name"></p-columnFilter>
-                    </div>
+                <th pSortableColumn="name">
+                    Actif
+                    <p-sortIcon field="name"></p-sortIcon>
                 </th>
-                <th style="min-width: 12rem">
-                    <div class="flex justify-between items-center">
-                        Country
-                        <p-columnFilter type="text" field="Actif" display="menu" placeholder="Search by country"></p-columnFilter>
-                    </div>
+
+                <th pSortableColumn="currentPrice" class="text-right">
+                    Prix actuel
+                    <p-sortIcon field="currentPrice"></p-sortIcon>
                 </th>
-                <th style="min-width: 14rem">
-                    <div class="flex justify-between items-center">
-                        Agent
-                        <p-columnFilter field="representative" matchMode="in" display="menu" [showMatchModes]="false" [showOperator]="false" [showAddButton]="false">
-                            <ng-template #header>
-                                <div class="px-3 pt-3 pb-0">
-                                    <span class="font-bold">Agent Picker</span>
-                                </div>
-                            </ng-template>
-                            <ng-template #filter let-value let-filter="filterCallback">
-                                <p-multiselect [ngModel]="value"  placeholder="Any" (onChange)="filter($event.value)" optionLabel="name" styleClass="w-full">
-                                    <ng-template let-option #item>
-                                        <div class="flex items-center gap-2 w-44">
-                                            <img [alt]="option.label" src="https://primefaces.org/cdn/primeng/images/demo/avatar/{{ option.image }}" width="32" />
-                                            <span>{{ option.name }}</span>
-                                        </div>
-                                    </ng-template>
-                                </p-multiselect>
-                            </ng-template>
-                        </p-columnFilter>
-                    </div>
+
+                <th pSortableColumn="variation" class="text-right">
+                    Variation
+                    <p-sortIcon field="variation"></p-sortIcon>
                 </th>
-                <th style="min-width: 10rem">
-                    <div class="flex justify-between items-center">
-                        Date
-                        <p-columnFilter type="date" field="date" display="menu" placeholder="mm/dd/yyyy"></p-columnFilter>
-                    </div>
+
+                <th style="width: 16rem">
+                    Performance
                 </th>
-                <th style="min-width: 10rem">
-                    <div class="flex justify-between items-center">
-                        Balance
-                        <p-columnFilter type="numeric" field="balance" display="menu" currency="USD"></p-columnFilter>
-                    </div>
+
+                <th pSortableColumn="trend" class="text-center">
+                    Tendance
+                    <p-sortIcon field="trend"></p-sortIcon>
                 </th>
-                <th style="min-width: 12rem">
-                    <div class="flex justify-between items-center">
-                        Status
-                        <p-columnFilter field="status" matchMode="equals" display="menu">
-                            <ng-template #filter let-value let-filter="filterCallback">
-                                <p-select [ngModel]="value" [options]="statuses" (onChange)="filter($event.value)" placeholder="Any" [style]="{ 'min-width': '12rem' }">
-                                    <ng-template let-option #item>
-                                        <span [class]="'customer-badge status-' + option.value">{{ option.label }}</span>
-                                    </ng-template>
-                                </p-select>
-                            </ng-template>
-                        </p-columnFilter>
-                    </div>
-                </th>
-                <th style="min-width: 12rem">
-                    <div class="flex justify-between items-center">
-                        Activity
-                        <p-columnFilter field="activity" matchMode="between" display="menu" [showMatchModes]="false" [showOperator]="false" [showAddButton]="false">
-                            <ng-template #filter let-filter="filterCallback">
-                                <p-slider [ngModel]="activityValues" [range]="true" (onSlideEnd)="filter($event.values)" styleClass="m-3" [style]="{ 'min-width': '12rem' }"></p-slider>
-                                <div class="flex items-center justify-between px-2">
-                                    <span>{{ activityValues[0] }}</span>
-                                    <span>{{ activityValues[1] }}</span>
-                                </div>
-                            </ng-template>
-                        </p-columnFilter>
-                    </div>
-                </th>
-                <th style="min-width: 8rem">
-                    <div class="flex justify-between items-center">
-                        Verified
-                        <p-columnFilter type="boolean" field="verified" display="menu"></p-columnFilter>
-                    </div>
+
+                <th class="text-center" style="width: 8rem">
+                    Actions
                 </th>
             </tr>
         </ng-template>
-        <ng-template #body let-customer>
+
+        <!-- Corps du tableau -->
+        <ng-template #body let-actif>
             <tr>
+
+                <!-- Actif : nom, symbole et icône -->
                 <td>
-                    {{ customer.name }}
-                </td>
-                <td>
-                    <div class="flex items-center gap-2">
-                        <img src="https://primefaces.org/cdn/primeng/images/demo/flag/flag_placeholder.png" [class]="'flag flag-' + customer.country.code" width="30" />
-                        <span>{{ customer.country.name }}</span>
+                    <div class="flex items-center gap-3">
+
+                        <span
+                            class="w-10 h-10 rounded-full flex items-center
+                                   justify-center text-xs font-bold
+                                   text-primary bg-surface-100
+                                   dark:bg-surface-800 shrink-0">
+                            {{ actif.symbol?.slice(0, 2) || 'NA' }}
+                        </span>
+
+                        <div class="flex flex-col gap-1 min-w-0">
+                            <span class="font-semibold">
+                                {{ actif.name }}
+                            </span>
+
+                            <span class="text-xs text-surface-500">
+                                {{ actif.symbol }}
+                            </span>
+                        </div>
+
                     </div>
                 </td>
+
+                <!-- Prix actuel -->
+                <td class="text-right font-medium whitespace-nowrap">
+                    {{ actif.currentPrice | number:'1.2-2' }}
+                    {{ actif.currency || '' }}
+                </td>
+
+                <!-- Variation en pourcentage -->
+                <td
+                    class="text-right font-medium whitespace-nowrap"
+                    [ngClass]="{
+                        'text-green-600': (actif.variation ?? 0) > 0,
+                        'text-red-500': (actif.variation ?? 0) < 0,
+                        'text-surface-500': (actif.variation ?? 0) === 0
+                    }">
+
+                    <i
+                        class="pi mr-1"
+                        [ngClass]="{
+                            'pi-arrow-up-right': (actif.variation ?? 0) > 0,
+                            'pi-arrow-down-right': (actif.variation ?? 0) < 0,
+                            'pi-minus': (actif.variation ?? 0) === 0
+                        }">
+                    </i>
+
+                    {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
+                </td>
+
+                <!-- Barre de performance -->
                 <td>
-                    <div class="flex items-center gap-2">
-                        <img [alt]="customer.representative.name" src="https://primefaces.org/cdn/primeng/images/demo/avatar/{{ customer.representative.image }}" width="32" style="vertical-align: middle" />
-                        <span class="image-text">{{ customer.representative.name }}</span>
+                    <div class="flex items-center gap-3">
+
+                        <div
+                            class="relative flex-1 h-2 rounded-full
+                                   bg-surface-100 dark:bg-surface-800">
+
+                            <!-- Axe central -->
+                            <span
+                                class="absolute left-1/2 top-[-2px] bottom-[-2px]
+                                       w-px bg-surface-300 dark:bg-surface-600">
+                            </span>
+
+                            <!-- Barre positive ou négative -->
+                            <span
+                                class="absolute top-0 h-2 rounded-full"
+                                [ngClass]="
+                                    (actif.variation ?? 0) >= 0
+                                        ? 'left-1/2 bg-green-500'
+                                        : 'right-1/2 bg-red-500'
+                                "
+                                [style.width.%]="largeurPerformance(actif)">
+                            </span>
+
+                        </div>
+
+                        <span
+                            class="w-16 text-right font-semibold text-sm"
+                            [ngClass]="
+                                (actif.variation ?? 0) >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-500'
+                            ">
+                            {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
+                        </span>
+
                     </div>
                 </td>
-                <td>
-                    {{ customer.date | date: 'MM/dd/yyyy' }}
-                </td>
-                <td>
-                    {{ customer.balance | currency: 'USD' : 'symbol' }}
-                </td>
-                <td>
-                    <p-tag [value]="customer.status.toLowerCase()" [severity]="getSeverity(customer.status.toLowerCase())" styleClass="dark:bg-surface-900!" />
-                </td>
-                <td>
-<!--                    <p-progressbar [value]="customer.activity" [showValue]="false" [style]="{ height: '0.5rem' }" />-->
-                </td>
+
+                <!-- Tendance -->
                 <td class="text-center">
-                    <p-tag [value]="customer.status.toLowerCase()" [severity]="getSeverity(customer.status.toLowerCase())" styleClass="dark:bg-surface-900!" />
+                    <p-tag
+                        [value]="
+                            actif.trend === 'up'
+                                ? 'Hausse'
+                                : actif.trend === 'down'
+                                    ? 'Baisse'
+                                    : 'Stable'
+                        "
+                        [severity]="
+                            actif.trend === 'up'
+                                ? 'success'
+                                : actif.trend === 'down'
+                                    ? 'danger'
+                                    : 'secondary'
+                        ">
+                    </p-tag>
                 </td>
+
+                <!-- Actions -->
+                <td>
+                    <div class="flex items-center justify-center gap-1">
+
+                        <p-button
+                            [icon]="estSelectionne(actif) ? 'pi pi-star-fill' : 'pi pi-star'"
+                            severity="warn"
+                            [text]="true"
+                            [rounded]="true"
+                            [pTooltip]="estSelectionne(actif)
+                                ? 'Retirer de mes actifs'
+                                : 'Ajouter à mes actifs'"
+                            (onClick)="basculerSelection(actif)">
+                        </p-button>
+
+                        <p-button
+                            icon="pi pi-eye"
+                            severity="secondary"
+                            [text]="true"
+                            [rounded]="true"
+                            pTooltip="Consulter les détails"
+                            (onClick)="voirActif(actif)">
+                        </p-button>
+
+                    </div>
+                </td>
+
             </tr>
         </ng-template>
+
+        <!-- Aucun résultat -->
         <ng-template #emptymessage>
             <tr>
-                <td colspan="8">No customers found.</td>
+                <td colspan="6">
+                    <div class="flex flex-col items-center
+                                justify-center gap-3 py-10">
+
+                        <i class="pi pi-chart-bar text-4xl text-surface-400"></i>
+
+                        <span class="font-semibold">
+                            {{ vue === 'mes'
+                            ? "Vous n'avez sélectionné aucun actif"
+                            : 'Aucun actif financier disponible' }}
+                        </span>
+
+                        <span class="text-sm text-surface-500">
+                            {{ vue === 'mes'
+                            ? "Cliquez sur l'étoile d'un actif pour l'ajouter ici."
+                            : 'Vérifiez les données ou modifiez votre recherche.' }}
+                        </span>
+
+                    </div>
+                </td>
             </tr>
         </ng-template>
-        <ng-template #loadingbody>
-            <tr>
-                <td colspan="8">Loading customers data. Please wait.</td>
-            </tr>
-        </ng-template>
+
     </p-table>
 </div>
-
