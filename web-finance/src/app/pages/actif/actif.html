@@ -1,4 +1,3 @@
-
 <div class="card !mb-0 min-h-[650px]">
 
     <!-- En-tête -->
@@ -13,14 +12,33 @@
 
     </div>
 
+    <!-- Boutons de vue -->
+    <div class="flex gap-2 mb-4">
+        <p-button
+            label="Tous les actifs"
+            icon="pi pi-list"
+            [severity]="vue === 'tous' ? 'primary' : 'secondary'"
+            [outlined]="vue !== 'tous'"
+            (onClick)="vue = 'tous'">
+        </p-button>
+
+        <p-button
+            [label]="'Mes actifs (' + actifsSelectionnes.length + ')'"
+            icon="pi pi-star"
+            [severity]="vue === 'mes' ? 'primary' : 'secondary'"
+            [outlined]="vue !== 'mes'"
+            (onClick)="vue = 'mes'">
+        </p-button>
+    </div>
+
     <!-- Tableau -->
     <p-table
         #dt
-        [value]="actifs"
+        [value]="actifsAffiches"
         [loading]="loading"
         dataKey="actifId"
         [paginator]="true"
-        [alwaysShowPaginator]="actifs.length > 0"
+        [alwaysShowPaginator]="actifsAffiches.length > 0"
         [rows]="12"
         [rowsPerPageOptions]="[10, 25, 50]"
         [showCurrentPageReport]="true"
@@ -40,11 +58,11 @@
                     <i class="pi pi-chart-line text-primary text-xl"></i>
 
                     <span class="font-semibold">
-                        Liste des actifs
+                        {{ vue === 'mes' ? 'Mes actifs' : 'Liste des actifs' }}
                     </span>
 
                     <p-tag
-                        [value]="actifs.length + ' actif(s)'"
+                        [value]="actifsAffiches.length + ' actif(s)'"
                         severity="secondary">
                     </p-tag>
                 </div>
@@ -92,7 +110,7 @@
                     <p-sortIcon field="trend"></p-sortIcon>
                 </th>
 
-                <th class="text-center" style="width: 5rem">
+                <th class="text-center" style="width: 8rem">
                     Actions
                 </th>
             </tr>
@@ -216,7 +234,19 @@
 
                 <!-- Actions -->
                 <td>
-                    <div class="flex items-center justify-center">
+                    <div class="flex items-center justify-center gap-1">
+
+                        <p-button
+                            [icon]="estSelectionne(actif) ? 'pi pi-star-fill' : 'pi pi-star'"
+                            severity="warn"
+                            [text]="true"
+                            [rounded]="true"
+                            [pTooltip]="estSelectionne(actif)
+                                ? 'Retirer de mes actifs'
+                                : 'Ajouter à mes actifs'"
+                            (onClick)="basculerSelection(actif)">
+                        </p-button>
+
                         <p-button
                             icon="pi pi-eye"
                             severity="secondary"
@@ -225,6 +255,7 @@
                             pTooltip="Consulter les détails"
                             (onClick)="voirActif(actif)">
                         </p-button>
+
                     </div>
                 </td>
 
@@ -241,11 +272,15 @@
                         <i class="pi pi-chart-bar text-4xl text-surface-400"></i>
 
                         <span class="font-semibold">
-                            Aucun actif financier disponible
+                            {{ vue === 'mes'
+                            ? "Vous n'avez sélectionné aucun actif"
+                            : 'Aucun actif financier disponible' }}
                         </span>
 
                         <span class="text-sm text-surface-500">
-                            Vérifiez les données ou modifiez votre recherche.
+                            {{ vue === 'mes'
+                            ? "Cliquez sur l'étoile d'un actif pour l'ajouter ici."
+                            : 'Vérifiez les données ou modifiez votre recherche.' }}
                         </span>
 
                     </div>

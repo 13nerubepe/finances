@@ -36,6 +36,9 @@ export class ActifComponent implements OnInit {
     actifs: Actif[] = [];
     loading = false;
 
+    vue: 'tous' | 'mes' = 'tous';
+    actifsSelectionnes: Actif[] = [];
+
     constructor(
         private router: Router,
         private assetService: ActifService) {}
@@ -44,18 +47,30 @@ export class ActifComponent implements OnInit {
         this.chargerActifs();
     }
 
-
-    // largeurPerformance(actif: Actif): number {
-    // const variation = actif.variation ?? 0;
-    //
-    // // Une variation de 10 % remplit la moitié de la barre.
-    // return Math.min(Math.abs(variation) / 10, 1) * 50;
-    // }
-
     largeurPerformance(actif: Actif): number {
         const variation = actif.variation ?? 0;
 
         return Math.min(Math.abs(variation), 50);
+    }
+
+    get actifsAffiches(): Actif[] {
+        return this.vue === 'tous' ? this.actifs : this.actifsSelectionnes;
+    }
+
+    estSelectionne(actif: Actif): boolean {
+        return this.actifsSelectionnes.some(a => a.actifId === actif.actifId);
+    }
+
+    basculerSelection(actif: Actif): void {
+        if (this.estSelectionne(actif)) {
+            this.actifsSelectionnes = this.actifsSelectionnes.filter(
+                a => a.actifId !== actif.actifId
+            );
+            // this.actifService.retirerActif(actif.actifId).subscribe();
+        } else {
+            this.actifsSelectionnes = [...this.actifsSelectionnes, actif];
+            // this.actifService.ajouterActif(actif.actifId).subscribe();
+        }
     }
 
 

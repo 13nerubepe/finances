@@ -1,4 +1,6 @@
 
+import type { UTCTimestamp } from 'lightweight-charts';
+
 /**
  * Actif financier
  */
@@ -39,6 +41,18 @@ export interface HistoricalPrice {
 }
 
 /**
+ * Bougie adaptée à Lightweight Charts
+ */
+export interface Bougie {
+    time: UTCTimestamp;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+}
+
+/**
  * Filtres de recherche des cours historiques
  */
 export interface FiltresCours {
@@ -49,12 +63,27 @@ export interface FiltresCours {
 }
 
 /**
+ * Fréquence des données historiques
+ */
+export type Frequence = NonNullable<FiltresCours['frequence']>;
+
+/**
+ * Période d'affichage du graphique
+ */
+export interface Periode {
+    label: string;
+    value: string;
+    jours: number;
+    frequence: Frequence;
+}
+
+/**
  * Paramètres d'analyse de volatilité
  */
 export interface AnalyseVolatiliteParams {
     actifs: string[];
     periode: number;
-    frequence?: 'daily' | 'weekly' | 'monthly';
+    frequence?: Frequence;
 }
 
 /**
