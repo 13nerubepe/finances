@@ -1,5 +1,8 @@
 from google import genai
 from google.genai import types
+from .models import Analysis
+
+from agent.market import get_price_move
 
 client = genai.Client()
 
@@ -16,11 +19,24 @@ def extract_sources(response) -> list:
 
 
 def analyze_asset(asset:str) -> dict:
+
+    move = get_price_move(asset)
+    if move is None:
+        return{"asset": asset, "error": "Ticker introuvable ou données indisponibles"}
+
+    existing = Analysis.objects.filter(asset=asset,date=move['date']).first()
+    if existing:
+        return serialize(existing, cached=True)
+
     prompt = (
-        f"""
-Find recent news about the asset {asset}. Explain the last movement in its price and provide reasons for it. Be concise, don't hallucinate
-        """
-    )
+     f"""
+     L'actif financier {asset} a varié de {move['change_pct']} % 
+      le {move['date']} (clôture : {move['close']}, 
+        veille : {move['previous_close']}). 
+        Recherche les actualités de cette période et explique les raisons 
+        probables de ce mouvement. Si aucune cause claire n'apparaît, dis-le. 
+        Réponds en français, de façon factuelle et concise."""
+   )
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=prompt,
@@ -29,7 +45,20 @@ Find recent news about the asset {asset}. Explain the last movement in its price
 
     return {
         "asset":asset,
-        "price_move":None,
+        "price_move":move,
         "analysis":response.text,
         "sources":extract_sources(response)
+    }
+def serialize(record: Analysis, cached: bool) -> dict:
+    return {
+        "asset": record.asset,
+        "price_move": {
+            "date": str(record.date),
+            "close": record.close,
+            "previous_close": record.previous_close,
+            "change_pct": record.change_pct,
+        },
+        "analysis": record.analysis,
+        "sources": record.sources,
+        "cached": cached,
     }
