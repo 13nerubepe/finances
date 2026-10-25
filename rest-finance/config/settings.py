@@ -41,10 +41,13 @@ INSTALLED_APPS = [
 
 #     DRF
     'rest_framework',
+    'django_filters',
 #     APP
     'finance',
-    'agent'
+    'marches',
+    'agent',
 ]
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -132,3 +135,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+AUTH_USER_MODEL = 'finance.User'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
