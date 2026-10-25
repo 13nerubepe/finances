@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 
+AUTH_USER_MODEL = 'finance.User'
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env', override=True)
@@ -41,14 +43,25 @@ INSTALLED_APPS = [
 
 #     DRF
     'rest_framework',
+
+    'drf_spectacular',
+
 #     APP
     'finance',
-<<<<<<< HEAD
     'actualites',
-=======
-    'agent'
->>>>>>> refs/remotes/origin/feat/agent_init
+    'agent',
+
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MEFA API',
+    'DESCRIPTION': 'API de suivi et d’analyse de la volatilité des marchés financiers.',
+    'VERSION': '1.0.0',
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
