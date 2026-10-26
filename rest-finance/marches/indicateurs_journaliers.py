@@ -1,25 +1,28 @@
 """Moteur d'indicateurs journaliers : source unique des pics (agent et tableau de bord).
 
 
-Entrée  : DataFrame indexé par date, colonnes open, high, low, close, volume.
+Entrée  : cours : DataFrame indexé par date, colonnes open, high, low, close, volume.
+          rendement_indice : Series des log-rendements de l'indice de référence
+          (même index de dates), ou None si l'actif n'a pas d'indice (cryptos).
 Sortie  : DataFrame indexé par date, colonnes :
-    rendement            log-rendement ln(close / close de la veille)
-    volatilite           volatilité EWMA journalière (RiskMetrics, lambda = 0,94)
-    volatilite_annuelle  volatilite x racine(jours_par_an)
-    parkinson            volatilité intrajournalière (high/low) sur 20 jours
-    z                    rendement / volatilité de la veille
-    z_volume             z-score du log-volume par rapport aux 20 jours précédents
-    gap                  ln(open / close de la veille)
-    est_pic              |z| > seuil
+
+    beta                 cov(r, r_indice) / var(r_indice) sur 60 jours glissants
+    rendement_anormal    rendement - beta de la veille x rendement de l'indice
+    z_anormal            rendement_anormal / son écart-type des 20 jours précédents
+    type_pic             "specifique", "systemique", ou vide (pas de pic, pas d'indice,
+                         ou historique insuffisant)
+
 """
 
 import numpy as np
 import pandas as pd
-
+#BON, humblement, apres relacture des articles financiers, je corrige les commentaires
 LAMBDA = .94
-FENETRE = 20 # Fenetre minimale a partir de laquelle les indicateurs sont calcules, valeur arbitraire
+FENETRE = 20 # Par mois, 20 jours de marches (sauf crypto et indices synthetiques)
+FENETRE_BETA = 60 #Beta sur 3 mois de marches
 
-def calculer_indicateurs(cours, seuil=3.0, jours_par_an=252): #252 car les marches financiers ferment les weekends, parcontre les crypto ce sera 365( si on faisait aussi les indices synthetiques, ce serait aussi 365)
+def calculer_indicateurs(cours, rendement_indice=None, seuil=3.0, jours_par_an=252):
+ #252 car les marches financiers ferment les weekends, parcontre les crypto ce sera 365( si on faisait aussi les indices synthetiques, ce serait aussi 365)
     close = cours["close"]
     ind = pd.DataFrame(index=cours.index)
     ind["rendement"] = np.log(close/close.shift(1))
@@ -34,6 +37,29 @@ def calculer_indicateurs(cours, seuil=3.0, jours_par_an=252): #252 car les march
     ecart = log_volume.rolling(FENETRE).std().shift(1)
     ind["z_volume"] = (log_volume - moyenne)/ecart
     ind["gap"]=np.log(cours["open"]/close.shift(1))
-    ind["est_pic"] = ind["z"].abs() > seuil # Le z > 3 egal pic, c'est une valeur concensuelle qui veut juste dire que si les cours s'eloigne de 3 fois la valeur moyenne en valeur absolu, pic
+    ind["est_pic"] = ind["z"].abs() > seuil #  pic : rendement supérieur à `seuil` fois la volatilité de la veille
+
+    ind["beta"] = np.nan
+    ind["rendement_anormal"] = np.nan
+    ind["z_anormal"] = np.nan
+    ind["type_pic"] = None
+
+    if rendement_indice is not None:
+        r = ind["rendement"]
+        rm = rendement_indice.reindex(ind.index)
+
+        ind["beta"] = r.rolling(FENETRE_BETA).cov(rm) / rm.rolling(FENETRE_BETA).var()
+        ind["rendement_anormal"] = r - ind["beta"].shift(1) * rm
+
+        ecart = ind["rendement_anormal"].rolling(FENETRE).std().shift(1)
+        ind["z_anormal"] = ind["rendement_anormal"] / ecart
+
+        type_pic = np.select(
+            [ind["z_anormal"].abs() > seuil, ind["z_anormal"].notna()],
+            ["specifique", "systemique"],
+            default=None,
+        )
+        ind["type_pic"] = pd.Series(type_pic, index=ind.index).where(ind["est_pic"])
+
 
     return ind
