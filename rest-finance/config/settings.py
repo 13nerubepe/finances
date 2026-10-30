@@ -43,11 +43,14 @@ INSTALLED_APPS = [
 
 #     DRF
     'rest_framework',
+    'django_filters',
 
     'drf_spectacular',
 
 #     APP
     'finance',
+    'marches',
+    'agent',
     'actualites',
     'agent',
 
@@ -149,3 +152,5 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+AUTH_USER_MODEL = 'finance.User'
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

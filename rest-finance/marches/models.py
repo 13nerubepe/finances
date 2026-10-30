@@ -15,9 +15,13 @@ class Actif(models.Model):
     est_suivi = models.BooleanField(
         default=True, help_text="Si décoché, l'ingestion ignore cet actif."
     )
+    indice_reference = models.ForeignKey(
+                "self", null=True, blank=True, on_delete=models.SET_NULL
+            )
 
     class Meta:
         ordering = ["symbole"]
+        
 
     def __str__(self):
         return f"{self.symbole} - {self.nom}"
@@ -46,3 +50,19 @@ class CoursHistorique(models.Model):
 
     def __str__(self):
         return f"{self.actif.symbole} {self.horodatage:%Y-%m-%d %H:%M} close={self.close}"
+
+class CoursJournalier(models.Model):
+    actif = models.ForeignKey(Actif, on_delete=models.CASCADE, related_name="cours_journaliers")
+    date = models.DateField()
+    open = models.FloatField()
+    high = models.FloatField()
+    low = models.FloatField()
+    close = models.FloatField()
+    volume = models.BigIntegerField(default=0)
+
+    class Meta:
+        ordering = ["actif","date"]
+        unique_together = ["actif","date"]
+
+    def __str__(self):
+        return f"{self.actif.symbole} {self.date} open={self.open} close={self.close}"
