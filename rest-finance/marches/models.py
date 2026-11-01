@@ -66,3 +66,32 @@ class CoursJournalier(models.Model):
 
     def __str__(self):
         return f"{self.actif.symbole} {self.date} open={self.open} close={self.close}"
+
+class IndicateurJournalier(models.Model):
+    class TypePic(models.TextChoices):
+        SPECIFIQUE = "specifique","Spécifique"
+        SYSTEMIQUE = "systemique","Systémique"
+
+    actif = models.ForeignKey(Actif, on_delete=models.CASCADE, related_name="indicateurs")
+    date = models.DateField()
+    rendement = models.FloatField(null=True,blank=True)
+    volatilite = models.FloatField(null=True,blank=True)
+    volatilite_annuelle = models.FloatField(null=True,blank=True)
+    parkinson = models.FloatField(null=True, blank=True)
+
+    z = models.FloatField(null=True,blank=True)
+    z_volume = models.FloatField(null=True,blank=True)
+    gap = models.FloatField(null=True,blank=True)
+    beta = models.FloatField(null=True,blank=True)
+    rendement_anormal = models.FloatField(null=True,blank=True)     
+    z_anormal = models.FloatField(null=True,blank=True)
+    est_pic = models.BooleanField(default=False)
+    type_pic = models.CharField(choices=TypePic.choices,blank=True)
+
+    class Meta:
+        ordering = ["actif","date"]
+        unique_together = ["actif","date"] # Logique, on doit avoir un seul rendement par actif par jour
+
+    def __str__(self):
+        pic = "  - est PIC" if self.est_pic else ""
+        return f"{self.actif} - {self.date} - z = {self.z} {pic}"
