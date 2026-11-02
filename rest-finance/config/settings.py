@@ -150,3 +150,4 @@ MAILERS = {
 }
 AUTH_USER_MODEL = 'finance.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+SEUIL_PIC = 3 # Choix consensuel du groupe a calibrer
