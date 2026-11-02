@@ -44,16 +44,12 @@ INSTALLED_APPS = [
 #     DRF
     'rest_framework',
     'django_filters',
-
     'drf_spectacular',
-
 #     APP
     'finance',
     'marches',
     'agent',
     'actualites',
-    'agent',
-
 ]
 
 REST_FRAMEWORK = {
