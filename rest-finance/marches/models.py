@@ -10,6 +10,7 @@ class Actif(models.Model):
 
     symbole = models.CharField(max_length=20, unique=True)  # AAPL, ^GSPC, BTC-USD par exemple
     nom = models.CharField(max_length=100)
+
     type_actif = models.CharField(max_length=10, choices=TypeActif.choices)
     devise = models.CharField(max_length=10, default="USD")
     est_suivi = models.BooleanField(
@@ -25,6 +26,32 @@ class Actif(models.Model):
 
     def __str__(self):
         return f"{self.symbole} - {self.nom}"
+
+
+
+    class SynchronisationYahoo(models.Model):
+
+        categorie = models.CharField(max_length=30)
+        marche = models.CharField(max_length=50)
+
+        date_debut = models.DateTimeField(auto_now_add=True)
+        date_fin = models.DateTimeField(null=True, blank=True)
+
+        statut = models.CharField(
+            max_length=20,
+            default="en_attente"
+        )
+
+        actifs_decouverts = models.PositiveIntegerField(default=0)
+        actifs_crees = models.PositiveIntegerField(default=0)
+        actifs_actualises = models.PositiveIntegerField(default=0)
+
+        erreur = models.TextField(blank=True)
+
+        class Meta:
+            ordering = ["-date_debut"]
+
+
 
 
 class CoursHistorique(models.Model):
