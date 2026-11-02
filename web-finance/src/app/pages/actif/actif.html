@@ -36,7 +36,7 @@
         #dt
         [value]="actifsAffiches"
         [loading]="loading"
-        dataKey="actifId"
+        dataKey="id"
         [paginator]="true"
         [alwaysShowPaginator]="actifsAffiches.length > 0"
         [rows]="12"
@@ -129,16 +129,16 @@
                                    justify-center text-xs font-bold
                                    text-primary bg-surface-100
                                    dark:bg-surface-800 shrink-0">
-                            {{ actif.symbol?.slice(0, 2) || 'NA' }}
+                            {{ actif.symbole?.slice(0, 2) || 'NA' }}
                         </span>
 
                         <div class="flex flex-col gap-1 min-w-0">
                             <span class="font-semibold">
-                                {{ actif.name }}
+                                {{ actif.nom }}
                             </span>
 
                             <span class="text-xs text-surface-500">
-                                {{ actif.symbol }}
+                                {{ actif.symbole }}
                             </span>
                         </div>
 
@@ -148,7 +148,7 @@
                 <!-- Prix actuel -->
                 <td class="text-right font-medium whitespace-nowrap">
                     {{ actif.currentPrice | number:'1.2-2' }}
-                    {{ actif.currency || '' }}
+                    {{ actif.devise || '' }}
                 </td>
 
                 <!-- Variation en pourcentage -->

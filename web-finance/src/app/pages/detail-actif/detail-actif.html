@@ -1,259 +1,258 @@
-<div class="flex flex-col gap-4">
+<div class="wrapper flex flex-col gap-6">
 
-    <!-- En-tête -->
-    <div class="card !mb-0">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <div class="flex items-center gap-2 text-sm text-surface-500">
-                    <i class="pi pi-chart-line"></i>
-                    <span>Marchés financiers</span>
-                    <i class="pi pi-angle-right"></i>
-                    <span>Détail de l'actif</span>
-                </div>
-                <h1 class="mt-2 mb-1 text-2xl font-semibold">Fiche de l'actif</h1>
-            </div>
+    <!-- Barre d'outils -->
+    <div class="card !mb-0 flex flex-col gap-4">
+        <div class="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
 
-            <div class="flex items-center gap-2">
-                <p-button label="Retour" icon="pi pi-arrow-left" severity="secondary"
-                          [text]="true" (onClick)="retour()"></p-button>
-                <p-button icon="pi pi-refresh" severity="secondary" [outlined]="true"
-                          [rounded]="true" pTooltip="Actualiser" [loading]="loading"
-                          (onClick)="actualiser()"></p-button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Chargement -->
-    @if (loading) {
-        <div class="card !mb-0">
-            <div class="flex min-h-48 flex-col items-center justify-center gap-3">
-                <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
-                <span class="text-sm text-surface-500">Chargement des données du marché...</span>
-            </div>
-        </div>
-    }
-
-    <!-- Erreur -->
-    @if (!loading && errorMessage) {
-        <div class="card !mb-0">
-            <div class="flex flex-col items-center gap-3 py-10 text-center">
-                <i class="pi pi-exclamation-circle text-3xl text-red-500"></i>
-                <h2 class="m-0 text-lg font-semibold">Données indisponibles</h2>
-                <p class="m-0 text-sm text-surface-500">{{ errorMessage }}</p>
-                <div class="flex flex-wrap justify-center gap-2">
-                    <p-button label="Réessayer" icon="pi pi-refresh" (onClick)="actualiser()"></p-button>
-                    <p-button label="Retour" severity="secondary" [outlined]="true" (onClick)="retour()"></p-button>
-                </div>
-            </div>
-        </div>
-    }
-
-    <!-- Actif -->
-    @if (!loading && !errorMessage && actif) {
-
-        <!-- Présentation principale -->
-        <div class="card !mb-0">
-            <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-
-                <div class="flex min-w-0 items-center gap-4">
-                    @if (actif.logo) {
-                        <img [src]="actif.logo" [alt]="actif.name"
-                             class="h-14 w-14 shrink-0 rounded-xl border border-surface-200 object-contain p-2 dark:border-surface-700">
-                    } @else {
-                        <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                            <i class="pi pi-chart-line text-2xl text-primary"></i>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+                <p-multiselect
+                    [options]="actifs"
+                    [(ngModel)]="selection"
+                    (onChange)="onSelectionChange()"
+                    dataKey="id"
+                    optionLabel="nom"
+                    [filter]="true"
+                    filterBy="nom,symbole"
+                    [selectionLimit]="maxActifs"
+                    [showToggleAll]="false"
+                    [maxSelectedLabels]="0"
+                    selectedItemsLabel="{0} actifs sélectionnés"
+                    placeholder="Choisir des actifs"
+                    class="w-full sm:w-64"
+                    styleClass="w-full">
+                    <ng-template let-a #item>
+                        <div class="flex items-center gap-2 w-full">
+                            <span class="w-2.5 h-2.5 rounded-full" [style.background]="couleur(a)"></span>
+                            <span>{{ a.nom }}</span>
+                            <span class="text-xs text-surface-500">{{ a.symbole }}</span>
+                            <span class="text-xs text-surface-400 ml-auto capitalize">{{ a.type_actif }}</span>
                         </div>
-                    }
+                    </ng-template>
+                </p-multiselect>
 
-                    <div class="min-w-0">
-                        <h2 class="m-0 break-words text-xl font-semibold">{{ actif.name }}</h2>
-                        <div class="mt-2 flex flex-wrap items-center gap-2">
-                            <p-tag [value]="actif.symbol" severity="secondary"></p-tag>
-                            <span class="text-sm text-surface-500">{{ actif.currency || 'Devise inconnue' }}</span>
-                        </div>
-                    </div>
+                <!-- Actif de référence -->
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-surface-500 whitespace-nowrap">Référence :</label>
+                    <p-select
+                        [options]="selection"
+                        [(ngModel)]="reference"
+                        (onChange)="majTout()"
+                        dataKey="id"
+                        optionLabel="nom"
+                        placeholder="Actif de référence"
+                        styleClass="w-48" />
                 </div>
+            </div>
 
-                <div class="lg:text-right">
-                    <p class="m-0 text-sm text-surface-500">Dernier cours disponible</p>
-
-                    @if (actif.currentPrice != null) {
-                        <div class="mt-1 flex flex-wrap items-baseline gap-2 lg:justify-end">
-                            <span class="text-3xl font-bold tracking-tight">
-                                {{ actif.currentPrice | number:'1.2-2' }}
-                            </span>
-                            <span class="text-sm text-surface-500">{{ actif.currency || '' }}</span>
-                        </div>
-                    } @else {
-                        <p class="mt-2 mb-0 text-surface-400">Non disponible</p>
-                    }
-
-                    <div class="mt-2 flex flex-wrap items-center gap-2 lg:justify-end">
-                        @if (actif.variation != null) {
-                            <span class="inline-flex items-center gap-1 font-semibold"
-                                  [ngClass]="{
-                                      'text-green-600 dark:text-green-400': actif.variation > 0,
-                                      'text-red-500': actif.variation < 0,
-                                      'text-surface-500': actif.variation === 0
-                                  }">
-                                <i class="pi" [ngClass]="{
-                                    'pi-arrow-up-right': actif.variation > 0,
-                                    'pi-arrow-down-right': actif.variation < 0,
-                                    'pi-minus': actif.variation === 0
-                                }"></i>
-                                {{ actif.variation > 0 ? '+' : '' }}{{ actif.variation | number:'1.2-2' }} %
-                            </span>
-                            <span class="text-xs text-surface-500">Variation journalière</span>
-                        } @else {
-                            <span class="text-sm text-surface-500">Variation indisponible</span>
-                        }
-                    </div>
-                </div>
+            <div class="flex items-center gap-3">
+                <p-selectbutton
+                    [options]="periodes"
+                    [ngModel]="periode"
+                    (onChange)="changerPeriode($event.value)"
+                    optionLabel="label"
+                    optionValue="value"
+                    [allowEmpty]="false"
+                    size="small"></p-selectbutton>
+                <p-button label="Comparer" icon="pi pi-chart-line" [loading]="loading" (onClick)="comparer()" />
             </div>
         </div>
 
-        <!-- Graphique : types de graphes + périodes -->
-        <div class="card !mb-0">
-            <div class="flex flex-col gap-3 mb-4 xl:flex-row xl:items-center xl:justify-between">
-
-                <div class="flex flex-wrap gap-2">
-                    @for (t of typesGraphe; track t.value) {
-                        <p-button
-                            [label]="t.label"
-                            [icon]="t.icon"
-                            size="small"
-                            [severity]="typeGraphe === t.value ? 'primary' : 'secondary'"
-                            [outlined]="typeGraphe !== t.value"
-                            (onClick)="changerType(t.value)">
-                        </p-button>
+        <!-- Pastilles sélectionnées (clic = retirer) -->
+        <div class="flex flex-wrap items-center gap-2">
+            @for (a of selection; track a.id) {
+                <button
+                    type="button"
+                    (click)="retirer(a)"
+                    class="group flex items-center gap-2 pl-2.5 pr-2 py-1 rounded-full text-sm font-medium
+                           border transition-colors hover:border-red-300"
+                    [ngClass]="a.id === reference?.id
+                        ? 'border-primary bg-primary/10'
+                        : 'border-surface-200 dark:border-surface-700'"
+                    [title]="selection.length > 2 ? 'Retirer ' + a.nom : '2 actifs minimum'">
+                    <span class="w-2 h-2 rounded-full" [style.background]="couleur(a)"></span>
+                    {{ a.symbole }}
+                    @if (a.id === reference?.id) {
+                        <span class="text-xs text-primary">réf.</span>
                     }
-                </div>
+                    <i class="pi pi-times text-xs text-surface-400 group-hover:text-red-500"></i>
+                </button>
+            }
+        </div>
 
-                <div class="flex flex-wrap gap-1">
-                    @for (p of periodes; track p.value) {
-                        <p-button
-                            [label]="p.label"
-                            size="small"
-                            [text]="periode !== p.value"
-                            [severity]="periode === p.value ? 'primary' : 'secondary'"
-                            (onClick)="changerPeriode(p.value)">
-                        </p-button>
-                    }
-                </div>
-            </div>
-
-            <div class="relative">
-                <div #chartContainer class="w-full" style="height: 26rem"></div>
-
-                @if (chargementGraphe) {
-                    <div class="absolute inset-0 flex items-center justify-center bg-surface-0/60 dark:bg-surface-900/60">
-                        <i class="pi pi-spin pi-spinner text-3xl text-primary"></i>
-                    </div>
-                } @else if (erreurGraphe) {
-                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                        <i class="pi pi-exclamation-circle text-2xl text-red-500"></i>
-                        <span class="text-sm text-surface-500">{{ erreurGraphe }}</span>
-                        <p-button label="Réessayer" size="small" (onClick)="chargerHistorique()"></p-button>
-                    </div>
-                } @else if (!bougies.length) {
-                    <div class="absolute inset-0 flex items-center justify-center text-sm text-surface-500">
-                        Aucun historique disponible pour cette période.
-                    </div>
+        <!-- Suggestions : ajouter un actif à comparer -->
+        @if (suggestions.length && selection.length < maxActifs) {
+            <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-surface-200 dark:border-surface-700">
+                <span class="text-sm text-surface-500">Ajouter pour comparer :</span>
+                @for (s of suggestions; track s.id) {
+                    <button
+                        type="button"
+                        (click)="ajouter(s)"
+                        class="flex items-center gap-2 px-2.5 py-1 rounded-full text-sm
+                               border border-dashed border-surface-300 dark:border-surface-600
+                               hover:border-primary hover:text-primary transition-colors">
+                        <i class="pi pi-plus text-xs"></i>
+                        <span class="w-2 h-2 rounded-full" [style.background]="couleur(s)"></span>
+                        {{ s.symbole }}
+                    </button>
                 }
             </div>
-        </div>
+        }
+    </div>
 
-        <!-- Indicateurs -->
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
-            <div class="card !mb-0">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm text-surface-500">Performance ({{ periode }})</span>
-                    <i class="pi pi-percentage text-primary"></i>
-                </div>
-                <p class="mt-3 mb-1 text-xl font-semibold"
-                   [ngClass]="performance >= 0 ? 'text-green-600' : 'text-red-500'">
-                    {{ performance >= 0 ? '+' : '' }}{{ performance | number:'1.2-2' }} %
-                </p>
-                <span class="text-xs text-surface-500">Sur la période sélectionnée</span>
-            </div>
-
-            <div class="card !mb-0">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm text-surface-500">Plus haut ({{ periode }})</span>
-                    <i class="pi pi-arrow-up text-primary"></i>
-                </div>
-                <p class="mt-3 mb-1 text-xl font-semibold">{{ plusHaut | number:'1.2-2' }}</p>
-                <span class="text-xs text-surface-500">{{ actif.currency || '' }}</span>
-            </div>
-
-            <div class="card !mb-0">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm text-surface-500">Plus bas ({{ periode }})</span>
-                    <i class="pi pi-arrow-down text-primary"></i>
-                </div>
-                <p class="mt-3 mb-1 text-xl font-semibold">{{ plusBas | number:'1.2-2' }}</p>
-                <span class="text-xs text-surface-500">{{ actif.currency || '' }}</span>
-            </div>
-
-            <div class="card !mb-0">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="text-sm text-surface-500">Volume échangé</span>
-                    <i class="pi pi-database text-primary"></i>
-                </div>
-                <p class="mt-3 mb-1 text-xl font-semibold">
-                    @if (dernierVolume != null) {
-                        {{ dernierVolume | number:'1.0-0' }}
-                    } @else {
-                        —
-                    }
-                </p>
-                <span class="text-xs text-surface-500">Dernière séance disponible</span>
-            </div>
-        </div>
-
-        <!-- Informations -->
-        <div class="card !mb-0">
-            <div class="mb-4 flex items-center gap-3">
-                <i class="pi pi-info-circle text-xl text-primary"></i>
-                <h3 class="m-0 text-lg font-semibold">Informations sur l'actif</h3>
-            </div>
-
-            <div class="grid grid-cols-1 gap-x-12 md:grid-cols-2">
-                <div class="flex items-center justify-between gap-3 border-b border-surface-200 py-4 dark:border-surface-700">
-                    <span class="text-sm text-surface-500">Nom</span>
-                    <span class="font-medium">{{ actif.name }}</span>
-                </div>
-                <div class="flex items-center justify-between gap-3 border-b border-surface-200 py-4 dark:border-surface-700">
-                    <span class="text-sm text-surface-500">Symbole</span>
-                    <span class="font-medium">{{ actif.symbol }}</span>
-                </div>
-                <div class="flex items-center justify-between gap-3 border-b border-surface-200 py-4 dark:border-surface-700">
-                    <span class="text-sm text-surface-500">Devise</span>
-                    <span class="font-medium">{{ actif.currency || 'Non définie' }}</span>
-                </div>
-                <div class="flex items-center justify-between gap-3 border-b border-surface-200 py-4 dark:border-surface-700">
-                    <span class="text-sm text-surface-500">Identifiant</span>
-                    <span class="font-medium">#{{ actif.actifId }}</span>
+    <!-- Faits marquants -->
+    @if (meilleur && plusVolatil) {
+        <div class="grid grid-cols-12 gap-4">
+            <div class="col-span-12 md:col-span-4">
+                <div class="card !mb-0 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-green-100 dark:bg-green-500/20">
+                        <i class="pi pi-trophy text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-surface-500">Meilleure performance ({{ periodeLabel }})</div>
+                        <div class="text-lg font-semibold">
+                            {{ meilleur.nom }}
+                            <span class="ml-1" [ngClass]="perf(meilleur) >= 0 ? 'text-green-600' : 'text-red-500'">
+                                {{ perf(meilleur) > 0 ? '+' : '' }}{{ perf(meilleur) }} %
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="mt-5 flex justify-end">
-                <p-button label="Retour à la liste" icon="pi pi-arrow-left" severity="secondary"
-                          [text]="true" (onClick)="retour()"></p-button>
+            <div class="col-span-12 md:col-span-4">
+                <div class="card !mb-0 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-orange-100 dark:bg-orange-500/20">
+                        <i class="pi pi-bolt text-orange-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-surface-500">Actif le plus volatil</div>
+                        <div class="text-lg font-semibold">
+                            {{ plusVolatil.nom }}
+                            <span class="text-orange-600 ml-1">{{ volatilite(plusVolatil) }} %</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
 
-    } @else if (!loading && !errorMessage) {
-
-        <!-- Actif introuvable -->
-        <div class="card !mb-0">
-            <div class="flex flex-col items-center justify-center gap-3 py-10 text-center">
-                <i class="pi pi-search text-4xl text-surface-400"></i>
-                <h3 class="m-0 text-lg font-semibold">Actif introuvable</h3>
-                <p class="m-0 text-sm text-surface-500">Aucun actif ne correspond à cet identifiant.</p>
-                <p-button label="Retour aux actifs" icon="pi pi-arrow-left" (onClick)="retour()"></p-button>
-            </div>
+            @if (reference && meilleurVsRef) {
+                <div class="col-span-12 md:col-span-4">
+                    <div class="card !mb-0 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-100 dark:bg-blue-500/20">
+                            <i class="pi pi-arrow-up-right text-blue-600 text-xl"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm text-surface-500">Meilleur écart vs {{ reference.symbole }}</div>
+                            <div class="text-lg font-semibold">
+                                {{ meilleurVsRef.nom }}
+                                <span class="ml-1" [ngClass]="ecart(meilleurVsRef) >= 0 ? 'text-blue-600' : 'text-red-500'">
+                                    {{ ecart(meilleurVsRef) > 0 ? '+' : '' }}{{ ecart(meilleurVsRef) }} pts
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
+
+    <!-- Graphique base 100 -->
+    <div class="card !mb-0">
+        <div class="mb-4">
+            <h2 class="text-lg font-semibold">Évolution des cours (base 100)</h2>
+            <p class="text-sm text-surface-500">
+                Tous les actifs partent de 100 pour comparer leur trajectoire.
+                @if (reference) { La courbe épaisse est la référence ({{ reference.nom }}). }
+            </p>
+        </div>
+        <p-chart type="line" [data]="chartData" [options]="chartOptions" height="22rem" />
+    </div>
+
+    <!-- Tableau -->
+    <div class="card !mb-0 !p-0 overflow-hidden">
+        <div class="p-5 pb-3">
+            <h2 class="text-lg font-semibold">Indicateurs de performance</h2>
+        </div>
+
+        <p-table [value]="selection" [loading]="loading" [tableStyle]="{ 'min-width': '52rem' }">
+            <ng-template #header>
+                <tr>
+                    <th>Actif</th>
+                    <th class="text-right">Prix actuel</th>
+                    <th class="text-right">Variation (24h)</th>
+                    <th class="text-right">Volatilité (30j)</th>
+                    <th class="text-right">Écart vs {{ reference?.symbole }}</th>
+                    <th style="width: 16rem">Performance ({{ periodeLabel }})</th>
+                </tr>
+            </ng-template>
+
+            <ng-template #body let-a>
+                <tr [ngClass]="{ 'bg-primary/5': a.id === reference?.id }">
+                    <td>
+                        <div class="flex items-center gap-3">
+                            @if (a.logo) {
+                                <img [src]="a.logo" [alt]="a.nom" class="w-9 h-9 rounded-full object-cover" />
+                            } @else {
+                                <span class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                                      [style.background]="couleur(a)">
+                                    {{ a.symbole.slice(0, 2) }}
+                                </span>
+                            }
+                            <div class="flex flex-col leading-tight">
+                                <span class="font-semibold">
+                                    {{ a.nom }}
+                                    @if (a.id === reference?.id) {
+                                        <p-tag value="Référence" severity="info" styleClass="ml-2" />
+                                    }
+                                </span>
+                                <span class="text-xs text-surface-500">
+                                    {{ a.symbole }} · <span class="capitalize">{{ a.type_actif }}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <td class="text-right font-medium">
+                        @if (prixActuel(a) !== null) {
+                            {{ prixActuel(a) | number: '1.2-2' }} {{ a.devise }}
+                        } @else {
+                            —
+                        }
+                    </td>
+
+                    <td class="text-right font-medium" [ngClass]="var24h(a) >= 0 ? 'text-green-600' : 'text-red-500'">
+                        {{ var24h(a) >= 0 ? '+' : '' }}{{ var24h(a) }} %
+                    </td>
+
+                    <td class="text-right">{{ volatilite(a) }} %</td>
+
+                    <td class="text-right font-medium"
+                        [ngClass]="a.id === reference?.id ? 'text-surface-400'
+                                   : ecart(a) >= 0 ? 'text-green-600' : 'text-red-500'">
+                        @if (a.id === reference?.id) {
+                            —
+                        } @else {
+                            {{ ecart(a) >= 0 ? '+' : '' }}{{ ecart(a) }} pts
+                        }
+                    </td>
+
+                    <!-- Barre de performance : vert à droite, rouge à gauche -->
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="relative flex-1 h-2 rounded-full bg-surface-100 dark:bg-surface-800">
+                                <span class="absolute left-1/2 top-[-2px] bottom-[-2px] w-px bg-surface-300 dark:bg-surface-600"></span>
+                                <span class="absolute top-0 h-2 rounded-full"
+                                      [ngClass]="perf(a) >= 0 ? 'bg-green-500 left-1/2' : 'bg-red-500 right-1/2'"
+                                      [style.width.%]="maxPerf ? (Math.abs(perf(a)) / maxPerf) * 50 : 0">
+                                </span>
+                            </div>
+                            <span class="w-16 text-right font-semibold text-sm"
+                                  [ngClass]="perf(a) >= 0 ? 'text-green-600' : 'text-red-500'">
+                                {{ perf(a) >= 0 ? '+' : '' }}{{ perf(a) }} %
+                            </span>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    </div>
 </div>

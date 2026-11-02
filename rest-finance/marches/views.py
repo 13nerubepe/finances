@@ -3,7 +3,7 @@ from django.shortcuts import render
 # Create your views here.
 from datetime import timedelta
 
-from django.db.models import Max
+from django.db.models import Max, OuterRef, Subquery
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics
@@ -79,6 +79,22 @@ class ActifViewSet(ReadOnlyModelViewSet):
     filterset_fields = ["type_actif", "est_suivi"]
     search_fields = ["symbole", "nom"]
     pagination_class = None  # liste courte : pas de pagination
+
+    def get_queryset(self):
+        dernieres_bougies = (
+            CoursHistorique.objects
+            .filter(actif=OuterRef("pk"))
+            .order_by("-horodatage")
+        )
+
+        return Actif.objects.annotate(
+            prix_actuel_db=Subquery(
+                dernieres_bougies.values("close")[:1]
+            ),
+            prix_precedent_db=Subquery(
+                dernieres_bougies.values("close")[1:2]
+            ),
+        )
 
     def get_object(self):
         # Le symbole est reconnu quelle que soit la casse : /actifs/aapl/ = /actifs/AAPL/

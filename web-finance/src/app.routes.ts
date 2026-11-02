@@ -26,7 +26,7 @@ export const appRoutes: Routes = [
             // },
 
             {
-                path: `${AppConstantRoute.Detail_Actif_PATH}/:id`,
+                path: `${AppConstantRoute.Detail_Actif_PATH}/:symbole`,
                 loadComponent: () => import('./app/pages/detail-actif/detail-actif')
                     .then((c) => c.DetailActif),
                 data: { breadcrumb: 'Detail-actif' }

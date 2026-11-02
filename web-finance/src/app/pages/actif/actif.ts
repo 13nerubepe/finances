@@ -3,6 +3,7 @@ import { CommonModule, CurrencyPipe, DecimalPipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ChangeDetectorRef } from '@angular/core';
 
 
 import { Button } from 'primeng/button';
@@ -41,11 +42,14 @@ export class ActifComponent implements OnInit {
 
     constructor(
         private router: Router,
-        private assetService: ActifService) {}
+        private cdr: ChangeDetectorRef,
+        private assetService: ActifService
+    ) {}
 
     ngOnInit(): void {
         this.chargerActifs();
     }
+
 
     largeurPerformance(actif: Actif): number {
         const variation = actif.variation ?? 0;
@@ -58,13 +62,13 @@ export class ActifComponent implements OnInit {
     }
 
     estSelectionne(actif: Actif): boolean {
-        return this.actifsSelectionnes.some(a => a.actifId === actif.actifId);
+        return this.actifsSelectionnes.some(a => a.id === actif.id);
     }
 
     basculerSelection(actif: Actif): void {
         if (this.estSelectionne(actif)) {
             this.actifsSelectionnes = this.actifsSelectionnes.filter(
-                a => a.actifId !== actif.actifId
+                a => a.id !== actif.id
             );
             // this.actifService.retirerActif(actif.actifId).subscribe();
         } else {
@@ -79,20 +83,25 @@ export class ActifComponent implements OnInit {
 
         this.assetService.getAssets().subscribe({
             next: (data: Actif[]) => {
+                console.log('Données reçues du backend :', data);
+
                 this.actifs = data;
                 this.loading = false;
+
+                this.cdr.detectChanges();
             },
             error: (error) => {
                 console.error('Erreur lors du chargement des actifs :', error);
                 this.loading = false;
+                this.cdr.detectChanges();
             }
         });
     }
 
     voirActif(actif: Actif): void {
         console.log('Actif sélectionné :', actif);
-        console.log('ID de l’actif :', actif.actifId);
+        console.log('Symbole de l’actif :', actif.symbole);
 
-        this.router.navigate(['/detail-actif', actif.actifId]);
+        this.router.navigate(['/detail-actif', actif.symbole]);
     }
 }

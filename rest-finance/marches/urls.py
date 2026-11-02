@@ -7,6 +7,7 @@ router = SimpleRouter()
 router.register("actifs", ActifViewSet, basename="actif")
 
 urlpatterns = [
+# RECUPERER LES COURS HISTORIQUES
     path("cours/", CoursListView.as_view(), name="cours"),
     path("correlations/", CorrelationsView.as_view(), name="correlations"),
     path("", include(router.urls)),

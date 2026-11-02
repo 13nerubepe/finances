@@ -1,11 +1,10 @@
 
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, map, throwError } from 'rxjs';
+import { Observable, of, map, throwError, expand, reduce, EMPTY } from 'rxjs';
 
 import {
     Actif,
-    ActifOption,
     Actualite,
     ActualiteResponse,
     AlerteRisque,
@@ -28,14 +27,13 @@ import {
     RequeteAssistantIA,
     ResultatAnalyseVolatilite,
     TopMoversResponse,
-    Transaction
+    Transaction, HistoricalPriceResponse
 } from '@/app/models/actif-model';
 
 import { User } from '@/app/models/auth.models';
 import { environment } from '@/environments/environment';
 import { TOP_MOVERS_MOCK } from '@/app/DATA/topmoves-mock.data';
 import { ACTUALITES_MOCK } from '@/app/DATA/actualites-mock.data';
-import { ACTIFS_MOCK, COURS_HISTORIQUES_MOCK } from '@/app/DATA/marche-mock.data.ts';
 import { RESULTAT_ANALYSE_VOLATILITE_MOCK } from '@/app/DATA/volatile-mock.data';
 
 @Injectable({
@@ -51,7 +49,7 @@ export class ActifService {
     private readonly apiUrl = environment.apiUrl.replace(/\/+$/, '');
 
     // Passe à false lorsque tu veux utiliser les API Django.
-    private readonly useMockData = true;
+    private readonly useMockData = false;
 
     // URL des ressources
     private readonly actifsUrl = `${this.apiUrl}/actifs/`;
@@ -74,25 +72,53 @@ export class ActifService {
 
     getAssets(): Observable<Actif[]> {
 
-        return of(ACTIFS_MOCK);
-
-        // return this.http.get<Actif[]>(this.actifsUrl);
+        return this.http.get<Actif[]>(this.actifsUrl);
     }
 
     getAssetById(id: number): Observable<Actif> {
-        // return this.http.get<Actif>(`${this.actifsUrl}${id}/`);
 
-        const actif = ACTIFS_MOCK.find(
-            (item) => item.actifId === id
-        );
-
-        if (!actif) {
-            return throwError(() => new Error(`Actif ${id} introuvable`));
-        }
-        return of(actif);
+        return this.http.get<Actif>(`${this.actifsUrl}${id}/`);
     }
 
-    getAssetBySymbol(symbol: string): Observable<Actif> {
+    // =========================================================
+    // 2. COURS HISTORIQUES
+    // =========================================================
+
+    getAssetHistory(filtres: FiltresCours): Observable<HistoricalPriceResponse> {
+
+        let params = new HttpParams()
+            .set('actif', filtres.actif)
+            .set('ordre', '-horodatage')
+            .set('taille', 100);
+
+        if (filtres.debut) {
+            params = params.set('debut', filtres.debut);
+        }
+
+        if (filtres.fin) {
+            params = params.set('fin', filtres.fin);
+        }
+
+        return this.http.get<HistoricalPriceResponse>(
+            `${this.apiUrl}/cours/`,
+            { params }
+        );
+    }
+
+    getAllAssetHistory(filtres: FiltresCours): Observable<HistoricalPrice[]> {
+        return this.getAssetHistory(filtres).pipe(
+            // tant qu'il y a une page suivante, on la récupère
+            expand(r => (r.next ? this.http.get<HistoricalPriceResponse>(r.next) : EMPTY)),
+            map(r => r.results),
+            reduce((acc, rows) => acc.concat(rows), [] as HistoricalPrice[]),
+            // l'API renvoie du plus récent au plus ancien : on inverse
+            map(rows => rows.sort((a, b) => a.horodatage.localeCompare(b.horodatage)))
+        );
+    }
+
+
+
+    // getAssetBySymbol(symbol: string): Observable<Actif> {
         // const params = new HttpParams().set('symbol', symbol);
         //
         // return this.http.get<Actif>(
@@ -100,172 +126,140 @@ export class ActifService {
         //     { params }
         // );
 
-        const actif = ACTIFS_MOCK.find(
-            item => item.symbol.toUpperCase() === symbol.toUpperCase()
-        );
-
-        if (!actif) {
-            return throwError(
-                () => new Error(`Aucun actif trouvé pour le symbole ${symbol}`)
-            );
-        }
-
-        return of(actif);
-    }
-
-    rechercherActifs(recherche: string): Observable<Actif[]> {
-        // const params = new HttpParams().set('search', recherche);
-        //
-        // return this.http.get<Actif[]>(
-        //     this.actifsUrl,
-        //     { params }
+        // const actif = ACTIFS_MOCK.find(
+        //     item => item.symbol.toUpperCase() === symbol.toUpperCase()
         // );
-
-        if (this.useMockData) {
-            const terme = recherche.trim().toLowerCase();
-
-            const actifs = ACTIFS_MOCK.filter(actif =>
-                actif.name.toLowerCase().includes(terme) ||
-                actif.symbol.toLowerCase().includes(terme)
-            );
-
-            return of(actifs);
-        }
-
-        const params = new HttpParams().set('search', recherche);
-
-        return this.http.get<Actif[]>(
-            this.actifsUrl,
-            { params }
-        );
-    }
-
-    actualiserActif(symbol: string): Observable<Actif> {
-        // return this.http.post<Actif>(
-        //     `${this.actifsUrl}actualiser/`,
-        //     { symbol }
-        // );
-
-        if (this.useMockData) {
-            const actif = ACTIFS_MOCK.find(
-                item => item.symbol.toUpperCase() === symbol.toUpperCase()
-            );
-
-            if (!actif) {
-                return throwError(
-                    () => new Error(`Aucun actif trouvé pour le symbole ${symbol}`)
-                );
-            }
-
-            // Retourne l'actif simulé sans modifier les données originales.
-            return of({ ...actif });
-        }
-
-        return this.http.post<Actif>(
-            `${this.actifsUrl}actualiser/`,
-            { symbol }
-        );
-    }
-
-    // =========================================================
-    // 2. COURS HISTORIQUES
-    // =========================================================
-
-    getAssetHistory(filtres: FiltresCours): Observable<HistoricalPrice[]> {
-        // let params = new HttpParams()
-        //     .set('actifId', filtres.actifId)
-        //     .set('dateDebut', filtres.dateDebut)
-        //     .set('dateFin', filtres.dateFin);
         //
-        // if (filtres.frequence) {
-        //     params = params.set('frequence', filtres.frequence);
+        // if (!actif) {
+        //     return throwError(
+        //         () => new Error(`Aucun actif trouvé pour le symbole ${symbol}`)
+        //     );
         // }
         //
-        // return this.http.get<HistoricalPrice[]>(
-        //     `${this.coursUrl}historique/`,
-        //     { params }
-        // );
+        // return of(actif);
+    // }
 
-        if (this.useMockData) {
-            const historique = COURS_HISTORIQUES_MOCK[filtres.actifId] ?? [];
+    // rechercherActifs(recherche: string): Observable<Actif[]> {
+    //     // const params = new HttpParams().set('search', recherche);
+    //     //
+    //     // return this.http.get<Actif[]>(
+    //     //     this.actifsUrl,
+    //     //     { params }
+    //     // );
+    //
+    //     if (this.useMockData) {
+    //         const terme = recherche.trim().toLowerCase();
+    //
+    //         const actifs = ACTIFS_MOCK.filter(actif =>
+    //             actif.name.toLowerCase().includes(terme) ||
+    //             actif.symbol.toLowerCase().includes(terme)
+    //         );
+    //
+    //         return of(actifs);
+    //     }
+    //
+    //     const params = new HttpParams().set('search', recherche);
+    //
+    //     return this.http.get<Actif[]>(
+    //         this.actifsUrl,
+    //         { params }
+    //     );
+    // }
 
-            const dateDebut = filtres.dateDebut.substring(0, 10);
-            const dateFin = filtres.dateFin.substring(0, 10);
+    // actualiserActif(symbol: string): Observable<Actif> {
+    //     // return this.http.post<Actif>(
+    //     //     `${this.actifsUrl}actualiser/`,
+    //     //     { symbol }
+    //     // );
+    //
+    //     if (this.useMockData) {
+    //         const actif = ACTIFS_MOCK.find(
+    //             item => item.symbol.toUpperCase() === symbol.toUpperCase()
+    //         );
+    //
+    //         if (!actif) {
+    //             return throwError(
+    //                 () => new Error(`Aucun actif trouvé pour le symbole ${symbol}`)
+    //             );
+    //         }
+    //
+    //         // Retourne l'actif simulé sans modifier les données originales.
+    //         return of({ ...actif });
+    //     }
+    //
+    //     return this.http.post<Actif>(
+    //         `${this.actifsUrl}actualiser/`,
+    //         { symbol }
+    //     );
+    // }
 
-            const resultats = historique.filter(cours => {
-                const dateCours = cours.date.substring(0, 10);
 
-                return dateCours >= dateDebut && dateCours <= dateFin;
-            });
 
-            return of(resultats);
-        }
+    //     let params = new HttpParams()
+    //         .set('actifId', filtres.actifId.toString())
+    //         .set('dateDebut', filtres.dateDebut)
+    //         .set('dateFin', filtres.dateFin);
+    //
+    //     if (filtres.frequence) {
+    //         params = params.set('frequence', filtres.frequence);
+    //     }
+    //
+    //     return this.http.get<HistoricalPrice[]>(
+    //         `${this.coursUrl}historique/`,
+    //         { params }
+    //     );
+    // }
 
-        let params = new HttpParams()
-            .set('actifId', filtres.actifId.toString())
-            .set('dateDebut', filtres.dateDebut)
-            .set('dateFin', filtres.dateFin);
-
-        if (filtres.frequence) {
-            params = params.set('frequence', filtres.frequence);
-        }
-
-        return this.http.get<HistoricalPrice[]>(
-            `${this.coursUrl}historique/`,
-            { params }
-        );
-    }
-
-    getCoursById(id: number): Observable<HistoricalPrice> {
+    // getCoursById(id: number): Observable<HistoricalPrice> {
         // return this.http.get<HistoricalPrice>(
         //     `${this.coursUrl}${id}/`
         // );
 
-        if (this.useMockData) {
-            const cours = Object.values(COURS_HISTORIQUES_MOCK)
-                .flat()
-                .find(item => item.id === id);
-
-            if (!cours) {
-                return throwError(
-                    () => new Error(`Cours avec l'identifiant ${id} introuvable`)
-                );
-            }
-
-            return of(cours);
-        }
-
-        return this.http.get<HistoricalPrice>(
-            `${this.coursUrl}${id}/`
-        );
-    }
-
-    synchroniserCours(actifId: number): Observable<HistoricalPrice[]> {
-        // return this.http.post<HistoricalPrice[]>(
-        //     `${this.coursUrl}synchroniser/`,
-        //     { actifId }
+        // if (this.useMockData) {
+        //     const cours = Object.values(COURS_HISTORIQUES_MOCK)
+        //         .flat()
+        //         .find(item => item.id === id);
+        //
+        //     if (!cours) {
+        //         return throwError(
+        //             () => new Error(`Cours avec l'identifiant ${id} introuvable`)
+        //         );
+        //     }
+        //
+        //     return of(cours);
+        // }
+        //
+        // return this.http.get<HistoricalPrice>(
+        //     `${this.coursUrl}${id}/`
         // );
+    // }
 
-        if (this.useMockData) {
-            const historique = COURS_HISTORIQUES_MOCK[actifId] ?? [];
-
-            if (historique.length === 0) {
-                return throwError(
-                    () => new Error(
-                        `Aucun historique disponible pour l'actif ${actifId}`
-                    )
-                );
-            }
-
-            // Retourne une copie des cours simulés.
-            return of([...historique]);
-        }
-
-        return this.http.post<HistoricalPrice[]>(
-            `${this.coursUrl}synchroniser/`,
-            { actifId }
-        );
-    }
+    // synchroniserCours(actifId: number): Observable<HistoricalPrice[]> {
+    //     // return this.http.post<HistoricalPrice[]>(
+    //     //     `${this.coursUrl}synchroniser/`,
+    //     //     { actifId }
+    //     // );
+    //
+    //     if (this.useMockData) {
+    //         const historique = COURS_HISTORIQUES_MOCK[actifId] ?? [];
+    //
+    //         if (historique.length === 0) {
+    //             return throwError(
+    //                 () => new Error(
+    //                     `Aucun historique disponible pour l'actif ${actifId}`
+    //                 )
+    //             );
+    //         }
+    //
+    //         // Retourne une copie des cours simulés.
+    //         return of([...historique]);
+    //     }
+    //
+    //     return this.http.post<HistoricalPrice[]>(
+    //         `${this.coursUrl}synchroniser/`,
+    //         { actifId }
+    //     );
+    // }
 
     // =========================================================
     // 3. ANALYSE DE VOLATILITÉ
@@ -288,62 +282,62 @@ export class ActifService {
         );
     }
 
-    getAnalyse(params: AnalyseVolatiliteParams): Observable<ResultatAnalyseVolatilite> {
-        // let httpParams = new HttpParams()
-        //     .set('actifs', params.actifs.join(','))
-        //     .set('periode', params.periode);
-        //
-        // if (params.frequence) {
-        //     httpParams = httpParams.set(
-        //         'frequence',
-        //         params.frequence
-        //     );
-        // }
-        //
-        // return this.http.get<ResultatAnalyseVolatilite>(
-        //     `${this.volatiliteUrl}analyse/`,
-        //     { params: httpParams }
-        // );
+    // getAnalyse(params: AnalyseVolatiliteParams): Observable<ResultatAnalyseVolatilite> {
+    //     // let httpParams = new HttpParams()
+    //     //     .set('actifs', params.actifs.join(','))
+    //     //     .set('periode', params.periode);
+    //     //
+    //     // if (params.frequence) {
+    //     //     httpParams = httpParams.set(
+    //     //         'frequence',
+    //     //         params.frequence
+    //     //     );
+    //     // }
+    //     //
+    //     // return this.http.get<ResultatAnalyseVolatilite>(
+    //     //     `${this.volatiliteUrl}analyse/`,
+    //     //     { params: httpParams }
+    //     // );
+    //
+    //     if (this.useMockData) {
+    //         return of(RESULTAT_ANALYSE_VOLATILITE_MOCK);
+    //     }
+    //
+    //     let httpParams = new HttpParams()
+    //         .set('actifs', params.actifs.join(','))
+    //         .set('periode', params.periode.toString());
+    //
+    //     if (params.frequence) {
+    //         httpParams = httpParams.set(
+    //             'frequence',
+    //             params.frequence
+    //         );
+    //     }
+    //
+    //     return this.http.get<ResultatAnalyseVolatilite>(
+    //         `${this.volatiliteUrl}analyse/`,
+    //         { params: httpParams }
+    //     );
+    // }
+    //
+    // analyserVolatilite(
+    //     params: AnalyseVolatiliteParams
+    // ): Observable<ResultatAnalyseVolatilite> {
+    //     return this.http.post<ResultatAnalyseVolatilite>(
+    //         `${this.volatiliteUrl}analyse/`,
+    //         {
+    //             actifs: params.actifs,
+    //             periode: params.periode,
+    //             frequence: params.frequence ?? 'daily'
+    //         }
+    //     );
+    // }
 
-        if (this.useMockData) {
-            return of(RESULTAT_ANALYSE_VOLATILITE_MOCK);
-        }
-
-        let httpParams = new HttpParams()
-            .set('actifs', params.actifs.join(','))
-            .set('periode', params.periode.toString());
-
-        if (params.frequence) {
-            httpParams = httpParams.set(
-                'frequence',
-                params.frequence
-            );
-        }
-
-        return this.http.get<ResultatAnalyseVolatilite>(
-            `${this.volatiliteUrl}analyse/`,
-            { params: httpParams }
-        );
-    }
-
-    analyserVolatilite(
-        params: AnalyseVolatiliteParams
-    ): Observable<ResultatAnalyseVolatilite> {
-        return this.http.post<ResultatAnalyseVolatilite>(
-            `${this.volatiliteUrl}analyse/`,
-            {
-                actifs: params.actifs,
-                periode: params.periode,
-                frequence: params.frequence ?? 'daily'
-            }
-        );
-    }
-
-    getActifsDisponibles(): Observable<ActifOption[]> {
-        return this.http.get<ActifOption[]>(
-            `${this.volatiliteUrl}actifs/`
-        );
-    }
+    // getActifsDisponibles(): Observable<ActifOption[]> {
+    //     return this.http.get<ActifOption[]>(
+    //         `${this.volatiliteUrl}actifs/`
+    //     );
+    // }
 
     getVolatiliteGlissante(
         symbol: string,

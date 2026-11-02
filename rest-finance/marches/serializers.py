@@ -4,11 +4,48 @@ from .indicateurs import FREQUENCES
 from .models import Actif, CoursHistorique
 
 
-# ---------- Données ----------
 class ActifSerializer(serializers.ModelSerializer):
+    prix_actuel = serializers.SerializerMethodField()
+    variation = serializers.SerializerMethodField()
+    trend = serializers.SerializerMethodField()
+
     class Meta:
         model = Actif
-        fields = ["id", "symbole", "nom", "type_actif", "devise", "est_suivi"]
+        fields = ["id","symbole","nom","type_actif","devise","est_suivi","prix_actuel","variation","trend",]
+
+#     def get_dernieres_bougies(self, obj):
+#         if not hasattr(obj, "_dernieres_bougies_cache"):
+#             obj._dernieres_bougies_cache = list(
+#                 CoursHistorique.objects.filter(actif=obj)
+#                 .order_by("-horodatage")[:2]
+#             )
+#         return obj._dernieres_bougies_cache
+
+    def get_prix_actuel(self, obj):
+        prix = obj.prix_actuel_db
+
+        return float(prix) if prix is not None else None
+
+
+    def get_variation(self, obj):
+        dernier = obj.prix_actuel_db
+        precedent = obj.prix_precedent_db
+
+        if dernier is None or precedent is None or precedent == 0:
+            return None
+
+        variation = ((dernier - precedent) / precedent) * 100
+
+        return round(float(variation), 2)
+
+
+    def get_trend(self, obj):
+        variation = self.get_variation(obj)
+
+        if variation is None or variation == 0:
+            return "stable"
+
+        return "up" if variation > 0 else "down"
 
 
 class CoursSerializer(serializers.ModelSerializer):

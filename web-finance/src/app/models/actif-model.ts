@@ -4,41 +4,68 @@ import type { UTCTimestamp } from 'lightweight-charts';
 /**
  * Actif financier
  */
-export interface Actif {
-    actifId: number;
-    name: string;
-    symbol: string;
-    currentPrice: number;
-    previousPrice: number;
-    variation: number;
-    currency?: string;
-    volume?: number;
-    logo?: string;
-    trend?: 'up' | 'down';
-}
 
-/**
- * Option d'actif pour les listes déroulantes
- */
-export interface ActifOption {
-    actifId: number;
-    symbol: string;
-    name: string;
+export interface Actif {
+    id: number;
+    symbole: string;
+    nom: string;
+    type_actif: 'action' | 'indice' | 'crypto';
+    // Prix actuel
+    devise: string;
+    est_suivi: boolean;
+
+    // Données complémentaires
+    prix_actuel?: number;
+    variation?: number;
+    logo?: string;
+    trend?: 'up' | 'down' | 'stable';
 }
+//
+// /**
+//  * Option d'actif pour les listes déroulantes
+//  */
+// export interface ActifOption {
+//     actifId: number;
+//     symbol: string;
+//     name: string;
+// }
 
 /**
  * Historique des cours
  */
+
 export interface HistoricalPrice {
-    id: number;
-    actifId: number;
-    date: string;
+    actif: string;
+    horodatage: string;
     open: number;
     high: number;
     low: number;
     close: number;
     volume: number;
 }
+export interface HistoricalPriceResponse {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: HistoricalPrice[];
+}
+
+/**
+ * Filtres de recherche des cours historiques
+ */
+export interface FiltresCours {
+    actif: string;
+    debut?: string;
+    fin?: string;
+    // frequence?: 'daily' | 'weekly' | 'monthly';
+}
+
+/**
+ * Fréquence des données historiques
+ */
+// export type Frequence = NonNullable<FiltresCours['frequence']>;
+
+
 
 /**
  * Bougie adaptée à Lightweight Charts
@@ -52,20 +79,6 @@ export interface Bougie {
     volume: number;
 }
 
-/**
- * Filtres de recherche des cours historiques
- */
-export interface FiltresCours {
-    actifId: number;
-    dateDebut: string;
-    dateFin: string;
-    frequence?: 'daily' | 'weekly' | 'monthly';
-}
-
-/**
- * Fréquence des données historiques
- */
-export type Frequence = NonNullable<FiltresCours['frequence']>;
 
 /**
  * Période d'affichage du graphique
@@ -74,7 +87,7 @@ export interface Periode {
     label: string;
     value: string;
     jours: number;
-    frequence: Frequence;
+    // frequence: Frequence;
 }
 
 /**
@@ -83,7 +96,7 @@ export interface Periode {
 export interface AnalyseVolatiliteParams {
     actifs: string[];
     periode: number;
-    frequence?: Frequence;
+    // frequence?: Frequence;
 }
 
 /**

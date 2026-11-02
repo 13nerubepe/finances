@@ -1,15 +1,7 @@
-
-import {
-    Component,
-    ElementRef,
-    OnDestroy,
-    OnInit,
-    ViewChild
-} from '@angular/core';
-
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { forkJoin, Subscription } from 'rxjs';
 
 import { Button } from 'primeng/button';
 import { Tag } from 'primeng/tag';
@@ -24,530 +16,484 @@ import {
     createChart,
     LineSeries
 } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, SeriesType, UTCTimestamp } from 'lightweight-charts';
 
-import type {
-    IChartApi,
-    ISeriesApi,
-    SeriesType,
-    Time,
-    UTCTimestamp,
-    CandlestickData,
-    BarData,
-    LineData,
-    BaselineData
-} from 'lightweight-charts';
-
-import type {
-    Actif,
-    FiltresCours,
-    HistoricalPrice,
-    Bougie,
-    Periode
-} from '@/app/models/actif-model';
-
+import type { Actif, Bougie, FiltresCours, HistoricalPrice } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
+// @ts-ignore
+import { ComparateurComponent } from './comparateur.component';
+import { Select } from 'primeng/select';
+import { FormsModule } from '@angular/forms';
+import { SelectButton } from 'primeng/selectbutton';
+import { TableModule } from 'primeng/table';
+import { UIChart } from 'primeng/chart'; // adapte le chemin
 
 type TypeGraphe = 'candle' | 'line' | 'area' | 'bar' | 'baseline';
+
 
 @Component({
     selector: 'app-detail-actif',
     standalone: true,
-    imports: [CommonModule, Button, Tag, Tooltip],
+    imports: [CommonModule, Button, Tag, ComparateurComponent, Select, FormsModule, SelectButton, TableModule, UIChart],
     templateUrl: './detail-actif.html'
 })
 export class DetailActif implements OnInit, OnDestroy {
+    // Actifs
+    actifs: Actif[] = [];
+    selection: Actif[] = [];
+    reference: Actif | null = null;
+    suggestions: Actif[] = [];
 
-    actif?: Actif;
-
+    maxActifs = 5;
     loading = false;
-    chargementGraphe = false;
-
     errorMessage = '';
-    erreurGraphe = '';
 
-    // Périodes disponibles
-    periodes: Periode[] = [
-        { label: '7J', value: '7J', jours: 7, frequence: 'daily' },
-        { label: '1M', value: '1M', jours: 30, frequence: 'daily' },
-        { label: '3M', value: '3M', jours: 90, frequence: 'daily' },
-        { label: '6M', value: '6M', jours: 182, frequence: 'weekly' },
-        { label: '1A', value: '1A', jours: 365, frequence: 'weekly' },
-        { label: '5A', value: '5A', jours: 1825, frequence: 'monthly' }
+    // Périodes
+    periode = '1mo';
+
+    periodes = [
+        { label: '1S', value: '5d' },
+        { label: '1M', value: '1mo' },
+        { label: '3M', value: '3mo' },
+        { label: '6M', value: '6mo' },
+        { label: '1A', value: '1y' },
+        { label: '5A', value: '5y' }
     ];
 
-    // Types de graphiques
-    typesGraphe: {
-        value: TypeGraphe;
-        label: string;
-        icon: string;
-    }[] = [
-        { value: 'candle', label: 'Chandeliers', icon: 'pi pi-chart-bar' },
-        { value: 'line', label: 'Ligne', icon: 'pi pi-chart-line' },
-        { value: 'area', label: 'Aire', icon: 'pi pi-chart-scatter' },
-        { value: 'bar', label: 'Barres', icon: 'pi pi-align-justify' },
-        { value: 'baseline', label: 'Baseline', icon: 'pi pi-arrows-v' }
-    ];
+    // Historiques
+    historiques: any[] = [];
 
-    periode = '3M';
-    typeGraphe: TypeGraphe = 'candle';
+    // Graphique
+    chartData: any = {
+        labels: [],
+        datasets: []
+    };
 
-    bougies: Bougie[] = [];
+    chartOptions: any = {};
 
-    private chart?: IChartApi;
-    private serie?: ISeriesApi<SeriesType>;
-    private container?: HTMLDivElement;
+    couleurs = ['#F97316', '#3B82F6', '#10B981', '#A855F7', '#EF4444'];
 
-    private actifSub?: Subscription;
-    private histSub?: Subscription;
+    private subscriptions = new Subscription();
 
-    @ViewChild('chartContainer')
-    set chartContainer(el: ElementRef<HTMLDivElement> | undefined) {
-        if (el) {
-            const nouveauConteneur = el.nativeElement;
-
-            if (this.container !== nouveauConteneur || !this.chart) {
-                this.detruireGraphique();
-                this.container = nouveauConteneur;
-                this.creerGraphique();
-            }
-        } else {
-            this.detruireGraphique();
-        }
-    }
-
-    constructor(
-        private route: ActivatedRoute,
-        private router: Router,
-        private actifService: ActifService
-    ) {}
+    constructor(private actifService: ActifService) {}
 
     ngOnInit(): void {
-        this.actualiser();
+        this.configurerGraphique();
+        this.chargerActifs();
     }
 
     ngOnDestroy(): void {
-        this.actifSub?.unsubscribe();
-        this.histSub?.unsubscribe();
-        this.detruireGraphique();
+        this.subscriptions.unsubscribe();
     }
 
-    // ---------- Chargement de l'actif ----------
+    // --------------------------------------------------
+    // CHARGEMENT DES ACTIFS
+    // --------------------------------------------------
 
-    actualiser(): void {
-        const parametre =
-            this.route.snapshot.paramMap.get('actifId')
-            ?? this.route.snapshot.paramMap.get('id');
+    chargerActifs(): void {
+        this.loading = true;
 
-        const id = Number(parametre);
+        const sub = this.actifService.getAssets().subscribe({
+            next: (data: Actif[]) => {
+                this.actifs = data;
 
-        if (
-            !parametre ||
-            !Number.isInteger(id) ||
-            id <= 0
-        ) {
-            this.errorMessage = "Identifiant d'actif manquant ou invalide.";
+                // Sélection initiale de 3 actifs
+                this.selection = this.actifs.slice(0, 3);
+
+                this.reference = this.selection[0] ?? null;
+
+                this.majSuggestions();
+
+                if (this.selection.length >= 2) {
+                    this.comparer();
+                } else {
+                    this.loading = false;
+                }
+            },
+
+            error: (err) => {
+                console.error('Erreur de chargement des actifs :', err);
+                this.errorMessage = 'Impossible de charger les actifs.';
+                this.loading = false;
+            }
+        });
+
+        this.subscriptions.add(sub);
+    }
+
+    // --------------------------------------------------
+    // GESTION DE LA SELECTION
+    // --------------------------------------------------
+
+    onSelectionChange(): void {
+        if (this.selection.length > this.maxActifs) {
+            this.selection = this.selection.slice(0, this.maxActifs);
+        }
+
+        if (!this.selection.some((a) => a.id === this.reference?.id)) {
+            this.reference = this.selection[0] ?? null;
+        }
+
+        this.majSuggestions();
+        this.comparer();
+    }
+
+    ajouter(actif: Actif): void {
+        if (this.selection.length >= this.maxActifs) return;
+
+        if (this.selection.some((a) => a.id === actif.id)) return;
+
+        this.selection = [...this.selection, actif];
+
+        if (!this.reference) {
+            this.reference = actif;
+        }
+
+        this.majSuggestions();
+        this.comparer();
+    }
+
+    retirer(actif: Actif): void {
+        if (this.selection.length <= 2) return;
+
+        this.selection = this.selection.filter((a) => a.id !== actif.id);
+
+        if (this.reference?.id === actif.id) {
+            this.reference = this.selection[0] ?? null;
+        }
+
+        this.majSuggestions();
+        this.comparer();
+    }
+
+    majSuggestions(): void {
+        this.suggestions = this.actifs.filter((a) => !this.selection.some((s) => s.id === a.id)).slice(0, 5);
+    }
+
+    // --------------------------------------------------
+    // COULEURS
+    // --------------------------------------------------
+
+    couleur(actif: Actif): string {
+        const index = this.selection.findIndex((a) => a.id === actif.id);
+
+        if (index !== -1) {
+            return this.couleurs[index % this.couleurs.length];
+        }
+
+        const indexActif = this.actifs.findIndex((a) => a.id === actif.id);
+
+        return this.couleurs[Math.max(0, indexActif) % this.couleurs.length];
+    }
+
+    // --------------------------------------------------
+    // PERIODE
+    // --------------------------------------------------
+
+    changerPeriode(value: string): void {
+        this.periode = value;
+        this.comparer();
+    }
+
+    get periodeLabel(): string {
+        return this.periodes.find((p) => p.value === this.periode)?.label ?? '';
+    }
+
+    // --------------------------------------------------
+    // COMPARAISON DES ACTIFS
+    // --------------------------------------------------
+
+    comparer(): void {
+        if (this.selection.length < 2) {
+            this.historiques = [];
+            this.chartData = { labels: [], datasets: [] };
+            this.loading = false;
             return;
         }
 
         this.loading = true;
         this.errorMessage = '';
 
-        this.actifSub?.unsubscribe();
-
-        this.actifSub = this.actifService.getAssetById(id).subscribe({
-            next: (actif: Actif) => {
-                this.actif = actif;
-                this.loading = false;
-                this.chargerHistorique();
-            },
-            error: (err) => {
-                console.error(
-                    "Erreur lors du chargement de l'actif :",
-                    err
-                );
-
-                this.actif = undefined;
-                this.loading = false;
-
-                const introuvable =
-                    err?.status === 404 ||
-                    /introuvable/i.test(err?.message ?? '');
-
-                this.errorMessage = introuvable
-                    ? 'Actif introuvable.'
-                    : 'Impossible de charger les données du marché.';
-            }
-        });
-    }
-
-    // ---------- Chargement des cours historiques ----------
-
-    chargerHistorique(): void {
-        if (!this.actif) {
-            return;
-        }
-
-        const periode = this.periodeCourante;
+        const actifsSelectionnes = [...this.selection];
 
         const fin = new Date();
-        const debut = new Date();
+        const debut = this.calculerDateDebut(this.periode);
 
-        debut.setDate(debut.getDate() - periode.jours);
+        const requetes = actifsSelectionnes.map((actif) => {
+            const filtres: FiltresCours = {
+                actif: actif.symbole,
+                debut: this.formaterDate(debut),
+                fin: this.formaterDate(fin)
+            };
 
-        const filtres: FiltresCours = {
-            actifId: this.actif.actifId,
-            dateDebut: this.formaterDate(debut),
-            dateFin: this.formaterDate(fin),
-            frequence: periode.frequence
-        };
+            return this.actifService.getAllAssetHistory(filtres);
+        });
 
-        this.chargementGraphe = true;
-        this.erreurGraphe = '';
+        const sub = forkJoin(requetes).subscribe({
+            next: (resultats: any[]) => {
+                this.historiques = resultats.map((response, index) => {
+                    const cours: HistoricalPrice[] = response.results ?? response;
 
-        this.histSub?.unsubscribe();
+                    return {
+                        actif: actifsSelectionnes[index],
+                        historique: [...cours].sort((a, b) => new Date(a.horodatage).getTime() - new Date(b.horodatage).getTime())
+                    };
+                });
 
-        this.histSub = this.actifService
-            .getAssetHistory(filtres)
-            .subscribe({
-                next: (cours: HistoricalPrice[]) => {
-                    this.bougies = this.versBougies(cours);
-                    this.chargementGraphe = false;
+                this.construireGraphique();
 
-                    if (this.bougies.length === 0) {
-                        this.erreurGraphe =
-                            'Aucun cours historique disponible pour cette période.';
-                    }
+                this.loading = false;
+            },
 
-                    this.dessiner();
-                },
-                error: (err) => {
-                    console.error(
-                        "Erreur lors du chargement de l'historique :",
-                        err
-                    );
+            error: (err: any) => {
+                console.error('Erreur de comparaison :', err);
 
-                    this.bougies = [];
-                    this.erreurGraphe =
-                        "Impossible de charger l'historique des cours.";
+                this.errorMessage = 'Impossible de récupérer les historiques des actifs.';
 
-                    this.chargementGraphe = false;
-                    this.dessiner();
-                }
-            });
+                this.historiques = [];
+                this.chartData = { labels: [], datasets: [] };
+
+                this.loading = false;
+            }
+        });
+
+        this.subscriptions.add(sub);
     }
 
-    // ---------- Navigation ----------
+    private calculerDateDebut(periode: string): Date {
+        const date = new Date();
 
-    retour(): void {
-        this.router.navigate(['/actifs']);
-    }
+        switch (periode) {
+            case '5d':
+                date.setDate(date.getDate() - 5);
+                break;
 
-    // ---------- Actions utilisateur ----------
+            case '1mo':
+                date.setMonth(date.getMonth() - 1);
+                break;
 
-    changerPeriode(value: string): void {
-        if (value === this.periode) {
-            return;
+            case '3mo':
+                date.setMonth(date.getMonth() - 3);
+                break;
+
+            case '6mo':
+                date.setMonth(date.getMonth() - 6);
+                break;
+
+            case '1y':
+                date.setFullYear(date.getFullYear() - 1);
+                break;
+
+            case '5y':
+                date.setFullYear(date.getFullYear() - 5);
+                break;
         }
 
-        this.periode = value;
-        this.chargerHistorique();
+        return date;
     }
-
-    changerType(type: TypeGraphe): void {
-        if (type === this.typeGraphe) {
-            return;
-        }
-
-        this.typeGraphe = type;
-        this.dessiner();
-    }
-
-    // ---------- Indicateurs ----------
-
-    get periodeCourante(): Periode {
-        return this.periodes.find(
-            (p) => p.value === this.periode
-        ) ?? this.periodes[2];
-    }
-
-    get plusHaut(): number {
-        return this.bougies.length
-            ? Math.max(...this.bougies.map((b) => b.high))
-            : 0;
-    }
-
-    get plusBas(): number {
-        return this.bougies.length
-            ? Math.min(...this.bougies.map((b) => b.low))
-            : 0;
-    }
-
-    get performance(): number {
-        if (!this.bougies.length) {
-            return 0;
-        }
-
-        const debut = this.bougies[0].open;
-        const fin = this.bougies[this.bougies.length - 1].close;
-
-        return debut !== 0
-            ? +(((fin - debut) / debut) * 100).toFixed(2)
-            : 0;
-    }
-
-    get dernierVolume(): number | null {
-        if (this.actif?.volume != null) {
-            return this.actif.volume;
-        }
-
-        return this.bougies.length
-            ? this.bougies[this.bougies.length - 1].volume
-            : null;
-    }
-
-    // ---------- Transformation des données ----------
 
     private formaterDate(date: Date): string {
         return date.toISOString().slice(0, 10);
     }
 
-    /**
-     * Convertit les cours historiques en données pour le graphique.
-     * Les dates sont converties en timestamps Unix en secondes.
-     * Les cours sont triés chronologiquement et les doublons supprimés.
-     */
-    private versBougies(cours: HistoricalPrice[]): Bougie[] {
-        const parTemps = new Map<number, Bougie>();
+    // --------------------------------------------------
+    // GRAPHIQUE BASE 100
+    // --------------------------------------------------
 
-        for (const c of cours ?? []) {
-            const ms = Date.parse(c.date);
+    construireGraphique(): void {
+        if (!this.historiques.length) return;
 
-            if (!Number.isFinite(ms) || c.close == null) {
-                continue;
-            }
+        const toutesLesDates = [...new Set(this.historiques.flatMap((serie) => serie.historique.map((h: { horodatage: string | any[] }) => h.horodatage.slice(0, 10))))].sort();
 
-            const time = Math.floor(ms / 1000) as UTCTimestamp;
+        const datasets = this.historiques.map((serie) => {
+            const historique = serie.historique;
 
-            const open = c.open ?? c.close;
-            const high = c.high ?? Math.max(open, c.close);
-            const low = c.low ?? Math.min(open, c.close);
+            const premierPrix = historique[0]?.close ?? 0;
 
-            parTemps.set(time, {
-                time,
-                open,
-                high,
-                low,
-                close: c.close,
-                volume: c.volume ?? 0
+            const estReference = serie.actif.id === this.reference?.id;
+
+            const donnees = toutesLesDates.map((date) => {
+                const cours = historique.find((h: { horodatage: string | any[] }) => h.horodatage.slice(0, 10) === date);
+
+                return cours && premierPrix > 0 ? Number(((cours.close / premierPrix) * 100).toFixed(2)) : null;
             });
-        }
 
-        return [...parTemps.values()].sort(
-            (a, b) => Number(a.time) - Number(b.time)
-        );
-    }
-
-    // ---------- Création du graphique ----------
-
-    private creerGraphique(): void {
-        const conteneur = this.container;
-
-        if (!conteneur) {
-            return;
-        }
-
-        // Évite de conserver plusieurs graphiques sur le même conteneur.
-        this.chart?.remove();
-        this.chart = undefined;
-        this.serie = undefined;
-
-        const css = getComputedStyle(document.documentElement);
-
-        const texte =
-            css.getPropertyValue('--p-text-muted-color').trim()
-            || '#64748b';
-
-        const grille =
-            css.getPropertyValue('--p-content-border-color').trim()
-            || '#e2e8f0';
-
-        this.chart = createChart(conteneur, {
-            autoSize: true,
-
-            layout: {
-                background: {
-                    type: ColorType.Solid,
-                    color: 'transparent'
-                },
-                textColor: texte
-            },
-
-            grid: {
-                vertLines: { color: grille },
-                horzLines: { color: grille }
-            },
-
-            rightPriceScale: {
-                borderColor: grille
-            },
-
-            timeScale: {
-                borderColor: grille,
-                timeVisible: false
-            },
-
-            crosshair: {
-                mode: 1
-            }
+            return {
+                label: serie.actif.symbole,
+                data: donnees,
+                borderColor: this.couleur(serie.actif),
+                backgroundColor: this.couleur(serie.actif),
+                borderWidth: estReference ? 4 : 2,
+                pointRadius: 0,
+                tension: 0.3,
+                fill: false,
+                spanGaps: true
+            };
         });
 
-        this.dessiner();
+        this.chartData = {
+            labels: toutesLesDates,
+            datasets
+        };
     }
 
-    private detruireGraphique(): void {
-        this.chart?.remove();
+    // --------------------------------------------------
+    // CONFIGURATION DU GRAPHIQUE
+    // --------------------------------------------------
 
-        this.chart = undefined;
-        this.serie = undefined;
-        this.container = undefined;
+    configurerGraphique(): void {
+        this.chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: (context: any) => `${context.dataset.label}: ${context.parsed.y?.toFixed(2) ?? '—'}`
+                    }
+                }
+            },
+
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Indice base 100'
+                    }
+                }
+            }
+        };
     }
 
-    // ---------- Affichage des séries ----------
+    // --------------------------------------------------
+    // CALCUL DES PERFORMANCES
+    // --------------------------------------------------
 
-    private dessiner(): void {
-        if (!this.chart) {
-            return;
-        }
+    perf(actif: Actif): number {
+        const serie = this.historiques.find((s) => s.actif.id === actif.id);
 
-        if (this.serie) {
-            this.chart.removeSeries(this.serie);
-            this.serie = undefined;
-        }
+        if (!serie || serie.historique.length < 2) return 0;
 
-        if (this.bougies.length === 0) {
-            return;
-        }
+        const debut = serie.historique[0].close;
+        const fin = serie.historique[serie.historique.length - 1].close;
 
-        const haussier = '#22c55e';
-        const baissier = '#ef4444';
+        if (!debut) return 0;
 
-        // Chaque tableau possède le type attendu par sa série.
-        const donneesChandeliers: CandlestickData<Time>[] =
-            this.bougies.map(({ time, open, high, low, close }) => ({
-                time: time as Time,
-                open,
-                high,
-                low,
-                close
-            }));
-
-        const donneesBarres: BarData<Time>[] =
-            this.bougies.map(({ time, open, high, low, close }) => ({
-                time: time as Time,
-                open,
-                high,
-                low,
-                close
-            }));
-
-        const donneesLigne: LineData<Time>[] =
-            this.bougies.map(({ time, close }) => ({
-                time: time as Time,
-                value: close
-            }));
-
-        const donneesBaseline: BaselineData<Time>[] =
-            this.bougies.map(({ time, close }) => ({
-                time: time as Time,
-                value: close
-            }));
-
-        switch (this.typeGraphe) {
-            case 'candle': {
-                const serie = this.chart.addSeries(
-                    CandlestickSeries,
-                    {
-                        upColor: haussier,
-                        downColor: baissier,
-                        borderVisible: false,
-                        wickUpColor: haussier,
-                        wickDownColor: baissier
-                    }
-                );
-
-                serie.setData(donneesChandeliers);
-                this.serie = serie;
-                break;
-            }
-
-            case 'bar': {
-                const serie = this.chart.addSeries(
-                    BarSeries,
-                    {
-                        upColor: haussier,
-                        downColor: baissier
-                    }
-                );
-
-                serie.setData(donneesBarres);
-                this.serie = serie;
-                break;
-            }
-
-            case 'line': {
-                const serie = this.chart.addSeries(
-                    LineSeries,
-                    {
-                        color: '#f97316',
-                        lineWidth: 2
-                    }
-                );
-
-                serie.setData(donneesLigne);
-                this.serie = serie;
-                break;
-            }
-
-            case 'area': {
-                const serie = this.chart.addSeries(
-                    AreaSeries,
-                    {
-                        lineColor: '#f97316',
-                        topColor: 'rgba(249,115,22,0.35)',
-                        bottomColor: 'rgba(249,115,22,0.02)',
-                        lineWidth: 2
-                    }
-                );
-
-                serie.setData(donneesLigne);
-                this.serie = serie;
-                break;
-            }
-
-            case 'baseline': {
-                const serie = this.chart.addSeries(
-                    BaselineSeries,
-                    {
-                        baseValue: {
-                            type: 'price',
-                            price: this.bougies[0].open
-                        },
-                        topLineColor: haussier,
-                        topFillColor1: 'rgba(34,197,94,0.3)',
-                        topFillColor2: 'rgba(34,197,94,0.02)',
-                        bottomLineColor: baissier,
-                        bottomFillColor1: 'rgba(239,68,68,0.02)',
-                        bottomFillColor2: 'rgba(239,68,68,0.3)'
-                    }
-                );
-
-                serie.setData(donneesBaseline);
-                this.serie = serie;
-                break;
-            }
-        }
-
-        this.chart.timeScale().fitContent();
+        return Number((((fin - debut) / debut) * 100).toFixed(2));
     }
+
+    // --------------------------------------------------
+    // PRIX ACTUEL
+    // --------------------------------------------------
+
+    prixActuel(actif: Actif): number | null {
+        return actif.prix_actuel ?? null;
+    }
+
+    // --------------------------------------------------
+    // VARIATION 24H
+    // --------------------------------------------------
+
+    var24h(actif: Actif): number {
+        return Number((actif.variation ?? 0).toFixed(2));
+    }
+
+    // --------------------------------------------------
+    // VOLATILITE
+    // --------------------------------------------------
+
+    volatilite(actif: Actif): number {
+        const serie = this.historiques.find((s) => s.actif.id === actif.id);
+
+        if (!serie || serie.historique.length < 2) return 0;
+
+        const prix = serie.historique.map((h: { close: any }) => h.close);
+
+        const rendements: number[] = [];
+
+        for (let i = 1; i < prix.length; i++) {
+            if (prix[i - 1] > 0) {
+                rendements.push((prix[i] - prix[i - 1]) / prix[i - 1]);
+            }
+        }
+
+        if (!rendements.length) return 0;
+
+        const moyenne = rendements.reduce((a, b) => a + b, 0) / rendements.length;
+
+        const variance = rendements.reduce((somme, r) => somme + Math.pow(r - moyenne, 2), 0) / rendements.length;
+
+        return Number((Math.sqrt(variance) * 100).toFixed(2));
+    }
+
+    // --------------------------------------------------
+    // MEILLEURE PERFORMANCE
+    // --------------------------------------------------
+
+    get meilleur(): Actif | null {
+        if (!this.selection.length) return null;
+
+        return [...this.selection].sort((a, b) => this.perf(b) - this.perf(a))[0];
+    }
+
+    // --------------------------------------------------
+    // PLUS VOLATIL
+    // --------------------------------------------------
+
+    get plusVolatil(): Actif | null {
+        if (!this.selection.length) return null;
+
+        return [...this.selection].sort((a, b) => this.volatilite(b) - this.volatilite(a))[0];
+    }
+
+    // --------------------------------------------------
+    // MEILLEUR ECART VS REFERENCE
+    // --------------------------------------------------
+
+    get meilleurVsRef(): Actif | null {
+        const autres = this.selection.filter((a) => a.id !== this.reference?.id);
+
+        if (!autres.length) return null;
+
+        return [...autres].sort((a, b) => this.ecart(b) - this.ecart(a))[0];
+    }
+
+    ecart(actif: Actif): number {
+        if (!this.reference) return 0;
+
+        return Number((this.perf(actif) - this.perf(this.reference)).toFixed(2));
+    }
+
+    // --------------------------------------------------
+    // PERFORMANCE MAXIMALE POUR LES BARRES
+    // --------------------------------------------------
+
+    get maxPerf(): number {
+        return Math.max(1, ...this.selection.map((a) => Math.abs(this.perf(a))));
+    }
+
+    // --------------------------------------------------
+    // CHANGEMENT DE REFERENCE
+    // --------------------------------------------------
+
+    majTout(): void {
+        this.construireGraphique();
+    }
+
+    protected readonly Math = Math;
 }
-
