@@ -1,10 +1,93 @@
-<div class="wrapper flex flex-col gap-6">
+<div class="wrapper tv-page">
 
-    <!-- Barre d'outils -->
-    <div class="card !mb-0 flex flex-col gap-4">
-        <div class="flex flex-col lg:flex-row gap-4 lg:items-center justify-between">
+    <!-- En-tête de l'actif -->
+    <header class="tv-panel tv-entete">
+        @if (reference; as actif) {
+            <div class="tv-identite">
+                @if (actif.logo) {
+                    <img [src]="actif.logo" [alt]="actif.nom" class="tv-logo" />
+                } @else {
+                    <span class="tv-logo tv-logo-texte" [style.background]="couleur(actif)">{{ actif.symbole.slice(0, 2) }}</span>
+                }
+                <div class="min-w-0">
+                    <h1>{{ actif.nom }}</h1>
+                    <div class="tv-identite-details">
+                        <strong>{{ actif.symbole }}</strong>
+                        <p-tag [value]="actif.type_actif" severity="secondary" styleClass="capitalize" />
+                        <span>{{ actif.devise }}</span>
+                    </div>
+                </div>
+            </div>
 
-            <div class="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+            <div class="tv-prix">
+                <span class="tv-prix-valeur">{{ formaterPrix(prixActuel(actif)) }}</span>
+                <span class="tv-prix-devise">{{ actif.devise }}</span>
+                <span class="tv-prix-variation" [ngClass]="classeVariation(var24h(actif))">
+                    {{ formaterVariation(var24h(actif)) }}
+                    <small>24h</small>
+                </span>
+            </div>
+        } @else if (!loading) {
+            <p class="tv-muet">Aucun actif à afficher.</p>
+        }
+    </header>
+
+    @if (errorMessage) {
+        <div class="tv-alerte" role="alert">
+            <i class="pi pi-exclamation-triangle"></i>
+            {{ errorMessage }}
+        </div>
+    }
+
+    <div class="tv-corps">
+        <!-- Graphique -->
+        <section #panneauGraphique class="tv-panel tv-panneau-graphique" [class.tv-plein-ecran]="pleinEcran">
+            <div class="tv-outils">
+                <div class="tv-groupe" role="group" aria-label="Période">
+                    @for (p of periodes; track p.value) {
+                        <button type="button" class="tv-bouton" [class.actif]="periode === p.value"
+                                [attr.aria-pressed]="periode === p.value" (click)="changerPeriode(p.value)">
+                            {{ p.label }}
+                        </button>
+                    }
+                </div>
+
+                <span class="tv-separateur"></span>
+
+                <div class="tv-groupe" role="group" aria-label="Mode d'affichage">
+                    <button type="button" class="tv-bouton" [class.actif]="mode === 'cours'"
+                            [attr.aria-pressed]="mode === 'cours'" (click)="changerMode('cours')">Cours</button>
+                    <button type="button" class="tv-bouton" [class.actif]="mode === 'base100'"
+                            [attr.aria-pressed]="mode === 'base100'" (click)="changerMode('base100')">Base 100</button>
+                </div>
+
+                @if (mode === 'cours') {
+                    <span class="tv-separateur"></span>
+                    <p-select [options]="typesGraphe" [(ngModel)]="typeGraphe" (onChange)="majTout()"
+                              optionLabel="label" optionValue="value" size="small" ariaLabel="Type de graphique" />
+                    <button type="button" class="tv-bouton" [class.actif]="mm20" [attr.aria-pressed]="mm20" (click)="basculerMm(20)">
+                        <span class="tv-pastille" [style.background]="couleurMm20"></span>MM20
+                    </button>
+                    <button type="button" class="tv-bouton" [class.actif]="mm50" [attr.aria-pressed]="mm50" (click)="basculerMm(50)">
+                        <span class="tv-pastille" [style.background]="couleurMm50"></span>MM50
+                    </button>
+                }
+
+                <div class="tv-groupe tv-droite">
+                    <button type="button" class="tv-bouton" [class.actif]="echelleLog" [attr.aria-pressed]="echelleLog"
+                            title="Échelle logarithmique" (click)="basculerEchelleLog()">log</button>
+                    <button type="button" class="tv-bouton" title="Afficher toute la période" aria-label="Afficher toute la période" (click)="ajusterVue()">
+                        <i class="pi pi-arrows-h"></i>
+                    </button>
+                    <button type="button" class="tv-bouton" [title]="pleinEcran ? 'Quitter le plein écran' : 'Plein écran'"
+                            [attr.aria-label]="pleinEcran ? 'Quitter le plein écran' : 'Plein écran'" (click)="basculerPleinEcran()">
+                        <i class="pi" [ngClass]="pleinEcran ? 'pi-window-minimize' : 'pi-window-maximize'"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sélection des actifs à comparer -->
+            <div class="tv-comparaison">
                 <p-multiselect
                     [options]="actifs"
                     [(ngModel)]="selection"
@@ -16,23 +99,22 @@
                     [selectionLimit]="maxActifs"
                     [showToggleAll]="false"
                     [maxSelectedLabels]="0"
-                    selectedItemsLabel="{0} actifs sélectionnés"
+                    [selectedItemsLabel]="selection.length > 1 ? '{0} actifs sélectionnés' : '{0} actif sélectionné'"
                     placeholder="Choisir des actifs"
-                    class="w-full sm:w-64"
-                    styleClass="w-full">
+                    size="small"
+                    styleClass="tv-champ">
                     <ng-template let-a #item>
                         <div class="flex items-center gap-2 w-full">
-                            <span class="w-2.5 h-2.5 rounded-full" [style.background]="couleur(a)"></span>
+                            <span class="tv-pastille" [style.background]="couleur(a)"></span>
                             <span>{{ a.nom }}</span>
-                            <span class="text-xs text-surface-500">{{ a.symbole }}</span>
-                            <span class="text-xs text-surface-400 ml-auto capitalize">{{ a.type_actif }}</span>
+                            <span class="tv-muet text-xs">{{ a.symbole }}</span>
+                            <span class="tv-muet text-xs ml-auto capitalize">{{ a.type_actif }}</span>
                         </div>
                     </ng-template>
                 </p-multiselect>
 
-                <!-- Actif de référence -->
-                <div class="flex items-center gap-2">
-                    <label class="text-sm text-surface-500 whitespace-nowrap">Référence :</label>
+                <label class="tv-reference">
+                    <span>Référence :</span>
                     <p-select
                         [options]="selection"
                         [(ngModel)]="reference"
@@ -40,162 +122,210 @@
                         dataKey="id"
                         optionLabel="nom"
                         placeholder="Actif de référence"
-                        styleClass="w-48" />
+                        size="small"
+                        styleClass="tv-champ" />
+                </label>
+
+                <p-button label="Comparer" icon="pi pi-chart-line" size="small" [loading]="loading" (onClick)="comparer()" />
+
+                <!-- Pastilles sélectionnées (clic = retirer) -->
+                <div class="tv-pastilles">
+                    @for (a of selection; track a.id) {
+                        <button type="button" class="tv-puce" [class.reference]="a.id === reference?.id"
+                                [disabled]="selection.length <= 1"
+                                [title]="selection.length > 1 ? 'Retirer ' + a.nom : '1 actif minimum'"
+                                (click)="retirer(a)">
+                            <span class="tv-pastille" [style.background]="couleur(a)"></span>
+                            {{ a.symbole }}
+                            @if (a.id === reference?.id) {
+                                <span class="tv-puce-ref">réf.</span>
+                            }
+                            @if (selection.length > 1) {
+                                <i class="pi pi-times"></i>
+                            }
+                        </button>
+                    }
                 </div>
             </div>
 
-            <div class="flex items-center gap-3">
-                <p-selectbutton
-                    [options]="periodes"
-                    [ngModel]="periode"
-                    (onChange)="changerPeriode($event.value)"
-                    optionLabel="label"
-                    optionValue="value"
-                    [allowEmpty]="false"
-                    size="small"></p-selectbutton>
-                <p-button label="Comparer" icon="pi pi-chart-line" [loading]="loading" (onClick)="comparer()" />
-            </div>
-        </div>
-
-        <!-- Pastilles sélectionnées (clic = retirer) -->
-        <div class="flex flex-wrap items-center gap-2">
-            @for (a of selection; track a.id) {
-                <button
-                    type="button"
-                    (click)="retirer(a)"
-                    class="group flex items-center gap-2 pl-2.5 pr-2 py-1 rounded-full text-sm font-medium
-                           border transition-colors hover:border-red-300"
-                    [ngClass]="a.id === reference?.id
-                        ? 'border-primary bg-primary/10'
-                        : 'border-surface-200 dark:border-surface-700'"
-                    [title]="selection.length > 2 ? 'Retirer ' + a.nom : '2 actifs minimum'">
-                    <span class="w-2 h-2 rounded-full" [style.background]="couleur(a)"></span>
-                    {{ a.symbole }}
-                    @if (a.id === reference?.id) {
-                        <span class="text-xs text-primary">réf.</span>
+            <div class="tv-zone">
+                <!-- Légende façon TradingView : suit le curseur -->
+                <div class="tv-legende">
+                    @if (mode === 'cours') {
+                        @if (legendeCours; as l) {
+                            <span class="tv-legende-date">{{ l.date }}</span>
+                            <span [ngClass]="classeVariation(l.variation)">
+                                <small>O</small> {{ formaterPrix(l.open) }}
+                                <small>H</small> {{ formaterPrix(l.high) }}
+                                <small>B</small> {{ formaterPrix(l.low) }}
+                                <small>C</small> {{ formaterPrix(l.close) }}
+                                ({{ formaterVariation(l.variation) }})
+                            </span>
+                            @if (l.volume !== null) {
+                                <span><small>Vol</small> {{ formaterVolume(l.volume) }}</span>
+                            }
+                        }
+                    } @else {
+                        @for (l of legendeBase100; track l.symbole) {
+                            <span [style.color]="l.couleur">
+                                <small class="tv-legende-symbole">{{ l.symbole }}</small>
+                                {{ formaterPrix(l.valeur) }}
+                            </span>
+                        }
                     }
-                    <i class="pi pi-times text-xs text-surface-400 group-hover:text-red-500"></i>
-                </button>
-            }
-        </div>
+                </div>
 
-        <!-- Suggestions : ajouter un actif à comparer -->
-        @if (suggestions.length && selection.length < maxActifs) {
-            <div class="flex flex-wrap items-center gap-2 pt-3 border-t border-surface-200 dark:border-surface-700">
-                <span class="text-sm text-surface-500">Ajouter pour comparer :</span>
-                @for (s of suggestions; track s.id) {
-                    <button
-                        type="button"
-                        (click)="ajouter(s)"
-                        class="flex items-center gap-2 px-2.5 py-1 rounded-full text-sm
-                               border border-dashed border-surface-300 dark:border-surface-600
-                               hover:border-primary hover:text-primary transition-colors">
-                        <i class="pi pi-plus text-xs"></i>
-                        <span class="w-2 h-2 rounded-full" [style.background]="couleur(s)"></span>
-                        {{ s.symbole }}
-                    </button>
+                <div #zoneGraphique class="tv-canvas"></div>
+
+                @if (loading) {
+                    <div class="tv-chargement"><i class="pi pi-spin pi-spinner"></i> Chargement…</div>
                 }
             </div>
-        }
+
+            <p class="tv-note">
+                @if (mode === 'base100') {
+                    Tous les actifs partent de 100 pour comparer leur trajectoire.
+                    @if (reference) { La courbe épaisse est la référence ({{ reference.nom }}). }
+                } @else if (reference) {
+                    Cours de {{ reference.nom }} sur la période {{ periodeLabel }}.
+                }
+            </p>
+        </section>
+
+        <!-- Panneau latéral -->
+        <aside class="tv-lateral">
+            <section class="tv-panel">
+                <h2>Liste de comparaison</h2>
+                <ul class="tv-liste">
+                    @for (a of selection; track a.id) {
+                        <li>
+                            <button type="button" class="tv-ligne" [class.selectionnee]="a.id === reference?.id"
+                                    [attr.aria-current]="a.id === reference?.id" (click)="definirReference(a)">
+                                <span class="tv-pastille" [style.background]="couleur(a)"></span>
+                                <span class="tv-ligne-symbole">{{ a.symbole }}</span>
+                                <span class="tv-ligne-prix">{{ formaterPrix(prixActuel(a)) }}</span>
+                                <span class="tv-ligne-var" [ngClass]="classeVariation(var24h(a))">{{ formaterVariation(var24h(a)) }}</span>
+                            </button>
+                        </li>
+                    }
+                </ul>
+
+                <!-- Suggestions : ajouter un actif à comparer -->
+                @if (suggestions.length && selection.length < maxActifs) {
+                    <div class="tv-suggestions">
+                        <span class="tv-muet">Ajouter pour comparer :</span>
+                        <div class="tv-pastilles">
+                            @for (s of suggestions; track s.id) {
+                                <button type="button" class="tv-puce tv-puce-ajout" (click)="ajouter(s)">
+                                    <i class="pi pi-plus"></i>
+                                    {{ s.symbole }}
+                                </button>
+                            }
+                        </div>
+                    </div>
+                }
+            </section>
+
+            @if (reference; as actif) {
+                <section class="tv-panel">
+                    <h2>Statistiques ({{ periodeLabel }})</h2>
+                    <div class="tv-fourchette">
+                        <div class="tv-fourchette-barre">
+                            <span [style.left.%]="positionFourchette"></span>
+                        </div>
+                        <div class="tv-fourchette-bornes">
+                            <span>{{ formaterPrix(statsActif(actif).bas) }}</span>
+                            <small>Plus bas – Plus haut</small>
+                            <span>{{ formaterPrix(statsActif(actif).haut) }}</span>
+                        </div>
+                    </div>
+                    <dl class="tv-stats">
+                        <div>
+                            <dt>Performance</dt>
+                            <dd [ngClass]="classeVariation(perf(actif))">{{ formaterVariation(perf(actif)) }}</dd>
+                        </div>
+                        <div>
+                            <dt>Volatilité</dt>
+                            <dd>{{ formaterPrix(volatilite(actif)) }} %</dd>
+                        </div>
+                        <div>
+                            <dt>Ouverture</dt>
+                            <dd>{{ formaterPrix(statsActif(actif).ouverture) }}</dd>
+                        </div>
+                        <div>
+                            <dt>Dernier volume</dt>
+                            <dd>{{ formaterVolume(statsActif(actif).volume) }}</dd>
+                        </div>
+                    </dl>
+                </section>
+            }
+        </aside>
     </div>
 
     <!-- Faits marquants -->
-    @if (meilleur && plusVolatil) {
-        <div class="grid grid-cols-12 gap-4">
-            <div class="col-span-12 md:col-span-4">
-                <div class="card !mb-0 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-green-100 dark:bg-green-500/20">
-                        <i class="pi pi-trophy text-green-600 text-xl"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-surface-500">Meilleure performance ({{ periodeLabel }})</div>
-                        <div class="text-lg font-semibold">
-                            {{ meilleur.nom }}
-                            <span class="ml-1" [ngClass]="perf(meilleur) >= 0 ? 'text-green-600' : 'text-red-500'">
-                                {{ perf(meilleur) > 0 ? '+' : '' }}{{ perf(meilleur) }} %
-                            </span>
-                        </div>
-                    </div>
+    @if (selection.length > 1 && meilleur && plusVolatil) {
+        <div class="tv-faits">
+            <div class="tv-panel tv-fait">
+                <i class="pi pi-trophy hausse"></i>
+                <div>
+                    <span>Meilleure performance ({{ periodeLabel }})</span>
+                    <strong>
+                        {{ meilleur.nom }}
+                        <em [ngClass]="classeVariation(perf(meilleur))">{{ formaterVariation(perf(meilleur)) }}</em>
+                    </strong>
                 </div>
             </div>
 
-            <div class="col-span-12 md:col-span-4">
-                <div class="card !mb-0 flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-orange-100 dark:bg-orange-500/20">
-                        <i class="pi pi-bolt text-orange-600 text-xl"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-surface-500">Actif le plus volatil</div>
-                        <div class="text-lg font-semibold">
-                            {{ plusVolatil.nom }}
-                            <span class="text-orange-600 ml-1">{{ volatilite(plusVolatil) }} %</span>
-                        </div>
-                    </div>
+            <div class="tv-panel tv-fait">
+                <i class="pi pi-bolt tv-orange"></i>
+                <div>
+                    <span>Actif le plus volatil ({{ periodeLabel }})</span>
+                    <strong>
+                        {{ plusVolatil.nom }}
+                        <em class="tv-orange">{{ formaterPrix(volatilite(plusVolatil)) }} %</em>
+                    </strong>
                 </div>
             </div>
 
-            @if (reference && meilleurVsRef) {
-                <div class="col-span-12 md:col-span-4">
-                    <div class="card !mb-0 flex items-center gap-4">
-                        <div class="w-12 h-12 rounded-xl flex items-center justify-center bg-blue-100 dark:bg-blue-500/20">
-                            <i class="pi pi-arrow-up-right text-blue-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm text-surface-500">Meilleur écart vs {{ reference.symbole }}</div>
-                            <div class="text-lg font-semibold">
-                                {{ meilleurVsRef.nom }}
-                                <span class="ml-1" [ngClass]="ecart(meilleurVsRef) >= 0 ? 'text-blue-600' : 'text-red-500'">
-                                    {{ ecart(meilleurVsRef) > 0 ? '+' : '' }}{{ ecart(meilleurVsRef) }} pts
-                                </span>
-                            </div>
-                        </div>
+            @if (reference && meilleurVsRef; as meilleurEcart) {
+                <div class="tv-panel tv-fait">
+                    <i class="pi pi-arrow-up-right tv-bleu"></i>
+                    <div>
+                        <span>Meilleur écart vs {{ reference.symbole }}</span>
+                        <strong>
+                            {{ meilleurEcart.nom }}
+                            <em [ngClass]="classeVariation(ecart(meilleurEcart))">{{ formaterVariation(ecart(meilleurEcart), ' pts') }}</em>
+                        </strong>
                     </div>
                 </div>
             }
         </div>
     }
 
-    <!-- Graphique base 100 -->
-    <div class="card !mb-0">
-        <div class="mb-4">
-            <h2 class="text-lg font-semibold">Évolution des cours (base 100)</h2>
-            <p class="text-sm text-surface-500">
-                Tous les actifs partent de 100 pour comparer leur trajectoire.
-                @if (reference) { La courbe épaisse est la référence ({{ reference.nom }}). }
-            </p>
-        </div>
-        <p-chart type="line" [data]="chartData" [options]="chartOptions" height="22rem" />
-    </div>
-
     <!-- Tableau -->
-    <div class="card !mb-0 !p-0 overflow-hidden">
-        <div class="p-5 pb-3">
-            <h2 class="text-lg font-semibold">Indicateurs de performance</h2>
-        </div>
+    <section class="tv-panel tv-panneau-tableau">
+        <h2>Indicateurs de performance</h2>
 
-        <p-table [value]="selection" [loading]="loading" [tableStyle]="{ 'min-width': '52rem' }">
+        <p-table [value]="selection" [loading]="loading" size="small" [tableStyle]="{ 'min-width': '52rem' }">
             <ng-template #header>
                 <tr>
                     <th>Actif</th>
                     <th class="text-right">Prix actuel</th>
                     <th class="text-right">Variation (24h)</th>
-                    <th class="text-right">Volatilité (30j)</th>
+                    <th class="text-right">Volatilité ({{ periodeLabel }})</th>
                     <th class="text-right">Écart vs {{ reference?.symbole }}</th>
                     <th style="width: 16rem">Performance ({{ periodeLabel }})</th>
                 </tr>
             </ng-template>
 
             <ng-template #body let-a>
-                <tr [ngClass]="{ 'bg-primary/5': a.id === reference?.id }">
+                <tr class="tv-rangee" [class.selectionnee]="a.id === reference?.id" (click)="definirReference(a)">
                     <td>
                         <div class="flex items-center gap-3">
                             @if (a.logo) {
-                                <img [src]="a.logo" [alt]="a.nom" class="w-9 h-9 rounded-full object-cover" />
+                                <img [src]="a.logo" [alt]="a.nom" class="tv-logo tv-logo-petit" />
                             } @else {
-                                <span class="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                                      [style.background]="couleur(a)">
-                                    {{ a.symbole.slice(0, 2) }}
-                                </span>
+                                <span class="tv-logo tv-logo-petit tv-logo-texte" [style.background]="couleur(a)">{{ a.symbole.slice(0, 2) }}</span>
                             }
                             <div class="flex flex-col leading-tight">
                                 <span class="font-semibold">
@@ -204,55 +334,46 @@
                                         <p-tag value="Référence" severity="info" styleClass="ml-2" />
                                     }
                                 </span>
-                                <span class="text-xs text-surface-500">
+                                <span class="tv-muet text-xs">
                                     {{ a.symbole }} · <span class="capitalize">{{ a.type_actif }}</span>
                                 </span>
                             </div>
                         </div>
                     </td>
 
-                    <td class="text-right font-medium">
-                        @if (prixActuel(a) !== null) {
-                            {{ prixActuel(a) | number: '1.2-2' }} {{ a.devise }}
-                        } @else {
-                            —
-                        }
+                    <td class="text-right font-medium tv-chiffre">
+                        {{ formaterPrix(prixActuel(a)) }} {{ prixActuel(a) !== null ? a.devise : '' }}
                     </td>
 
-                    <td class="text-right font-medium" [ngClass]="var24h(a) >= 0 ? 'text-green-600' : 'text-red-500'">
-                        {{ var24h(a) >= 0 ? '+' : '' }}{{ var24h(a) }} %
+                    <td class="text-right font-medium tv-chiffre" [ngClass]="classeVariation(var24h(a))">
+                        {{ formaterVariation(var24h(a)) }}
                     </td>
 
-                    <td class="text-right">{{ volatilite(a) }} %</td>
+                    <td class="text-right tv-chiffre">
+                        {{ volatilite(a) !== null ? formaterPrix(volatilite(a)) + ' %' : '—' }}
+                    </td>
 
-                    <td class="text-right font-medium"
-                        [ngClass]="a.id === reference?.id ? 'text-surface-400'
-                                   : ecart(a) >= 0 ? 'text-green-600' : 'text-red-500'">
-                        @if (a.id === reference?.id) {
-                            —
-                        } @else {
-                            {{ ecart(a) >= 0 ? '+' : '' }}{{ ecart(a) }} pts
-                        }
+                    <td class="text-right font-medium tv-chiffre"
+                        [ngClass]="a.id === reference?.id ? 'neutre' : classeVariation(ecart(a))">
+                        {{ a.id === reference?.id ? '—' : formaterVariation(ecart(a), ' pts') }}
                     </td>
 
                     <!-- Barre de performance : vert à droite, rouge à gauche -->
                     <td>
                         <div class="flex items-center gap-3">
-                            <div class="relative flex-1 h-2 rounded-full bg-surface-100 dark:bg-surface-800">
-                                <span class="absolute left-1/2 top-[-2px] bottom-[-2px] w-px bg-surface-300 dark:bg-surface-600"></span>
-                                <span class="absolute top-0 h-2 rounded-full"
-                                      [ngClass]="perf(a) >= 0 ? 'bg-green-500 left-1/2' : 'bg-red-500 right-1/2'"
-                                      [style.width.%]="maxPerf ? (Math.abs(perf(a)) / maxPerf) * 50 : 0">
-                                </span>
+                            <div class="tv-barre">
+                                <span class="tv-barre-axe"></span>
+                                <span class="tv-barre-valeur"
+                                      [ngClass]="(perf(a) ?? 0) >= 0 ? 'positive' : 'negative'"
+                                      [style.width.%]="largeurBarre(a)"></span>
                             </div>
-                            <span class="w-16 text-right font-semibold text-sm"
-                                  [ngClass]="perf(a) >= 0 ? 'text-green-600' : 'text-red-500'">
-                                {{ perf(a) >= 0 ? '+' : '' }}{{ perf(a) }} %
+                            <span class="tv-barre-texte tv-chiffre" [ngClass]="classeVariation(perf(a))">
+                                {{ formaterVariation(perf(a)) }}
                             </span>
                         </div>
                     </td>
                 </tr>
             </ng-template>
         </p-table>
-    </div>
+    </section>
 </div>
