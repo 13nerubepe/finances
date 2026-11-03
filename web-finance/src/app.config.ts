@@ -100,5 +100,8 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(),
         // providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } })
         providePrimeNG({ theme: { preset: AppPreset, options: { darkModeSelector: '.app-dark' } } })
+
+        // Dans providers, remplace ton provideHttpClient actuel par :
+        // provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     ]
 };

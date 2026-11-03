@@ -8,17 +8,14 @@ import {
     Validators
 } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { switchMap } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
+import { Checkbox } from 'primeng/checkbox';
 import { InputTextModule } from 'primeng/inputtext';
 import { PasswordModule } from 'primeng/password';
-import { SelectModule } from 'primeng/select';
-import { ActifService } from '@/app/pages/service/service/actif-service';
-import { apiErrorMessage } from '@/app/models/api-errors';
-import { Checkbox } from 'primeng/checkbox';
-import { AuthService } from '@/app/pages/service/service/auth.service';
-import { RegisterPayload, UserProfile } from '@/app/models/auth.models';
 
+import { apiErrorMessage } from '@/app/models/api-errors';
+import { RegisterPayload } from '@/app/models/auth.models';
+import { AuthService } from '@/app/pages/service/service/auth.service';
 
 /** Vérifie que « mot de passe » et « confirmation » sont identiques. */
 const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors | null => {
@@ -28,12 +25,11 @@ const passwordsMatch: ValidatorFn = (group: AbstractControl): ValidationErrors |
     return password && confirm && password !== confirm ? { passwordMismatch: true } : null;
 };
 
-
 @Component({
     selector: 'app-register',
     standalone: true,
-    imports: [ReactiveFormsModule, RouterModule, ButtonModule, InputTextModule, PasswordModule, SelectModule, Checkbox],
-    templateUrl: './register.html',
+    imports: [ReactiveFormsModule, RouterModule, ButtonModule, InputTextModule, PasswordModule, Checkbox],
+    templateUrl: './register.html'
 })
 export class Register {
     private readonly fb = inject(FormBuilder);
@@ -42,7 +38,6 @@ export class Register {
 
     readonly loading = signal(false);
     readonly errorMessage = signal('');
-    readonly successMessage = signal('');
 
     readonly form = this.fb.nonNullable.group(
         {
@@ -50,14 +45,7 @@ export class Register {
             last_name: ['', Validators.required],
             email: ['', [Validators.required, Validators.email]],
             phone: ['', Validators.required],
-            password: [
-                '',
-                [
-                    Validators.required,
-                    Validators.minLength(8),
-                    Validators.pattern(/^(?!\d+$).+$/)
-                ]
-            ],
+            password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?!\d+$).+$/)]],
             confirm_password: ['', Validators.required],
             acceptTerms: [false, Validators.requiredTrue]
         },
@@ -67,22 +55,19 @@ export class Register {
     isInvalid(controlName: string): boolean {
         const control = this.form.get(controlName);
 
-        return !!control &&
-            control.invalid &&
-            (control.touched || control.dirty);
+        return !!control && control.invalid && (control.touched || control.dirty);
     }
 
     passwordMismatch(): boolean {
-        return this.form.hasError('passwordMismatch') &&
-            !!this.form.get('confirm_password')?.touched;
+        return this.form.hasError('passwordMismatch') && !!this.form.get('confirm_password')?.touched;
     }
 
     onSubmit(): void {
         this.errorMessage.set('');
-        this.successMessage.set('');
 
         if (this.form.invalid) {
             this.form.markAllAsTouched();
+            this.errorMessage.set('Le formulaire est incomplet : corrige les champs signalés en rouge.');
             return;
         }
 
@@ -114,5 +99,4 @@ export class Register {
             }
         });
     }
-
 }

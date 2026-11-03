@@ -1,69 +1,106 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
+
+import type { Actif } from '@/app/models/actif-model';
+import { ActifService } from '@/app/pages/service/service/actif-service';
+
+interface Kpi {
+    titre: string;
+    valeur: string;
+    detail: string;
+    icone: string;
+    couleur: string;
+    fond: string;
+}
 
 @Component({
     standalone: true,
     selector: 'app-stats-widget',
-    imports: [CommonModule],
-    template: `<div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">SAP 500</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">152</div>
+    template: `
+        @for (kpi of kpis; track kpi.titre) {
+            <div class="col-span-12 lg:col-span-6 xl:col-span-3">
+                <div class="flex h-full items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+                    <div class="min-w-0">
+                        <p class="m-0 text-xs text-slate-500 dark:text-slate-400">{{ kpi.titre }}</p>
+                        <p class="mb-0 mt-1 truncate text-xl font-bold tabular-nums text-slate-900 dark:text-white">{{ kpi.valeur }}</p>
+                        <p class="mb-0 mt-1 truncate text-xs text-slate-500 dark:text-slate-400">{{ kpi.detail }}</p>
                     </div>
-                    <div class="flex items-center justify-center bg-blue-100 dark:bg-blue-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-shopping-cart text-blue-500 text-xl!"></i>
-                    </div>
-                </div>
-                <span class="text-primary font-medium">+1,23%</span>
-<!--                <span class="text-muted-color">since last visit</span>-->
-            </div>
-        </div>
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">BTC</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">$2.100</div>
-                    </div>
-                    <div class="flex items-center justify-center bg-orange-100 dark:bg-orange-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-dollar text-orange-500 text-xl!"></i>
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" [style.background]="kpi.fond" [style.color]="kpi.couleur">
+                        <i class="pi" [class]="kpi.icone"></i>
                     </div>
                 </div>
-                <span class="text-primary font-medium">+52% </span>
-<!--                <span class="text-muted-color">since last week</span>-->
             </div>
-        </div>
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">ETH</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">28441</div>
-                    </div>
-                    <div class="flex items-center justify-center bg-cyan-100 dark:bg-cyan-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-users text-cyan-500 text-xl!"></i>
-                    </div>
-                </div>
-                <span class="text-primary font-medium">+52%</span>
-<!--                <span class="text-muted-color">newly registered</span>-->
-            </div>
-        </div>
-        <div class="col-span-12 lg:col-span-6 xl:col-span-3">
-            <div class="card mb-0">
-                <div class="flex justify-between mb-4">
-                    <div>
-                        <span class="block text-muted-color font-medium mb-4">Portefeuille</span>
-                        <div class="text-surface-900 dark:text-surface-0 font-medium text-xl">152</div>
-                    </div>
-                    <div class="flex items-center justify-center bg-purple-100 dark:bg-purple-400/10 rounded-border" style="width: 2.5rem; height: 2.5rem">
-                        <i class="pi pi-comment text-purple-500 text-xl!"></i>
-                    </div>
-                </div>
-                <span class="text-primary font-medium">+85% </span>
-<!--                <span class="text-muted-color">responded</span>-->
-            </div>
-        </div>`
+        }
+    `
 })
-export class StatsWidget {}
+export class StatsWidget implements OnInit {
+    private readonly actifService = inject(ActifService);
+    private readonly cdr = inject(ChangeDetectorRef);
+
+    kpis: Kpi[] = this.creerKpis([]);
+
+    ngOnInit(): void {
+        this.actifService.getAssets().subscribe({
+            next: (actifs: Actif[]) => {
+                this.kpis = this.creerKpis(actifs.filter((actif) => actif.est_suivi !== false));
+                this.cdr.markForCheck();
+            },
+            error: (erreur) => console.error('Erreur de chargement des KPI :', erreur)
+        });
+    }
+
+    private creerKpis(actifs: Actif[]): Kpi[] {
+        const compter = (type: Actif['type_actif']) => actifs.filter((actif) => actif.type_actif === type).length;
+        const avecVariation = actifs
+            .map((actif) => ({ actif, variation: this.nombre(actif.variation) }))
+            .filter((ligne): ligne is { actif: Actif; variation: number } => ligne.variation !== null);
+
+        const hausses = avecVariation.filter((ligne) => ligne.variation > 0);
+        const baisses = avecVariation.filter((ligne) => ligne.variation < 0);
+        const plusForte = avecVariation.reduce<{ actif: Actif; variation: number } | null>(
+            (meilleure, ligne) => (!meilleure || Math.abs(ligne.variation) > Math.abs(meilleure.variation) ? ligne : meilleure),
+            null
+        );
+        const part = (nombre: number) => (avecVariation.length ? `${Math.round((nombre / actifs.length) * 100)} % du panier` : 'Variation indisponible');
+
+        return [
+            {
+                titre: 'Actifs suivis',
+                valeur: String(actifs.length),
+                detail: `Actions ${compter('action')} · Indices ${compter('indice')} · Cryptos ${compter('crypto')}`,
+                icone: 'pi-list',
+                couleur: '#2962ff',
+                fond: 'rgba(41, 98, 255, 0.1)'
+            },
+            {
+                titre: 'En hausse (24 h)',
+                valeur: avecVariation.length ? String(hausses.length) : '—',
+                detail: part(hausses.length),
+                icone: 'pi-arrow-up-right',
+                couleur: '#089981',
+                fond: 'rgba(8, 153, 129, 0.1)'
+            },
+            {
+                titre: 'En baisse (24 h)',
+                valeur: avecVariation.length ? String(baisses.length) : '—',
+                detail: part(baisses.length),
+                icone: 'pi-arrow-down-right',
+                couleur: '#f23645',
+                fond: 'rgba(242, 54, 69, 0.1)'
+            },
+            {
+                titre: 'Plus forte variation',
+                valeur: plusForte ? `${plusForte.variation > 0 ? '+' : ''}${plusForte.variation.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %` : '—',
+                detail: plusForte ? plusForte.actif.nom : 'Variation indisponible',
+                icone: 'pi-bolt',
+                couleur: '#f7a600',
+                fond: 'rgba(247, 166, 0, 0.12)'
+            }
+        ];
+    }
+
+    private nombre(valeur: unknown): number | null {
+        if (valeur === null || valeur === undefined || valeur === '') return null;
+        const n = Number(valeur);
+        return Number.isFinite(n) ? n : null;
+    }
+}

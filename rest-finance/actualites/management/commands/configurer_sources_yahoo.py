@@ -1,46 +1,40 @@
-
 from urllib.parse import urlencode
 
 from django.core.management.base import BaseCommand
 
 from actualites.models import Source
-
-
-SYMBOLES = {
-    "Yahoo Finance - Apple": "AAPL",
-    "Yahoo Finance - Microsoft": "MSFT",
-    "Yahoo Finance - Nvidia": "NVDA",
-    "Yahoo Finance - Tesla": "TSLA",
-    "Yahoo Finance - Amazon": "AMZN",
-    "Yahoo Finance - S&P 500": "^GSPC",
-    "Yahoo Finance - Nasdaq": "^IXIC",
-    "Yahoo Finance - Bitcoin": "BTC-USD",
-}
+from marches.models import Actif
 
 
 class Command(BaseCommand):
-    help = "Configure les sources RSS Yahoo Finance"
+    help = "Configure une source RSS Yahoo Finance par actif suivi"
 
     def handle(self, *args, **options):
-        for nom, symbole in SYMBOLES.items():
+        noms = []
+
+        for actif in Actif.objects.filter(est_suivi=True):
             parametres = urlencode({
-                "s": symbole,
+                "s": actif.symbole,
                 "region": "US",
                 "lang": "en-US",
             })
+            nom = f"Yahoo Finance - {actif.symbole}"
+            noms.append(nom)
 
-            url = (
-                "https://feeds.finance.yahoo.com/rss/2.0/headline?"
-                + parametres
-            )
-
-            source, cree = Source.objects.update_or_create(
+            Source.objects.update_or_create(
                 nom=nom,
                 defaults={
-                    "url_flux": url,
+                    "url_flux": f"https://feeds.finance.yahoo.com/rss/2.0/headline?{parametres}",
                     "actif": True,
                 },
             )
 
-            action = "Créée" if cree else "Actualisée"
-            self.stdout.write(f"{action} : {source.nom}")
+        desactivees = (
+            Source.objects.filter(nom__startswith="Yahoo Finance - ", actif=True)
+            .exclude(nom__in=noms)
+            .update(actif=False)
+        )
+
+        self.stdout.write(
+            f"{len(noms)} sources actives, {desactivees} anciennes désactivées."
+        )

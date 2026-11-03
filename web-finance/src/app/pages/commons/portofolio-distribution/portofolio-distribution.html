@@ -2,18 +2,11 @@
 
     <!-- En-tête -->
     <div class="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-700">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">
-                <i class="pi pi-chart-pie text-base"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 class="m-0 truncate !text-sm !font-bold !leading-tight text-slate-800 dark:text-white">
-                    Répartition du portefeuille
-                </h2>
-                <p class="mb-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    Composition des investissements
-                </p>
-            </div>
+        <div class="min-w-0">
+            <h2 class="!m-0 truncate !text-sm !font-bold !leading-tight text-slate-800 dark:text-white">
+                Répartition du panier
+            </h2>
+<!--            <p class="mb-0 mt-0.5 text-xs text-slate-500 dark:text-slate-400">Actifs suivis par catégorie</p>-->
         </div>
 
         <button
@@ -27,16 +20,15 @@
         </button>
     </div>
 
-    <!-- Contenu : occupe toute la hauteur restante -->
-    <div class="flex flex-1 flex-col p-3">
-
+    <!-- Contenu -->
+    <div class="flex flex-1 flex-col justify-center px-5 py-4">
         @if (loading) {
-            <div class="flex flex-1 items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+            <div class="flex items-center justify-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                 <i class="pi pi-spin pi-spinner text-emerald-600"></i>
                 Chargement...
             </div>
         } @else if (errorMessage) {
-            <div class="flex flex-1 flex-col items-center justify-center gap-2 text-center">
+            <div class="flex flex-col items-center gap-2 text-center">
                 <i class="pi pi-exclamation-circle text-xl text-red-500"></i>
                 <p class="m-0 text-xs text-red-600 dark:text-red-400">{{ errorMessage }}</p>
                 <button
@@ -46,75 +38,53 @@
                     Réessayer
                 </button>
             </div>
+        } @else if (total === 0) {
+            <p class="m-0 text-center text-xs text-slate-500 dark:text-slate-400">Aucun actif suivi pour le moment.</p>
+        } @else {
+            <div class="flex flex-col items-center gap-5 sm:flex-row sm:gap-7">
+
+                <!-- Anneau fin, façon TradingView -->
+                <div class="relative h-32 w-32 shrink-0">
+                    <svg viewBox="0 0 120 120" class="h-full w-full -rotate-90" role="img"
+                         [attr.aria-label]="'Répartition de ' + total + ' actifs par catégorie'">
+                        @for (segment of segments; track segment.type) {
+                            <circle cx="60" cy="60" r="52" fill="none" stroke-width="9"
+                                    [attr.stroke]="segment.couleur"
+                                    [attr.stroke-dasharray]="segment.longueur + ' ' + (circonference - segment.longueur)"
+                                    [attr.stroke-dashoffset]="-segment.debut">
+                                <title>{{ segment.label }} : {{ segment.nombre }}</title>
+                            </circle>
+                        }
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center">
+                        <span class="text-2xl font-semibold leading-none tabular-nums text-slate-900 dark:text-white">{{ total }}</span>
+                        <span class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Actifs</span>
+                    </div>
+                </div>
+
+                <!-- Légende en lignes -->
+                <table class="w-full min-w-0 flex-1 border-collapse text-xs">
+                    <thead>
+                    <tr class="border-b border-slate-200 text-[11px] text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                        <th scope="col" class="pb-2 pr-2 text-left font-normal">Catégorie</th>
+                        <th scope="col" class="px-2 pb-2 text-right font-normal">Actifs</th>
+                        <th scope="col" class="w-12 pb-2 pl-2 text-right font-normal">Part</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        @for (categorie of categories; track categorie.type) {
+                            <tr class="border-b border-slate-100 last:border-b-0 dark:border-slate-800">
+                                <td class="py-2.5 pr-2 font-medium text-slate-700 dark:text-slate-200">
+                                    <span class="mr-2 inline-block h-2 w-2 rounded-full align-[1px]" [style.background]="categorie.couleur"></span>
+                                    {{ categorie.label }}
+                                </td>
+                                <td class="px-2 py-2.5 text-right tabular-nums text-slate-500 dark:text-slate-400">{{ categorie.nombre }}</td>
+                                <td class="w-12 py-2.5 pl-2 text-right font-semibold tabular-nums text-slate-800 dark:text-white">{{ pourcentage(categorie.nombre) }} %</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         }
-<!--        @else if (distribution.length === 0) {-->
-<!--            <div class="flex flex-1 flex-col items-center justify-center text-center">-->
-<!--                <i class="pi pi-chart-pie mb-2 text-2xl text-slate-300 dark:text-slate-600"></i>-->
-<!--                <p class="m-0 text-sm font-medium text-slate-700 dark:text-slate-200">Aucune donnée disponible</p>-->
-<!--                <p class="mb-0 mt-1 text-xs text-slate-500 dark:text-slate-400">Ajoutez des actifs à votre portefeuille.</p>-->
-<!--            </div>-->
-<!--        } -->
-<!--        @else {-->
-
-<!--            &lt;!&ndash; Valeur totale &ndash;&gt;-->
-<!--            <div class="mb-3 flex items-center justify-between gap-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-slate-800/60">-->
-<!--                <div class="min-w-0">-->
-<!--                    <p class="m-0 text-[11px] text-slate-500 dark:text-slate-400">Valeur totale</p>-->
-<!--                    <p class="mb-0 mt-0.5 truncate text-base font-bold tracking-tight text-slate-900 dark:text-white">-->
-<!--                        {{ formatCurrency(totalValue) }}-->
-<!--                    </p>-->
-<!--                </div>-->
-<!--                <span class="inline-flex shrink-0 rounded-md bg-emerald-50 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400">-->
-<!--                    {{ distribution.length }} actif(s)-->
-<!--                </span>-->
-<!--            </div>-->
-
-<!--            &lt;!&ndash; Anneau + légende : centrés verticalement dans l'espace restant &ndash;&gt;-->
-<!--            <div class="flex flex-1 flex-col items-center justify-center gap-5 xl:flex-row">-->
-
-<!--                <div class="relative h-[170px] w-[170px] shrink-0">-->
-<!--                    <p-chart-->
-<!--                        type="doughnut"-->
-<!--                        [data]="chartData"-->
-<!--                        [options]="chartOptions"-->
-<!--                        width="170px"-->
-<!--                        height="170px"-->
-<!--                        styleClass="block h-full w-full">-->
-<!--                    </p-chart>-->
-<!--                </div>-->
-
-<!--                <div class="w-full min-w-0 flex-1 space-y-3">-->
-<!--                    @for (item of distribution; track item.actifId; let i = $index) {-->
-<!--                        <div class="min-w-0">-->
-<!--                            <div class="flex items-center justify-between gap-2">-->
-
-<!--                                <div class="flex min-w-0 items-center gap-2">-->
-<!--                                    <span class="h-2 w-2 shrink-0 rounded-full" [style.backgroundColor]="getColor(i)"></span>-->
-<!--                                    <span class="truncate text-xs font-medium text-slate-700 dark:text-slate-200">{{ item.name }}</span>-->
-<!--                                    <span class="text-[10px] text-slate-400">{{ item.symbol }}</span>-->
-<!--                                </div>-->
-
-<!--                                <div class="flex shrink-0 items-baseline gap-2">-->
-<!--                                    <span class="text-[10px] text-slate-500 dark:text-slate-400">-->
-<!--                                        {{ formatCurrency(item.totalValue) }}-->
-<!--                                    </span>-->
-<!--                                    <span class="w-11 text-right text-xs font-semibold text-slate-800 dark:text-white">-->
-<!--                                        {{ getPercentage(item.totalValue) | number:'1.1-1' }}%-->
-<!--                                    </span>-->
-<!--                                </div>-->
-<!--                            </div>-->
-
-<!--                            <div class="mt-1 h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">-->
-<!--                                <div-->
-<!--                                    class="h-full rounded-full transition-all duration-300"-->
-<!--                                    [style.width.%]="getPercentage(item.totalValue)"-->
-<!--                                    [style.backgroundColor]="getColor(i)">-->
-<!--                                </div>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    }-->
-<!--                </div>-->
-<!--            </div>-->
-<!--        }-->
     </div>
 </div>
