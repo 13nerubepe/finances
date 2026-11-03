@@ -30,7 +30,7 @@ export class AppMenu {
                     { label: 'Actif', icon: 'pi pi-fw pi-home', routerLink: ['/actifs'] },
                     // { label: 'Analyse de volatilité', icon: 'pi pi-fw pi-home', routerLink: ['/volatile'] },
                     // ANALYSE DE LA VOLATILITE
-                    { label: 'Analyse de volatilité', icon: 'pi pi-fw pi-home', routerLink: ['/comparaison'] },
+                    // { label: 'Analyse de volatilité', icon: 'pi pi-fw pi-home', routerLink: ['/comparaison'] },
                     { label: 'Actualités', icon: 'pi pi-fw pi-home', routerLink: ['/actualités'] },
                 ]
             },
