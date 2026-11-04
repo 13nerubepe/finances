@@ -40,13 +40,6 @@
     }
 
     <nav class="onglets -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="tablist" aria-label="Catégories d'actif">
-        <button type="button" role="tab" class="onglet" [class.onglet-actif]="onglet() === 'tout'"
-                [attr.aria-selected]="onglet() === 'tout'" (click)="choisirOnglet('tout')">
-            <i class="pi pi-th-large text-[11px]"></i>
-            <span>Tout</span>
-            <span class="onglet-compteur">{{ compteurs().tout }}</span>
-        </button>
-
         @for (categorie of categories; track categorie.id) {
             <button type="button" role="tab" class="onglet" [class.onglet-actif]="onglet() === categorie.id"
                     [style.--couleur]="categorie.couleur"
@@ -90,9 +83,24 @@
     } @else if (!articlesFiltres().length) {
         <div class="rounded-2xl border border-dashed border-surface px-5 py-10 text-center">
             <i class="pi pi-inbox text-xl text-muted-color"></i>
-            <h2 class="!mb-1 !mt-2 !text-sm !font-semibold !leading-snug">Aucune actualité trouvée</h2>
-            <p class="mx-auto mb-4 mt-0 max-w-sm text-xs text-muted-color">Essaie une autre recherche ou une autre catégorie d'actif.</p>
-            <button pButton type="button" label="Réinitialiser les filtres" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" size="small" class="!rounded-xl" (click)="reinitialiserFiltres()"></button>
+            <h2 class="!mb-1 !mt-2 !text-sm !font-semibold !leading-snug">Aucune actualité dans « {{ categorieActive().libelle }} »</h2>
+            @if (autresCategories().length) {
+                <div class="mb-3 text-xs text-muted-color">Des articles sont disponibles dans d'autres catégories :</div>
+                <div class="mb-4 flex flex-wrap justify-center gap-1.5">
+                    @for (autre of autresCategories(); track autre.id) {
+                        <button type="button" class="puce" [style.--couleur]="autre.couleur" (click)="choisirOnglet(autre.id)">
+                            <i class="pi text-[11px]" [ngClass]="autre.icone" [style.color]="autre.couleur"></i>
+                            <span class="font-semibold">{{ autre.libelle }}</span>
+                            <span class="opacity-70">{{ compteurs()[autre.id] }}</span>
+                        </button>
+                    }
+                </div>
+            } @else {
+                <div class="mb-4 text-xs text-muted-color">Essaie une autre recherche.</div>
+            }
+            @if (recherche()) {
+                <button pButton type="button" label="Effacer la recherche" icon="pi pi-filter-slash" severity="secondary" [outlined]="true" size="small" class="!rounded-xl" (click)="reinitialiserFiltres()"></button>
+            }
         </div>
     } @else {
 
@@ -179,38 +187,7 @@
             </a>
         }
 
-        @if (onglet() === 'tout' && !compact) {
-            <div class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-                @for (section of sections(); track section.categorie.id) {
-                    <section class="flex min-w-0 flex-col rounded-2xl border border-surface">
-                        <header class="flex items-center justify-between gap-3 border-b border-surface px-4 py-3">
-                            <div class="flex min-w-0 items-center gap-2.5">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                                      [style.background]="teinte(section.categorie.couleur)" [style.color]="section.categorie.couleur">
-                                    <i class="pi text-sm" [ngClass]="section.categorie.icone"></i>
-                                </span>
-                                <div class="flex min-w-0 flex-col">
-                                    <h2 class="!m-0 truncate !text-sm !font-semibold !leading-tight">{{ section.categorie.libelle }}</h2>
-                                    <span class="truncate text-[11px] text-muted-color">{{ section.categorie.description }}</span>
-                                </div>
-                            </div>
-                            <button type="button"
-                                    class="inline-flex shrink-0 cursor-pointer items-center gap-1 rounded-lg border-0 bg-transparent px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-                                    (click)="choisirOnglet(section.categorie.id); conteneur.scrollTo({ top: 0, behavior: 'smooth' })">
-                                Voir les {{ section.total }}
-                                <i class="pi pi-arrow-right text-[10px]"></i>
-                            </button>
-                        </header>
-
-                        <div class="flex flex-col p-1.5">
-                            @for (article of section.articles; track article.id) {
-                                <ng-container *ngTemplateOutlet="ligne; context: { $implicit: article }" />
-                            }
-                        </div>
-                    </section>
-                }
-            </div>
-        } @else if (totalListe() > 0) {
+        @if (totalListe() > 0) {
             <section class="flex flex-col gap-1">
                 @if (!compact) {
                     <h2 class="!m-0 !mb-1 !text-base !font-semibold !leading-snug">Dernières actualités</h2>
