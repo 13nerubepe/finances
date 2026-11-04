@@ -11,7 +11,6 @@ import { ActifService } from '@/app/pages/service/service/actif-service';
 import { Actif, Actualite } from '@/app/models/actif-model';
 
 export type CategorieId = 'action' | 'indice' | 'crypto' | 'general';
-type Onglet = CategorieId | 'tout';
 
 interface Categorie {
     id: CategorieId;
@@ -47,7 +46,6 @@ const CATEGORIES: Categorie[] = [
 
 const PREFIXE_YAHOO = 'Yahoo Finance - ';
 const SUFFIXES_NOM = /[\s,]+(inc\.?|corp\.?|corporation|co\.?|company|ltd\.?|limited|plc|s\.?a\.?|usd)$/i;
-const ARTICLES_PAR_CATEGORIE = 5;
 const ARTICLES_COMPACT = 5;
 
 function nomCourt(nom: string): string {
@@ -86,7 +84,7 @@ export class ActualitesComponent implements OnInit, OnChanges {
     readonly articles = signal<ArticleClasse[]>([]);
     readonly loading = signal(false);
     readonly errorMessage = signal('');
-    readonly onglet = signal<Onglet>('tout');
+    readonly onglet = signal<CategorieId>('action');
     readonly actifSelectionne = signal<string | null>(null);
     readonly recherche = signal('');
     readonly premier = signal(0);
@@ -102,18 +100,19 @@ export class ActualitesComponent implements OnInit, OnChanges {
     });
 
     readonly compteurs = computed(() => {
-        const compteurs: Record<Onglet, number> = { tout: this.articlesRecherches().length, action: 0, indice: 0, crypto: 0, general: 0 };
+        const compteurs: Record<CategorieId, number> = { action: 0, indice: 0, crypto: 0, general: 0 };
         for (const article of this.articlesRecherches()) {
             for (const categorie of article.categories) compteurs[categorie]++;
         }
         return compteurs;
     });
 
-    readonly categorieActive = computed(() => CATEGORIES.find((c) => c.id === this.onglet()) ?? null);
+    readonly categorieActive = computed(() => this.categorie(this.onglet()));
+
+    readonly autresCategories = computed(() => CATEGORIES.filter((c) => c.id !== this.onglet() && this.compteurs()[c.id] > 0));
 
     readonly articlesOnglet = computed(() => {
         const onglet = this.onglet();
-        if (onglet === 'tout') return this.articlesRecherches();
         return this.articlesRecherches().filter((article) => article.categories.includes(onglet));
     });
 
@@ -122,7 +121,7 @@ export class ActualitesComponent implements OnInit, OnChanges {
         const onglet = this.onglet();
         for (const article of this.articlesOnglet()) {
             for (const actif of article.actifs) {
-                if (onglet !== 'tout' && actif.type_actif !== onglet) continue;
+                if (onglet !== 'general' && actif.type_actif !== onglet) continue;
                 const entree = compte.get(actif.symbole) ?? { actif, nombre: 0 };
                 entree.nombre++;
                 compte.set(actif.symbole, entree);
@@ -136,13 +135,6 @@ export class ActualitesComponent implements OnInit, OnChanges {
         if (!symbole) return this.articlesOnglet();
         return this.articlesOnglet().filter((article) => article.actifs.some((a) => a.symbole === symbole));
     });
-
-    readonly sections = computed(() =>
-        CATEGORIES.map((categorie) => {
-            const articles = this.articlesRecherches().filter((article) => article.categories.includes(categorie.id));
-            return { categorie, total: articles.length, articles: articles.slice(0, ARTICLES_PAR_CATEGORIE) };
-        }).filter((section) => section.total > 0)
-    );
 
     readonly principale = computed(() => (this.compact || this.premier() > 0 ? null : (this.articlesFiltres()[0] ?? null)));
 
@@ -188,6 +180,7 @@ export class ActualitesComponent implements OnInit, OnChanges {
                 const liste: Actualite[] = Array.isArray(articles) ? articles : ((articles as { results?: Actualite[] })?.results ?? []);
                 const index = this.indexer(actifs ?? []);
                 this.articles.set(liste.map((article) => this.classer(article, index)));
+                this.choisirOngletDisponible();
                 this.loading.set(false);
             },
             error: (erreur) => {
@@ -231,7 +224,13 @@ export class ActualitesComponent implements OnInit, OnChanges {
         };
     }
 
-    choisirOnglet(onglet: Onglet): void {
+    private choisirOngletDisponible(): void {
+        if (this.compteurs()[this.onglet()] > 0) return;
+        const premiere = CATEGORIES.find((c) => this.compteurs()[c.id] > 0);
+        if (premiere) this.onglet.set(premiere.id);
+    }
+
+    choisirOnglet(onglet: CategorieId): void {
         this.onglet.set(onglet);
         this.actifSelectionne.set(null);
         this.premier.set(0);
@@ -250,8 +249,8 @@ export class ActualitesComponent implements OnInit, OnChanges {
     reinitialiserFiltres(): void {
         this.recherche.set('');
         this.actifSelectionne.set(null);
-        this.onglet.set('tout');
         this.premier.set(0);
+        this.choisirOngletDisponible();
     }
 
     changerPage(evenement: PaginatorState, conteneur: HTMLElement): void {
@@ -276,12 +275,12 @@ export class ActualitesComponent implements OnInit, OnChanges {
 
     categoriePrincipale(article: ArticleClasse): Categorie {
         const onglet = this.onglet();
-        return this.categorie(onglet !== 'tout' && article.categories.includes(onglet) ? onglet : article.categories[0]);
+        return this.categorie(article.categories.includes(onglet) ? onglet : article.categories[0]);
     }
 
     actifsAffiches(article: ArticleClasse): Actif[] {
         const onglet = this.onglet();
-        const actifs = onglet === 'tout' || onglet === 'general' ? article.actifs : article.actifs.filter((a) => a.type_actif === onglet);
+        const actifs = onglet === 'general' ? article.actifs : article.actifs.filter((a) => a.type_actif === onglet);
         return actifs.slice(0, 3);
     }
 
