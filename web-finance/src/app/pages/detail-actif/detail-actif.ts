@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap } from '@angular/router';
@@ -27,6 +27,7 @@ import type { IChartApi, ISeriesApi, MouseEventParams, SeriesType, UTCTimestamp 
 
 import type { Actif, Bougie, FiltresCours, HistoricalPrice } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
+import { AnalyseActif } from '@/app/pages/commons/analyse-actif/analyse-actif';
 
 type TypeGraphe = 'candle' | 'line' | 'area' | 'bar' | 'baseline';
 type ModeGraphe = 'cours' | 'base100';
@@ -74,7 +75,7 @@ const STATS_VIDES: StatsActif = { perf: null, volatilite: null, ouverture: null,
 @Component({
     selector: 'app-detail-actif',
     standalone: true,
-    imports: [CommonModule, FormsModule, Button, MultiSelect, Select, TableModule, Tag],
+    imports: [CommonModule, FormsModule, Button, MultiSelect, Select, TableModule, Tag, AnalyseActif],
     templateUrl: './detail-actif.html',
     styleUrl: './detail-actif.scss'
 })
@@ -87,6 +88,8 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     selection: Actif[] = [];
     reference: Actif | null = null;
     suggestions: Actif[] = [];
+
+    vueTableau: 'historique' | 'comparaison' = 'historique';
 
     maxActifs = 5;
     loading = false;
@@ -139,11 +142,13 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     private readonly subscriptions = new Subscription();
     private readonly surChangementPleinEcran = () => {
         this.pleinEcran = document.fullscreenElement === this.panneauGraphique?.nativeElement;
+        this.cdr.markForCheck();
     };
 
     constructor(
         private actifService: ActifService,
-        private route: ActivatedRoute
+        private route: ActivatedRoute,
+        private cdr: ChangeDetectorRef
     ) {
         this.typesGraphe = this.tousLesTypes;
     }
@@ -152,12 +157,13 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         // switchMap annule la requête en cours : une réponse lente ne peut plus écraser une plus récente.
         this.subscriptions.add(
             this.demandeComparaison$.pipe(switchMap(() => this.chargerHistoriques())).subscribe((series) => {
-                // this.series = series;
+                this.series = series;
                 this.calculerStats();
                 this.adapterTypesDisponibles();
                 this.loading = false;
-                // this.errorMessage = this.messageErreur(series);
+                this.errorMessage = this.messageErreur(series);
                 this.rendreGraphique();
+                this.cdr.markForCheck();
             })
         );
         this.chargerActifs();
@@ -176,6 +182,11 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         this.chart?.remove();
     }
 
+    lignesHistorique(): Bougie[] {
+        const serie = this.series.find((s) => s.actif.id === this.reference?.id);
+        return serie ? [...serie.points].reverse() : [];
+    }
+
     // --------------------------------------------------
     // CHARGEMENT DES ACTIFS
     // --------------------------------------------------
@@ -192,11 +203,15 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
                 })
             )
             .subscribe({
-                next: (params) => this.initialiserDepuisRoute(params),
+                next: (params) => {
+                    this.initialiserDepuisRoute(params);
+                    this.cdr.markForCheck();
+                },
                 error: (err) => {
                     console.error('Erreur de chargement des actifs :', err);
                     this.errorMessage = 'Impossible de charger les actifs.';
                     this.loading = false;
+                    this.cdr.markForCheck();
                 }
             });
 
@@ -610,7 +625,10 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
             localization: { locale: 'fr-FR' }
         });
         this.appliquerTheme();
-        this.chart.subscribeCrosshairMove((param) => this.majLegende(param));
+        this.chart.subscribeCrosshairMove((param) => {
+            this.majLegende(param);
+            this.cdr.markForCheck();
+        });
 
         // Suit le passage clair/sombre de l'application.
         this.observateurTheme = new MutationObserver(() => this.appliquerTheme());
@@ -622,20 +640,20 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         const sombre = racine.contains('app-dark') || racine.contains('dark');
         const grille = sombre ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.06)';
 
-        // this.chart?.applyOptions({
-        //     layout: {
-        //         background: { type: ColorType.Solid, color: 'transparent' },
-        //         textColor: sombre ? '#b2b5be' : '#5d606b',
-        //         attributionLogo: true
-        //     },
-        //     grid: { vertLines: { color: grille }, horzLines: { color: grille } }
-        // });
+        this.chart?.applyOptions({
+            layout: {
+                background: { type: ColorType.Solid, color: 'transparent' },
+                textColor: sombre ? '#b2b5be' : '#5d606b',
+                attributionLogo: true
+            },
+            grid: { vertLines: { color: grille }, horzLines: { color: grille } }
+        });
     }
 
     private appliquerOptionsEchelle(): void {
-        // this.chart?.applyOptions({
-        //     rightPriceScale: { mode: this.echelleLog ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal }
-        // });
+        this.chart?.applyOptions({
+            rightPriceScale: { mode: this.echelleLog ? PriceScaleMode.Logarithmic : PriceScaleMode.Normal }
+        });
     }
 
     private rendreGraphique(): void {

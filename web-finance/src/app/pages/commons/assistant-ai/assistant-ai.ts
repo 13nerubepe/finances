@@ -1,7 +1,6 @@
-import { Component, ElementRef, inject, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, inject, ViewChild } from '@angular/core';
 import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Tag } from 'primeng/tag';
 import { ButtonDirective } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
@@ -16,12 +15,13 @@ interface Message {
 
 @Component({
     selector: 'app-assistant-ai',
-    imports: [NgIf, NgFor, NgClass, DatePipe, FormsModule, Tag, ButtonDirective, Dialog, InputText],
+    imports: [NgIf, NgFor, NgClass, DatePipe, FormsModule, ButtonDirective, Dialog, InputText],
     templateUrl: './assistant-ai.html',
     styleUrl: './assistant-ai.scss'
 })
 export class AssistantAi {
     private readonly assistantService = inject(AssistantIaService);
+    private readonly cdr = inject(ChangeDetectorRef);
 
     @ViewChild('zoneMessages') zoneMessages?: ElementRef<HTMLElement>;
 
@@ -32,10 +32,10 @@ export class AssistantAi {
     messages: Message[] = [];
 
     actions = [
-        { id: 'conges', titre: 'Gérer les congés', sousTitre: 'Demandes et absences', icone: 'pi-calendar', couleur: 'text-orange-500', question: 'Comment gérer les congés ?' },
-        { id: 'effectifs', titre: 'Voir les effectifs', sousTitre: 'Statistiques du personnel', icone: 'pi-users', couleur: 'text-blue-500', question: 'Quels sont les effectifs actuels ?' },
-        { id: 'departements', titre: 'Départements', sousTitre: 'Structures et organisation', icone: 'pi-sitemap', couleur: 'text-purple-500', question: 'Présente-moi les départements.' },
-        { id: 'politiques-rh', titre: 'Politiques RH', sousTitre: 'Règles et procédures', icone: 'pi-book', couleur: 'text-green-600', question: 'Quelles sont les politiques RH ?' }
+        { id: 'pics', titre: 'Expliquer un pic', sousTitre: 'Volatilité et actualités', icone: 'pi-bolt', couleur: 'text-orange-500', question: 'Quels sont les derniers pics de volatilité et quelles actualités peuvent les expliquer ?' },
+        { id: 'volatilite', titre: 'Volatilité', sousTitre: 'Actifs les plus agités', icone: 'pi-chart-line', couleur: 'text-blue-500', question: 'Quels actifs du panier sont les plus volatils actuellement ?' },
+        { id: 'actualites', titre: 'Actualités', sousTitre: 'Dernières informations', icone: 'pi-globe', couleur: 'text-green-600', question: 'Quelles sont les dernières actualités importantes pour les actifs suivis ?' },
+        { id: 'correlations', titre: 'Corrélations', sousTitre: 'Liens entre actifs', icone: 'pi-sitemap', couleur: 'text-purple-500', question: 'Quels actifs du panier évoluent dans le même sens ou en sens opposés ?' }
     ];
 
     basculer(): void {
@@ -62,6 +62,7 @@ export class AssistantAi {
             next: (res) => {
                 this.messages.push({ auteur: 'ia', texte: res.reponse, sources: res.sources, heure: new Date() });
                 this.enCours = false;
+                this.cdr.markForCheck();
                 this.defiler();
             },
             error: () => {
@@ -71,6 +72,7 @@ export class AssistantAi {
                     heure: new Date()
                 });
                 this.enCours = false;
+                this.cdr.markForCheck();
                 this.defiler();
             }
         });

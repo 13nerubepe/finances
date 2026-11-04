@@ -21,7 +21,9 @@
 
             <div class="tv-prix">
                 <span class="tv-prix-valeur">{{ formaterPrix(prixActuel(actif)) }}</span>
-                <span class="tv-prix-devise">{{ actif.devise }}</span>
+                @if (prixActuel(actif) !== null) {
+                    <span class="tv-prix-devise">{{ actif.devise }}</span>
+                }
                 <span class="tv-prix-variation" [ngClass]="classeVariation(var24h(actif))">
                     {{ formaterVariation(var24h(actif)) }}
                     <small>24h</small>
@@ -126,7 +128,8 @@
                         styleClass="tv-champ" />
                 </label>
 
-                <p-button label="Comparer" icon="pi pi-chart-line" size="small" [loading]="loading" (onClick)="comparer()" />
+                <p-button label="Comparer" icon="pi pi-chart-line" size="small" [loading]="loading"
+                          (onClick)="comparer(); vueTableau = 'comparaison'" />
 
                 <!-- Pastilles sélectionnées (clic = retirer) -->
                 <div class="tv-pastilles">
@@ -246,7 +249,13 @@
                         </div>
                         <div>
                             <dt>Volatilité</dt>
-                            <dd>{{ formaterPrix(volatilite(actif)) }} %</dd>
+                            <dd>{{ volatilite(actif) !== null ? formaterPrix(volatilite(actif)) + ' %' : '—' }}</dd>
+                        </div>
+                        <div>
+                            <dt>Amplitude</dt>
+                            @let haut = statsActif(actif).haut;
+                            @let bas = statsActif(actif).bas;
+                            <dd>{{ haut !== null && bas !== null && bas > 0 ? formaterPrix((haut! / bas! - 1) * 100) + ' %' : '—' }}</dd>
                         </div>
                         <div>
                             <dt>Ouverture</dt>
@@ -302,78 +311,131 @@
         </div>
     }
 
-    <!-- Tableau -->
+    <!-- Historique et comparaison -->
     <section class="tv-panel tv-panneau-tableau">
-        <h2>Indicateurs de performance</h2>
+        <div class="tv-groupe mb-4" role="group" aria-label="Choix du tableau">
+            <button type="button" class="tv-bouton" [class.actif]="vueTableau === 'historique'"
+                    [attr.aria-pressed]="vueTableau === 'historique'" (click)="vueTableau = 'historique'">
+                <i class="pi pi-history"></i> Historique
+            </button>
+            <button type="button" class="tv-bouton" [class.actif]="vueTableau === 'comparaison'"
+                    [attr.aria-pressed]="vueTableau === 'comparaison'" (click)="vueTableau = 'comparaison'">
+                <i class="pi pi-chart-line"></i> Comparaison
+            </button>
+        </div>
 
-        <p-table [value]="selection" [loading]="loading" size="small" [tableStyle]="{ 'min-width': '52rem' }">
-            <ng-template #header>
-                <tr>
-                    <th>Actif</th>
-                    <th class="text-right">Prix actuel</th>
-                    <th class="text-right">Variation (24h)</th>
-                    <th class="text-right">Volatilité ({{ periodeLabel }})</th>
-                    <th class="text-right">Écart vs {{ reference?.symbole }}</th>
-                    <th style="width: 16rem">Performance ({{ periodeLabel }})</th>
-                </tr>
-            </ng-template>
+        @if (vueTableau === 'historique') {
+            <h2>Historique {{ reference ? 'de ' + reference?.symbole : '' }} ({{ periodeLabel }})</h2>
 
-            <ng-template #body let-a>
-                <tr class="tv-rangee" [class.selectionnee]="a.id === reference?.id" (click)="definirReference(a)">
-                    <td>
-                        <div class="flex items-center gap-3">
-                            @if (a.logo) {
-                                <img [src]="a.logo" [alt]="a.nom" class="tv-logo tv-logo-petit" />
-                            } @else {
-                                <span class="tv-logo tv-logo-petit tv-logo-texte" [style.background]="couleur(a)">{{ a.symbole.slice(0, 2) }}</span>
-                            }
-                            <div class="flex flex-col leading-tight">
-                                <span class="font-semibold">
-                                    {{ a.nom }}
-                                    @if (a.id === reference?.id) {
-                                        <p-tag value="Référence" severity="info" styleClass="ml-2" />
-                                    }
-                                </span>
-                                <span class="tv-muet text-xs">
-                                    {{ a.symbole }} · <span class="capitalize">{{ a.type_actif }}</span>
+            <p-table [value]="lignesHistorique()" [loading]="loading" size="small" [paginator]="true" [rows]="10"
+                     [tableStyle]="{ 'min-width': '42rem' }">
+                <ng-template #header>
+                    <tr>
+                        <th>Date</th>
+                        <th class="text-right">Ouverture</th>
+                        <th class="text-right">Haut</th>
+                        <th class="text-right">Bas</th>
+                        <th class="text-right">Clôture</th>
+                        <th class="text-right">Volume</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template #body let-ligne>
+                    <tr>
+                        <td>{{ ligne.time * 1000 | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td class="text-right tv-chiffre">{{ formaterPrix(ligne.open) }}</td>
+                        <td class="text-right tv-chiffre">{{ formaterPrix(ligne.high) }}</td>
+                        <td class="text-right tv-chiffre">{{ formaterPrix(ligne.low) }}</td>
+                        <td class="text-right tv-chiffre">{{ formaterPrix(ligne.close) }}</td>
+                        <td class="text-right tv-chiffre">{{ formaterVolume(ligne.volume) }}</td>
+                    </tr>
+                </ng-template>
+
+                <ng-template #emptymessage>
+                    <tr>
+                        <td colspan="6" class="text-center tv-muet">Aucune donnée sur cette période.</td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        } @else {
+            <h2>Indicateurs de performance</h2>
+
+            <p-table [value]="selection" [loading]="loading" size="small" [tableStyle]="{ 'min-width': '52rem' }">
+                <ng-template #header>
+                    <tr>
+                        <th>Actif</th>
+                        <th class="text-right">Prix actuel</th>
+                        <th class="text-right">Variation (24h)</th>
+                        <th class="text-right">Volatilité ({{ periodeLabel }})</th>
+                        <th class="text-right">Écart vs {{ reference?.symbole }}</th>
+                        <th style="width: 16rem">Performance ({{ periodeLabel }})</th>
+                    </tr>
+                </ng-template>
+
+                <ng-template #body let-a>
+                    <tr class="tv-rangee" [class.selectionnee]="a.id === reference?.id" (click)="definirReference(a)">
+                        <td>
+                            <div class="flex items-center gap-3">
+                                @if (a.logo) {
+                                    <img [src]="a.logo" [alt]="a.nom" class="tv-logo tv-logo-petit" />
+                                } @else {
+                                    <span class="tv-logo tv-logo-petit tv-logo-texte" [style.background]="couleur(a)">{{ a.symbole.slice(0, 2) }}</span>
+                                }
+                                <div class="flex flex-col leading-tight">
+                                    <span class="font-semibold">
+                                        {{ a.nom }}
+                                        @if (a.id === reference?.id) {
+                                            <p-tag value="Référence" severity="info" styleClass="ml-2" />
+                                        }
+                                    </span>
+                                    <span class="tv-muet text-xs">
+                                        {{ a.symbole }} · <span class="capitalize">{{ a.type_actif }}</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <td class="text-right font-medium tv-chiffre">
+                            {{ formaterPrix(prixActuel(a)) }} {{ prixActuel(a) !== null ? a.devise : '' }}
+                        </td>
+
+                        <td class="text-right font-medium tv-chiffre" [ngClass]="classeVariation(var24h(a))">
+                            {{ formaterVariation(var24h(a)) }}
+                        </td>
+
+                        <td class="text-right tv-chiffre">
+                            {{ volatilite(a) !== null ? formaterPrix(volatilite(a)) + ' %' : '—' }}
+                        </td>
+
+                        <td class="text-right font-medium tv-chiffre"
+                            [ngClass]="a.id === reference?.id ? 'neutre' : classeVariation(ecart(a))">
+                            {{ a.id === reference?.id ? '—' : formaterVariation(ecart(a), ' pts') }}
+                        </td>
+
+                        <!-- Barre de performance : vert à droite, rouge à gauche -->
+                        <td>
+                            <div class="flex items-center gap-3">
+                                <div class="tv-barre">
+                                    <span class="tv-barre-axe"></span>
+                                    <span class="tv-barre-valeur"
+                                          [ngClass]="(perf(a) ?? 0) >= 0 ? 'positive' : 'negative'"
+                                          [style.width.%]="largeurBarre(a)"></span>
+                                </div>
+                                <span class="tv-barre-texte tv-chiffre" [ngClass]="classeVariation(perf(a))">
+                                    {{ formaterVariation(perf(a)) }}
                                 </span>
                             </div>
-                        </div>
-                    </td>
-
-                    <td class="text-right font-medium tv-chiffre">
-                        {{ formaterPrix(prixActuel(a)) }} {{ prixActuel(a) !== null ? a.devise : '' }}
-                    </td>
-
-                    <td class="text-right font-medium tv-chiffre" [ngClass]="classeVariation(var24h(a))">
-                        {{ formaterVariation(var24h(a)) }}
-                    </td>
-
-                    <td class="text-right tv-chiffre">
-                        {{ volatilite(a) !== null ? formaterPrix(volatilite(a)) + ' %' : '—' }}
-                    </td>
-
-                    <td class="text-right font-medium tv-chiffre"
-                        [ngClass]="a.id === reference?.id ? 'neutre' : classeVariation(ecart(a))">
-                        {{ a.id === reference?.id ? '—' : formaterVariation(ecart(a), ' pts') }}
-                    </td>
-
-                    <!-- Barre de performance : vert à droite, rouge à gauche -->
-                    <td>
-                        <div class="flex items-center gap-3">
-                            <div class="tv-barre">
-                                <span class="tv-barre-axe"></span>
-                                <span class="tv-barre-valeur"
-                                      [ngClass]="(perf(a) ?? 0) >= 0 ? 'positive' : 'negative'"
-                                      [style.width.%]="largeurBarre(a)"></span>
-                            </div>
-                            <span class="tv-barre-texte tv-chiffre" [ngClass]="classeVariation(perf(a))">
-                                {{ formaterVariation(perf(a)) }}
-                            </span>
-                        </div>
-                    </td>
-                </tr>
-            </ng-template>
-        </p-table>
+                        </td>
+                    </tr>
+                </ng-template>
+            </p-table>
+        }
     </section>
+
+    <!-- Volatilité, mouvements inhabituels, corrélation et actualités de l'actif de référence -->
+    @if (reference; as actif) {
+        <section class="tv-panel tv-panneau-tableau">
+            <app-analyse-actif [symbole]="actif.symbole" [actifs]="selection" [lignes]="lignesHistorique()"></app-analyse-actif>
+        </section>
+    }
 </div>

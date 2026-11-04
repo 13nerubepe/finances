@@ -13,19 +13,16 @@
     </div>
 
     <!-- Ligne 2 : TopMoves et Actualités -->
-    <div class="col-span-12 grid min-w-0 grid-cols-1 items-start gap-6 lg:grid-cols-2">
+    <div class="col-span-12 grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
 
         <!-- TopMoves -->
-        <div class="min-w-0 overflow-hidden rounded-2xl">
+        <div class="min-w-0 rounded-2xl">
             <app-topmoves />
         </div>
 
-        <!-- Actualités compactes dans le dashboard -->
-<!--        <div class="dashboard-actualites min-w-0">-->
-<!--            <app-actualites />-->
-<!--        </div>-->
-        <div class="min-w-0 overflow-hidden rounded-2xl">
-            <app-topmoves />
+        <!-- Actualités : version courte, même hauteur que TopMoves -->
+        <div class="relative h-[28rem] min-w-0 overflow-hidden rounded-2xl lg:h-auto lg:min-h-[28rem]">
+            <app-actualites [compact]="true" class="block h-full lg:absolute lg:inset-0" />
         </div>
 
     </div>

@@ -56,7 +56,7 @@ class Command(BaseCommand):
 
         planificateur.add_job(import_journalier, "interval", hours=5)
         planificateur.add_job(synchronisation, "interval", minutes=5)
-        planificateur.add_job(collecte_rss, "interval", minutes=5)
+        planificateur.add_job(collecte_rss, "interval", hours=1)
 
         self.stdout.write(self.style.SUCCESS("Planificateur démarré."))
         planificateur.start()

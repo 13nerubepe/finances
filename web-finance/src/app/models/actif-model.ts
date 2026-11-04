@@ -1,38 +1,23 @@
-
 import type { UTCTimestamp } from 'lightweight-charts';
 
-/**
- * Actif financier
- */
+export type Frequence = '5min' | '15min' | '1h' | '1j';
+
+/* ---------- Actifs ---------- */
 
 export interface Actif {
     id: number;
     symbole: string;
     nom: string;
     type_actif: 'action' | 'indice' | 'crypto';
-    // Prix actuel
     devise: string;
     est_suivi: boolean;
-
-    // Données complémentaires
     prix_actuel?: number;
     variation?: number;
     logo?: string;
     trend?: 'up' | 'down' | 'stable';
 }
-//
-// /**
-//  * Option d'actif pour les listes déroulantes
-//  */
-// export interface ActifOption {
-//     actifId: number;
-//     symbol: string;
-//     name: string;
-// }
 
-/**
- * Historique des cours
- */
+/* ---------- Cours ---------- */
 
 export interface HistoricalPrice {
     actif: string;
@@ -43,6 +28,7 @@ export interface HistoricalPrice {
     close: number;
     volume: number;
 }
+
 export interface HistoricalPriceResponse {
     count: number;
     next: string | null;
@@ -50,26 +36,12 @@ export interface HistoricalPriceResponse {
     results: HistoricalPrice[];
 }
 
-/**
- * Filtres de recherche des cours historiques
- */
 export interface FiltresCours {
     actif: string;
     debut?: string;
     fin?: string;
-    // frequence?: 'daily' | 'weekly' | 'monthly';
 }
 
-/**
- * Fréquence des données historiques
- */
-// export type Frequence = NonNullable<FiltresCours['frequence']>;
-
-
-
-/**
- * Bougie adaptée à Lightweight Charts
- */
 export interface Bougie {
     time: UTCTimestamp;
     open: number;
@@ -79,217 +51,98 @@ export interface Bougie {
     volume: number;
 }
 
-
-/**
- * Période d'affichage du graphique
- */
 export interface Periode {
     label: string;
     value: string;
     jours: number;
-    // frequence: Frequence;
 }
 
-/**
- * Paramètres d'analyse de volatilité
- */
-export interface AnalyseVolatiliteParams {
-    actifs: string[];
-    periode: number;
-    // frequence?: Frequence;
-}
+/* ---------- Volatilité ---------- */
 
-/**
- * Rendement d'un actif
- */
-export interface RendementActif {
-    date: string;
-    symbol: string;
-    rendement: number;
-}
-
-/**
- * Point de volatilité glissante
- */
 export interface PointVolatilite {
-    date: string;
-    symbol: string;
-    volatilite: number;
-    fenetre: number;
+    horodatage: string;
+    close: number;
+    rendement: number | null;
+    volatilite: number | null;
+    amplitude: number | null;
 }
 
-/**
- * Indicateurs de volatilité et niveau de risque
- */
-export interface IndicateursVolatilite {
-    volatiliteActuelle: number;
-    volatiliteMoyenne: number;
-    volatiliteMaximale: number;
-    niveauRisque: 'faible' | 'modere' | 'eleve' | 'critique';
-}
-
-/**
- * Mouvement inhabituel détecté
- */
-export interface MouvementInhabituel {
+export interface VolatiliteResponse {
     actif: string;
-    date: string;
-    variation: number;
-    type: string;
-    description: string;
+    fenetre: number;
+    frequence: Frequence;
+    debut: string;
+    fin: string;
+    resume: {
+        nb_points: number;
+        volatilite_derniere: number | null;
+        volatilite_moyenne: number | null;
+        amplitude_periode: number | null;
+        rendement_periode: number | null;
+    };
+    serie: PointVolatilite[];
 }
 
-/**
- * Matrice de corrélation entre les actifs
- */
-export interface MatriceCorrelation {
+/* ---------- Mouvements inhabituels ---------- */
+
+export interface Pic {
+    debut: string;
+    fin: string;
+    nb_points: number;
+    horodatage_max: string;
+    volatilite_max: number;
+    score_max: number;
+    variation_prix: number;
+}
+
+export interface PicsResponse {
+    actif: string;
+    fenetre: number;
+    frequence: Frequence;
+    seuil: number;
+    debut: string;
+    fin: string;
+    moyenne: number;
+    ecart_type: number;
+    limite: number;
+    pics: Pic[];
+}
+
+/* ---------- Corrélations ---------- */
+
+export interface CorrelationsResponse {
     actifs: string[];
-    matrice: number[][];
+    frequence: Frequence;
+    debut: string;
+    fin: string;
+    correlations: Record<string, Record<string, number | null>>;
+    observations: Record<string, Record<string, number>>;
 }
 
-/**
- * Résultat de l'analyse de volatilité
- */
-export interface ResultatAnalyseVolatilite {
-    donnees: {
-        date: string;
-        cours: number;
-        volatilite: number;
-    }[];
+/* ---------- Actualités ---------- */
 
-    indicateurs: IndicateursVolatilite;
-
-    correlations: {
-        actif1: string;
-        actif2: string;
-        correlation: number;
-    }[];
-
-    covariances?: {
-        actif1: string;
-        actif2: string;
-        covariance: number;
-    }[];
-
-    matriceCorrelation?: MatriceCorrelation;
-
-    mouvementsInhabituels: MouvementInhabituel[];
-}
-
-/**
- * Alerte de risque
- */
-export interface AlerteRisque {
-    symbol: string;
-    date: string;
-    niveau: 'faible' | 'modere' | 'eleve' | 'critique';
-    message: string;
-}
-
-/**
- * Portefeuille financier
- */
-export interface Portefeuille {
-    portefeuilleId: number;
-    nom: string;
-    devise: string;
-    valeurTotale: number;
-    variation: number;
-    dateCreation: string;
-}
-
-/**
- * Position détenue dans un portefeuille
- */
-export interface PositionPortefeuille {
-    positionId: number;
-    portefeuilleId: number;
-    actifId: number;
-    symbol: string;
-    nom: string;
-    quantite: number;
-    prixAchat: number;
-    prixActuel: number;
-    valeurTotale: number;
-    rendement: number;
-    poids: number;
-}
-
-/**
- * Transaction : achat ou vente d'un actif
- */
-export interface Transaction {
-    transactionId: number;
-    portefeuilleId: number;
-    actifId: number;
-    symbol: string;
-    type: 'achat' | 'vente';
-    quantite: number;
-    prixUnitaire: number;
-    montantTotal: number;
-    frais?: number;
-    dateTransaction: string;
-    devise: string;
-}
-
-/**
- * Données nécessaires à la création d'une transaction
- */
-export type NouvelleTransaction = Omit<Transaction, 'transactionId'>;
-
-/**
- * Historique de la valeur du portefeuille
- */
-export interface HistoriquePortefeuille {
-    historiqueId: number;
-    portefeuilleId: number;
-    date: string;
-    valeurTotale: number;
-    liquidites: number;
-    valeurActifs: number;
-}
-
-/**
- * Performance financière du portefeuille
- */
-export interface PerformancePortefeuille {
-    portefeuilleId: number;
-    valeurInitiale: number;
-    valeurActuelle: number;
-    gainsPertes: number;
-    rendementPourcentage: number;
-    variationJournaliere?: number;
-    dateDebut: string;
-    dateFin: string;
-    devise: string;
-}
-
-/**
- * Actualité financière issue d'un flux RSS
- */
 export interface Actualite {
     id: number;
     titre: string;
-    resume: string;
+    lien: string;
+    auteur: string;
     contenu: string;
-    source: string;
-    categorie: string;
-    url: string;
-    imageUrl?: string;
-    datePublication: string;
+    date_publication: string | null;
+    themes: string[];
+    source: number;
+    source_nom: string;
 }
 
-/**
- * Réponse contenant une liste d'actualités
- */
-export interface ActualiteResponse {
-    results: Actualite[];
-    count?: number;
+export interface SourceActualites {
+    id: number;
+    nom: string;
+    url_flux: string;
+    actif: boolean;
+    derniere_collecte: string | null;
 }
 
-/**
- * Message envoyé à l'assistant IA
- */
+/* ---------- Assistant IA : à vérifier avec les routes de agent ---------- */
+
 export interface MessageAssistantIA {
     id: number;
     role: 'user' | 'assistant';
@@ -297,46 +150,32 @@ export interface MessageAssistantIA {
     dateCreation: string;
 }
 
-/**
- * Requête adressée à l'assistant IA
- */
 export interface RequeteAssistantIA {
     message: string;
     symboles?: string[];
-    portefeuilleId?: number;
     dateDebut?: string;
     dateFin?: string;
 }
 
-/**
- * Réponse de l'assistant IA
- */
-export interface ReponseAssistantIA {
-    reponse: string;
-    dateCreation?: string;
-    sources?: SourceAssistantIA[];
-}
-
-/**
- * Source utilisée par l'assistant IA
- */
 export interface SourceAssistantIA {
     titre: string;
     url: string;
     type: 'actualite' | 'donnee_marche' | 'analyse';
 }
 
-/**
- * Réponse de répartition du portefeuille pour le tableau de bord
- */
+export interface ReponseAssistantIA {
+    reponse: string;
+    dateCreation?: string;
+    sources?: SourceAssistantIA[];
+}
+
+/* ---------- Tableau de bord ---------- */
+
 export interface PortfolioDistributionResponse {
     labels: string[];
     values: number[];
 }
 
-/**
- * Actif présent dans le classement des plus fortes variations
- */
 export interface TopMover {
     symbol: string;
     name: string;
@@ -345,10 +184,15 @@ export interface TopMover {
     changePercent: number;
 }
 
-/**
- * Réponse du classement des actifs les plus variables
- */
 export interface TopMoversResponse {
     gainers: TopMover[];
     losers: TopMover[];
+}
+
+export interface Analyse {
+    volatilite: VolatiliteResponse | null;
+    pics: PicsResponse | null;
+    correlations: CorrelationsResponse | null;
+    covariances: Record<string, Record<string, number | null>>;
+    actualites: Actualite[] | null;
 }

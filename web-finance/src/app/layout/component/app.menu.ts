@@ -27,11 +27,11 @@ export class AppMenu {
                 label: 'Home',
                 items: [
                     { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/'] },
-                    { label: 'Actif', icon: 'pi pi-fw pi-home', routerLink: ['/actifs'] },
+                    { label: 'Actif', icon: 'pi pi-fw pi-chart-line', routerLink: ['/actifs'] },
                     // { label: 'Analyse de volatilité', icon: 'pi pi-fw pi-home', routerLink: ['/volatile'] },
                     // ANALYSE DE LA VOLATILITE
                     // { label: 'Analyse de volatilité', icon: 'pi pi-fw pi-home', routerLink: ['/comparaison'] },
-                    { label: 'Actualités', icon: 'pi pi-fw pi-home', routerLink: ['/actualités'] },
+                    { label: 'Actualités', icon: 'pi pi-fw pi-globe', routerLink: ['/actualités'] },
                 ]
             },
 
