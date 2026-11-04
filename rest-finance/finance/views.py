@@ -1,7 +1,7 @@
 from django.conf import settings
+from django.db.models import Count, Prefetch
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, viewsets
-from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -12,14 +12,14 @@ from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, Ou
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from marches.models import Actif
-
 from .models import Portefeuille, Position
 from .serializers import (
+    AjoutActifSerializer,
     ChangerMotDePasseSerializer,
     ConnexionSerializer,
     InscriptionSerializer,
     ModifierProfilSerializer,
+    PortefeuilleDetailSerializer,
     PortefeuilleSerializer,
     PositionSerializer,
     UserSerializer,
@@ -141,31 +141,71 @@ class ChangerMotDePasseView(APIView):
         return response
 
 
-class PortefeuilleViewSet(viewsets.ModelViewSet):
-    """Portefeuilles de l'utilisateur connecté (il ne voit jamais ceux des autres)."""
+def _mon_portefeuille(request, pk):
+    """Renvoie le portefeuille s'il appartient à l'utilisateur connecté, sinon 404
+    (on ne révèle pas l'existence des portefeuilles des autres)."""
+    return get_object_or_404(Portefeuille.objects.filter(utilisateur=request.user), pk=pk)
 
-    serializer_class = PortefeuilleSerializer
+
+class PortefeuilleViewSet(viewsets.ModelViewSet):
+    """Portefeuilles de l'utilisateur connecté : liste, création, détail, modification, suppression."""
+
     permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "patch", "delete", "head", "options"]
+    pagination_class = None  # un utilisateur a peu de portefeuilles
 
     def get_queryset(self):
-        return Portefeuille.objects.filter(utilisateur=self.request.user).prefetch_related("actifs")
+        if getattr(self, "swagger_fake_view", False):  # génération de la documentation
+            return Portefeuille.objects.none()
+
+        portefeuilles = Portefeuille.objects.filter(utilisateur=self.request.user).annotate(
+            nb_actifs=Count("positions")
+        )
+        if self.action == "retrieve":
+            positions = Position.objects.select_related("actif").order_by("actif__symbole")
+            portefeuilles = portefeuilles.prefetch_related(Prefetch("positions", queryset=positions))
+        return portefeuilles.order_by("nom")
+
+    def get_serializer_class(self):
+        return PortefeuilleDetailSerializer if self.action == "retrieve" else PortefeuilleSerializer
 
     def perform_create(self, serializer):
         serializer.save(utilisateur=self.request.user)
 
-    def _actif_demande(self, request):
-        serializer = PositionSerializer(data=request.data)
+
+class AjoutActifView(generics.GenericAPIView):
+    """Ajoute un actif (et sa quantité facultative) dans un portefeuille."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = AjoutActifSerializer
+
+    def post(self, request, pk):
+        portefeuille = _mon_portefeuille(request, pk)
+        serializer = AjoutActifSerializer(data=request.data, context={"portefeuille": portefeuille})
         serializer.is_valid(raise_exception=True)
-        return get_object_or_404(Actif, symbole=serializer.validated_data["symbole"].upper())
+        position = serializer.save()
+        return Response(PositionSerializer(position).data, status=status.HTTP_201_CREATED)
 
-    @action(detail=True, methods=["post"], url_path="ajouter-actif", serializer_class=PositionSerializer)
-    def ajouter_actif(self, request, pk=None):
-        portefeuille = self.get_object()
-        Position.objects.get_or_create(portefeuille=portefeuille, actif=self._actif_demande(request))
-        return Response(PortefeuilleSerializer(self.get_object()).data)
 
-    @action(detail=True, methods=["post"], url_path="retirer-actif", serializer_class=PositionSerializer)
-    def retirer_actif(self, request, pk=None):
-        portefeuille = self.get_object()
-        Position.objects.filter(portefeuille=portefeuille, actif=self._actif_demande(request)).delete()
-        return Response(PortefeuilleSerializer(self.get_object()).data)
+class ActifDuPortefeuilleView(generics.GenericAPIView):
+    """Modifie la quantité d'un actif du portefeuille (PATCH) ou le retire (DELETE)."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = PositionSerializer
+    http_method_names = ["patch", "delete", "head", "options"]
+
+    def _position(self, request, pk, symbole):
+        portefeuille = _mon_portefeuille(request, pk)
+        positions = Position.objects.select_related("actif")
+        return get_object_or_404(positions, portefeuille=portefeuille, actif__symbole__iexact=symbole)
+
+    def patch(self, request, pk, symbole):
+        position = self._position(request, pk, symbole)
+        serializer = PositionSerializer(position, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request, pk, symbole):
+        self._position(request, pk, symbole).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

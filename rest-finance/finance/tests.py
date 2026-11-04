@@ -1,24 +1,29 @@
-# from django.test import TestCase
+from decimal import Decimal
 
-# Create your tests here.
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from .models import User
 from marches.models import Actif
 
+from .models import User
+
+# Noms de champs attendus par le frontend
 DONNEES_VALIDES = {
-    "nom": "Mballa",
-    "prenom": "Yves",
-    "telephone": "+237690000000",
+    "first_name": "Yves",
+    "last_name": "Mballa",
+    "email": "yves@example.com",
+    "phone": "+237690000000",
     "password": "Motdepasse-Solide-2026",
 }
 
 
 class InscriptionTests(APITestCase):
+    def inscrire(self, **modifications):
+        return self.client.post(reverse("inscription"), {**DONNEES_VALIDES, **modifications})
+
     def test_inscription_reussie(self):
-        r = self.client.post(reverse("inscription"), DONNEES_VALIDES)
+        r = self.inscrire()
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
         self.assertNotIn("password", r.data)  # le mot de passe n'est jamais renvoyé
         user = User.objects.get(telephone="+237690000000")
@@ -26,60 +31,58 @@ class InscriptionTests(APITestCase):
         self.assertTrue(user.check_password(DONNEES_VALIDES["password"]))
 
     def test_espaces_dans_le_telephone_sont_retires(self):
-        donnees = {**DONNEES_VALIDES, "telephone": "+237 690 000 000"}
-        r = self.client.post(reverse("inscription"), donnees)
+        r = self.inscrire(phone="+237 690 000 000")
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(r.data["telephone"], "+237690000000")
+        self.assertEqual(r.data["phone"], "+237690000000")
 
     def test_numero_sans_indicatif_est_normalise(self):
-        donnees = {**DONNEES_VALIDES, "telephone": "696543193"}
-        r = self.client.post(reverse("inscription"), donnees)
+        r = self.inscrire(phone="696543193")
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(r.data["telephone"], "+237696543193")
+        self.assertEqual(r.data["phone"], "+237696543193")
 
     def test_numero_avec_237_sans_plus_est_normalise(self):
-        donnees = {**DONNEES_VALIDES, "telephone": "237696543193"}
-        r = self.client.post(reverse("inscription"), donnees)
+        r = self.inscrire(phone="237696543193")
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(r.data["telephone"], "+237696543193")
-
+        self.assertEqual(r.data["phone"], "+237696543193")
 
     def test_telephone_invalide(self):
-        donnees = {**DONNEES_VALIDES, "telephone": "0690000000"}
-        r = self.client.post(reverse("inscription"), donnees)
+        r = self.inscrire(phone="0690000000")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("telephone", r.data)
+        self.assertIn("phone", r.data)
 
     def test_telephone_deja_utilise(self):
-        self.client.post(reverse("inscription"), DONNEES_VALIDES)
-        r = self.client.post(reverse("inscription"), DONNEES_VALIDES)
+        self.inscrire()
+        r = self.inscrire(email="autre@example.com", phone="690000000")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("telephone", r.data)
+        self.assertIn("phone", r.data)
+
+    def test_email_deja_utilise(self):
+        self.inscrire()
+        r = self.inscrire(email="YVES@example.com", phone="691111111")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", r.data)
 
     def test_mot_de_passe_trop_faible(self):
-        donnees = {**DONNEES_VALIDES, "password": "12345678"}
-        r = self.client.post(reverse("inscription"), donnees)
+        r = self.inscrire(password="12345678")
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_champ_manquant(self):
-        donnees = {k: v for k, v in DONNEES_VALIDES.items() if k != "nom"}
+        donnees = {k: v for k, v in DONNEES_VALIDES.items() if k != "last_name"}
         r = self.client.post(reverse("inscription"), donnees)
         self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("nom", r.data)
+        self.assertIn("last_name", r.data)
 
 
 class AuthentificationTests(APITestCase):
     def setUp(self):
         User.objects.create_user(
-            telephone=DONNEES_VALIDES["telephone"],
+            telephone=DONNEES_VALIDES["phone"],
             password=DONNEES_VALIDES["password"],
-            nom=DONNEES_VALIDES["nom"],
-            prenom=DONNEES_VALIDES["prenom"],
+            nom=DONNEES_VALIDES["last_name"],
+            prenom=DONNEES_VALIDES["first_name"],
+            email=DONNEES_VALIDES["email"],
         )
-        self.identifiants = {
-            "telephone": DONNEES_VALIDES["telephone"],
-            "password": DONNEES_VALIDES["password"],
-        }
+        self.identifiants = {"email": DONNEES_VALIDES["email"], "password": DONNEES_VALIDES["password"]}
 
     def _connexion(self):
         return self.client.post(reverse("connexion"), self.identifiants)
@@ -88,21 +91,13 @@ class AuthentificationTests(APITestCase):
         r = self._connexion()
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertIn("access", r.data)
-        self.assertIn("refresh", r.data)
-        self.assertEqual(r.data["utilisateur"]["telephone"], "+237690000000")
-    
-    def test_connexion_avec_numero_sans_indicatif(self):
-        r = self.client.post(
-            reverse("connexion"), {**self.identifiants, "telephone": "690000000"}
-        )
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-
+        self.assertNotIn("refresh", r.data)  # le refresh est dans un cookie httpOnly
+        self.assertIn("refresh_token", r.cookies)
+        self.assertEqual(r.data["utilisateur"]["phone"], "+237690000000")
 
     def test_connexion_mauvais_mot_de_passe(self):
-        r = self.client.post(
-            reverse("connexion"), {**self.identifiants, "password": "faux"}
-        )
-        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
+        r = self.client.post(reverse("connexion"), {**self.identifiants, "password": "faux"})
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_moi_sans_token_refuse(self):
         r = self.client.get(reverse("profile"))
@@ -112,34 +107,40 @@ class AuthentificationTests(APITestCase):
         access = self._connexion().data["access"]
         r = self.client.get(reverse("profile"), HTTP_AUTHORIZATION=f"Bearer {access}")
         self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["prenom"], "Yves")
+        self.assertEqual(r.data["first_name"], "Yves")
 
-    def test_rafraichir_donne_un_nouvel_access(self):
-        refresh = self._connexion().data["refresh"]
-        r = self.client.post(reverse("rafraichir"), {"refresh": refresh})
+    def test_rafraichir_avec_le_cookie(self):
+        self._connexion()  # le client de test garde le cookie
+        r = self.client.post(reverse("rafraichir"))
         self.assertEqual(r.status_code, status.HTTP_200_OK)
         self.assertIn("access", r.data)
 
     def test_deconnexion_invalide_le_refresh(self):
-        donnees = self._connexion().data
-        en_tete = {"HTTP_AUTHORIZATION": f"Bearer {donnees['access']}"}
-        r = self.client.post(
-            reverse("deconnexion"), {"refresh": donnees["refresh"]}, **en_tete
-        )
+        refresh = self._connexion().cookies["refresh_token"].value
+        r = self.client.post(reverse("deconnexion"))
         self.assertEqual(r.status_code, status.HTTP_205_RESET_CONTENT)
-        # Le refresh ne peut plus servir
-        r = self.client.post(reverse("rafraichir"), {"refresh": donnees["refresh"]})
+        # On remet l'ancien cookie : il ne doit plus fonctionner
+        self.client.cookies["refresh_token"] = refresh
+        r = self.client.post(reverse("rafraichir"))
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_deconnexion_exige_d_etre_connecte(self):
-        r = self.client.post(reverse("deconnexion"), {"refresh": "x"})
-        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_changer_mot_de_passe(self):
+        access = self._connexion().data["access"]
+        r = self.client.post(
+            reverse("mot-de-passe"),
+            {"current_password": DONNEES_VALIDES["password"], "new_password": "Nouveau-Solide-2027"},
+            HTTP_AUTHORIZATION=f"Bearer {access}",
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertTrue(User.objects.get().check_password("Nouveau-Solide-2027"))
 
     def test_creation_superuser(self):
         admin = User.objects.create_superuser(
-            telephone="+237691111111", password="Admin-Solide-2026", nom="A", prenom="B"
+            telephone="691111111", password="Admin-Solide-2026", nom="A", prenom="B"
         )
         self.assertTrue(admin.is_staff and admin.is_superuser)
+        self.assertEqual(admin.telephone, "+237691111111")
+
 
 class PortefeuilleTests(APITestCase):
     def setUp(self):
@@ -148,25 +149,65 @@ class PortefeuilleTests(APITestCase):
         Actif.objects.create(symbole="AAPL", nom="Apple", type_actif=Actif.TypeActif.ACTION)
         self.client.force_authenticate(self.user)
 
-    def _creer(self):
-        return self.client.post(reverse("portefeuille-list"), {"nom": "Tech"}).data["id"]
+    def _creer(self, nom="Tech"):
+        return self.client.post(reverse("portefeuille-list"), {"nom": nom}, format="json")
 
-    def test_ajouter_un_actif(self):
-        pk = self._creer()
-        r = self.client.post(reverse("portefeuille-ajouter-actif", args=[pk]), {"symbole": "aapl"})
-        self.assertEqual(r.status_code, status.HTTP_200_OK)
-        self.assertEqual(r.data["actifs"], ["AAPL"])
+    def _ajouter(self, pk, **donnees):
+        return self.client.post(reverse("portefeuille-actifs", args=[pk]), donnees, format="json")
+
+    def test_creer_un_portefeuille(self):
+        r = self._creer()
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["nb_actifs"], 0)
+
+    def test_nom_en_double_refuse(self):
+        self._creer("Tech")
+        r = self._creer("tech")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("nom", r.data)
+
+    def test_ajouter_un_actif_avec_quantite(self):
+        pk = self._creer().data["id"]
+        r = self._ajouter(pk, symbole="aapl", quantite="10")
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["symbole"], "AAPL")
+        self.assertEqual(r.data["quantite"], Decimal("10"))
+
+    def test_ajouter_deux_fois_le_meme_actif(self):
+        pk = self._creer().data["id"]
+        self._ajouter(pk, symbole="AAPL")
+        r = self._ajouter(pk, symbole="AAPL")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_actif_inconnu(self):
-        pk = self._creer()
-        r = self.client.post(reverse("portefeuille-ajouter-actif", args=[pk]), {"symbole": "XXXX"})
-        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        pk = self._creer().data["id"]
+        r = self._ajouter(pk, symbole="XXXX")
+        self.assertEqual(r.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("symbole", r.data)
+
+    def test_detail_liste_les_actifs(self):
+        pk = self._creer().data["id"]
+        self._ajouter(pk, symbole="AAPL")
+        r = self.client.get(reverse("portefeuille-detail", args=[pk]))
+        self.assertEqual(r.data["nb_actifs"], 1)
+        self.assertEqual(r.data["actifs"][0]["symbole"], "AAPL")
+
+    def test_modifier_puis_retirer_un_actif(self):
+        pk = self._creer().data["id"]
+        self._ajouter(pk, symbole="AAPL")
+        url = reverse("portefeuille-actif", args=[pk, "aapl"])
+        r = self.client.patch(url, {"quantite": "5"}, format="json")
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["quantite"], Decimal("5"))
+        r = self.client.delete(url)
+        self.assertEqual(r.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(self.client.get(reverse("portefeuille-detail", args=[pk])).data["nb_actifs"], 0)
 
     def test_portefeuille_d_un_autre_invisible(self):
-        pk = self._creer()
+        pk = self._creer().data["id"]
         self.client.force_authenticate(self.autre)
-        r = self.client.get(reverse("portefeuille-detail", args=[pk]))
-        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertEqual(self.client.get(reverse("portefeuille-detail", args=[pk])).status_code, 404)
+        self.assertEqual(self._ajouter(pk, symbole="AAPL").status_code, 404)
 
     def test_sans_token_refuse(self):
         self.client.force_authenticate(None)

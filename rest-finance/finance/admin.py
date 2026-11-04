@@ -33,10 +33,13 @@ class UserAdmin(BaseUserAdmin):
 
 class PositionInline(admin.TabularInline):
     model = Position
-    extra = 1
+    extra = 0
+    autocomplete_fields = ["actif"]
+    readonly_fields = ["date_ajout"]
 
 
 @admin.register(Portefeuille)
 class PortefeuilleAdmin(admin.ModelAdmin):
     list_display = ("nom", "utilisateur", "devise", "date_creation")
+    search_fields = ("nom", "utilisateur__telephone", "utilisateur__nom")
     inlines = [PositionInline]

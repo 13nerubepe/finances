@@ -13,8 +13,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-AUTH_USER_MODEL = 'finance.User'
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env', override=True)
@@ -54,7 +52,6 @@ INSTALLED_APPS = [
     'agent',
     'actualites',
     'synchronisation',
-#     'portefeuilles'
 ]
 
 REST_FRAMEWORK = {
@@ -62,6 +59,10 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
             'rest_framework_simplejwt.authentication.JWTAuthentication',
         ),
+    # Toute l'API exige un token, sauf les vues qui disent AllowAny (inscription, connexion...)
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
 
 SPECTACULAR_SETTINGS = {
