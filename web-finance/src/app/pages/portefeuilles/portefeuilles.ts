@@ -1,5 +1,6 @@
-import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { DatePipe, DecimalPipe } from '@angular/common';
+import { Component, computed, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ConfirmationService } from 'primeng/api';
@@ -12,6 +13,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { catchError, EMPTY, Subject, switchMap, tap } from 'rxjs';
 
 import type { Actif, PicJournalier } from '@/app/models/actif-model';
 import { apiErrorMessage } from '@/app/models/api-errors';
@@ -21,10 +23,15 @@ import { PortefeuilleService } from '@/app/pages/service/service/portefeuille-se
 
 type Feedback = { type: 'success' | 'error'; text: string } | null;
 
-/** Les pics des 90 derniers jours sont affichés pour les actifs du portefeuille (|z| > 3 : quelques-uns par trimestre). */
+/** Période des pics affichés pour les actifs du portefeuille. */
 const JOURS_PICS = 90;
-
+const SAISIE_VIDE: PortefeuilleSaisie = { nom: '', description: '', devise: 'USD' };
 const LIBELLES_TYPE: Record<string, string> = { action: 'Action', indice: 'Indice', crypto: 'Crypto' };
+
+/** L'API peut renvoyer une quantité décimale sous forme de texte. */
+function versNombre(valeur: unknown): number | null {
+    return valeur === null || valeur === undefined || valeur === '' ? null : Number(valeur);
+}
 
 @Component({
     selector: 'app-portefeuilles',
@@ -39,6 +46,7 @@ export class PortefeuillesComponent implements OnInit {
     private readonly confirmation = inject(ConfirmationService);
 
     readonly libellesType = LIBELLES_TYPE;
+    readonly joursPics = JOURS_PICS;
 
     // Liste
     readonly portefeuilles = signal<Portefeuille[]>([]);
@@ -46,6 +54,7 @@ export class PortefeuillesComponent implements OnInit {
     readonly erreurListe = signal('');
 
     // Détail
+    readonly idSelectionne = signal<number | null>(null);
     readonly selection = signal<PortefeuilleDetail | null>(null);
     readonly chargementDetail = signal(false);
     readonly message = signal<Feedback>(null);
@@ -55,7 +64,7 @@ export class PortefeuillesComponent implements OnInit {
     readonly enregistrement = signal(false);
     readonly erreurFenetre = signal('');
     enEdition: Portefeuille | null = null;
-    saisie: PortefeuilleSaisie = { nom: '', description: '', devise: 'USD' };
+    saisie: PortefeuilleSaisie = { ...SAISIE_VIDE };
 
     // Ajout d'un actif
     readonly actifs = signal<Actif[]>([]);
@@ -68,6 +77,7 @@ export class PortefeuillesComponent implements OnInit {
 
     // Pics récents de tous les actifs (filtrés ensuite sur le portefeuille)
     private readonly picsRecents = signal<PicJournalier[]>([]);
+    readonly erreurPics = signal('');
 
     readonly actifsDisponibles = computed(() => {
         const detenus = new Set(this.selection()?.actifs.map((p) => p.symbole) ?? []);
@@ -78,15 +88,47 @@ export class PortefeuillesComponent implements OnInit {
 
     readonly picsDuPortefeuille = computed(() => {
         const detenus = new Set(this.selection()?.actifs.map((p) => p.symbole.toUpperCase()) ?? []);
-        return this.picsRecents().filter((pic) => detenus.has(pic.symbole.toUpperCase()));
+        return this.picsRecents()
+            .filter((pic) => detenus.has(pic.symbole.toUpperCase()))
+            .sort((a, b) => String(b.date).localeCompare(String(a.date)));
     });
+
+    /** Si l'utilisateur change vite de portefeuille, seule la dernière réponse est gardée. */
+    private readonly demandeDetail = new Subject<number>();
+
+    constructor() {
+        this.demandeDetail
+            .pipe(
+                tap((id) => {
+                    this.idSelectionne.set(id);
+                    this.chargementDetail.set(true);
+                }),
+                switchMap((id) =>
+                    this.portefeuilleService.getPortefeuille(id).pipe(
+                        catchError((erreur) => {
+                            this.selection.set(null);
+                            this.chargementDetail.set(false);
+                            this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Impossible de charger ce portefeuille.') });
+                            return EMPTY;
+                        })
+                    )
+                ),
+                takeUntilDestroyed()
+            )
+            .subscribe((detail) => {
+                this.selection.set(detail);
+                this.quantites = Object.fromEntries(detail.actifs.map((p) => [p.symbole, versNombre(p.quantite)]));
+                this.chargementDetail.set(false);
+            });
+    }
 
     ngOnInit(): void {
         this.chargerPortefeuilles();
-        this.actifService.getAssets().subscribe({ next: (actifs) => this.actifs.set(actifs) });
-
-        const debut = new Date(Date.now() - JOURS_PICS * 86400000).toISOString().slice(0, 10);
-        this.actifService.getPicsJournaliers({ debut }).subscribe({ next: (pics) => this.picsRecents.set(pics) });
+        this.chargerPics();
+        this.actifService.getAssets().subscribe({
+            next: (actifs) => this.actifs.set(actifs),
+            error: (erreur) => this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Impossible de charger la liste des actifs.') })
+        });
     }
 
     // ---------- LISTE ----------
@@ -100,11 +142,12 @@ export class PortefeuillesComponent implements OnInit {
                 this.portefeuilles.set(liste);
                 this.chargementListe.set(false);
 
-                const id = idASelectionner ?? this.selection()?.id ?? liste[0]?.id;
-                if (id !== undefined && liste.some((p) => p.id === id)) {
-                    this.selectionner(id);
-                } else {
+                const id = [idASelectionner, this.idSelectionne(), liste[0]?.id].find((candidat) => liste.some((p) => p.id === candidat));
+                if (id === undefined || id === null) {
+                    this.idSelectionne.set(null);
                     this.selection.set(null);
+                } else {
+                    this.demandeDetail.next(id);
                 }
             },
             error: (erreur) => {
@@ -115,34 +158,27 @@ export class PortefeuillesComponent implements OnInit {
     }
 
     selectionner(id: number): void {
-        this.chargementDetail.set(true);
         this.message.set(null);
+        this.demandeDetail.next(id);
+    }
 
-        this.portefeuilleService.getPortefeuille(id).subscribe({
-            next: (detail) => {
-                this.selection.set(detail);
-                this.quantites = Object.fromEntries(detail.actifs.map((p) => [p.symbole, p.quantite]));
-                this.chargementDetail.set(false);
-            },
-            error: (erreur) => {
-                this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Impossible de charger ce portefeuille.') });
-                this.chargementDetail.set(false);
-            }
-        });
+    classeCarte(id: number): string {
+        return this.idSelectionne() === id ? 'border-primary bg-primary-50 dark:bg-primary-900/20' : 'border-surface-200 dark:border-surface-700 bg-transparent hover:bg-surface-100 dark:hover:bg-surface-800';
     }
 
     // ---------- CRÉATION / MODIFICATION ----------
 
     ouvrirCreation(): void {
-        this.enEdition = null;
-        this.saisie = { nom: '', description: '', devise: 'USD' };
-        this.erreurFenetre.set('');
-        this.fenetreVisible.set(true);
+        this.ouvrirFenetre(null, { ...SAISIE_VIDE });
     }
 
     ouvrirModification(portefeuille: Portefeuille): void {
+        this.ouvrirFenetre(portefeuille, { nom: portefeuille.nom, description: portefeuille.description, devise: portefeuille.devise });
+    }
+
+    private ouvrirFenetre(portefeuille: Portefeuille | null, saisie: PortefeuilleSaisie): void {
         this.enEdition = portefeuille;
-        this.saisie = { nom: portefeuille.nom, description: portefeuille.description, devise: portefeuille.devise };
+        this.saisie = saisie;
         this.erreurFenetre.set('');
         this.fenetreVisible.set(true);
     }
@@ -159,12 +195,14 @@ export class PortefeuillesComponent implements OnInit {
         }
 
         this.enregistrement.set(true);
+        this.erreurFenetre.set('');
         const requete = this.enEdition ? this.portefeuilleService.modifierPortefeuille(this.enEdition.id, saisie) : this.portefeuilleService.creerPortefeuille(saisie);
 
         requete.subscribe({
             next: (portefeuille) => {
                 this.enregistrement.set(false);
                 this.fenetreVisible.set(false);
+                this.message.set(null);
                 this.chargerPortefeuilles(portefeuille.id);
             },
             error: (erreur) => {
@@ -186,7 +224,9 @@ export class PortefeuillesComponent implements OnInit {
             accept: () =>
                 this.portefeuilleService.supprimerPortefeuille(portefeuille.id).subscribe({
                     next: () => {
+                        this.idSelectionne.set(null);
                         this.selection.set(null);
+                        this.message.set({ type: 'success', text: `« ${portefeuille.nom} » a été supprimé.` });
                         this.chargerPortefeuilles();
                     },
                     error: (erreur) => this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Suppression impossible.') })
@@ -210,6 +250,8 @@ export class PortefeuillesComponent implements OnInit {
                 this.quantiteAjout = null;
                 this.message.set({ type: 'success', text: `${position.symbole} ajouté au portefeuille.` });
                 this.chargerPortefeuilles(portefeuille.id);
+                // Un actif tout juste importé peut apporter de nouveaux pics.
+                this.chargerPics();
             },
             error: (erreur) => {
                 this.ajoutEnCours.set(false);
@@ -219,7 +261,7 @@ export class PortefeuillesComponent implements OnInit {
     }
 
     quantiteModifiee(position: Position): boolean {
-        return (this.quantites[position.symbole] ?? null) !== (position.quantite ?? null);
+        return versNombre(this.quantites[position.symbole]) !== versNombre(position.quantite);
     }
 
     enregistrerQuantite(position: Position): void {
@@ -228,23 +270,47 @@ export class PortefeuillesComponent implements OnInit {
 
         this.portefeuilleService.modifierQuantite(portefeuille.id, position.symbole, this.quantites[position.symbole] ?? null).subscribe({
             next: (maj) => {
-                this.selection.set({
-                    ...portefeuille,
-                    actifs: portefeuille.actifs.map((p) => (p.symbole === maj.symbole ? maj : p))
-                });
+                this.selection.update((actuel) => (actuel?.id === portefeuille.id ? { ...actuel, actifs: actuel.actifs.map((p) => (p.symbole === maj.symbole ? maj : p)) } : actuel));
                 this.message.set({ type: 'success', text: `Quantité de ${maj.symbole} enregistrée.` });
             },
             error: (erreur) => this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Modification impossible.') })
         });
     }
 
-    retirerActif(position: Position): void {
+    confirmerRetrait(position: Position): void {
+        this.confirmation.confirm({
+            header: "Retirer l'actif",
+            message: `Retirer ${position.symbole} de ce portefeuille ?`,
+            icon: 'pi pi-exclamation-triangle',
+            acceptLabel: 'Retirer',
+            rejectLabel: 'Annuler',
+            acceptButtonProps: { severity: 'danger' },
+            rejectButtonProps: { severity: 'secondary', outlined: true },
+            accept: () => this.retirerActif(position)
+        });
+    }
+
+    private retirerActif(position: Position): void {
         const portefeuille = this.selection();
         if (!portefeuille) return;
 
         this.portefeuilleService.retirerActif(portefeuille.id, position.symbole).subscribe({
-            next: () => this.chargerPortefeuilles(portefeuille.id),
+            next: () => {
+                this.message.set({ type: 'success', text: `${position.symbole} retiré du portefeuille.` });
+                this.chargerPortefeuilles(portefeuille.id);
+            },
             error: (erreur) => this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Retrait impossible.') })
+        });
+    }
+
+    // ---------- PICS ----------
+
+    private chargerPics(): void {
+        const debut = new Date(Date.now() - JOURS_PICS * 86400000).toISOString().slice(0, 10);
+        this.erreurPics.set('');
+        this.actifService.getPicsJournaliers({ debut }).subscribe({
+            next: (pics) => this.picsRecents.set(pics),
+            error: (erreur) => this.erreurPics.set(apiErrorMessage(erreur, 'Impossible de charger les pics récents.'))
         });
     }
 }
