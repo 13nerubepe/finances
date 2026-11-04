@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 from pathlib import Path
 from dotenv import load_dotenv
 
-AUTH_USER_MODEL = 'finance.User'
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env', override=True)
@@ -45,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'django_filters',
     'drf_spectacular',
+    'rest_framework_simplejwt.token_blacklist',
+
 #     APP
     'finance',
     'marches',
@@ -56,7 +56,11 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 }
+
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'MEFA API',

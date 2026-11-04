@@ -30,7 +30,7 @@ def synchronisation():
 
 
 def collecte_rss():
-    executer("configurer_sources")
+    executer("configurer_sources_yahoo")
     executer("collecter_rss")
 
 

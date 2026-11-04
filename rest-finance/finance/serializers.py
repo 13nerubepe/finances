@@ -2,7 +2,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import User
+from .models import User, normaliser_telephone
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -25,7 +25,7 @@ class InscriptionSerializer(serializers.ModelSerializer):
         # on met le numéro de téléphone au bon format (retirer les espaces si nécessaire)
         data = data.copy()
         if isinstance(data.get("telephone"), str):
-            data["telephone"] = data["telephone"].replace(" ", "")
+            data["telephone"] = normaliser_telephone(data["telephone"])
         return super().to_internal_value(data)
 
     def validate(self, donnees):
@@ -45,6 +45,7 @@ class InscriptionSerializer(serializers.ModelSerializer):
 class ConnexionSerializer(TokenObtainPairSerializer):
 
     def validate(self, attrs):
+        attrs["telephone"] = normaliser_telephone(attrs["telephone"])
         donnees = super().validate(attrs)
         donnees["utilisateur"] = UserSerializer(self.user).data
         return donnees
