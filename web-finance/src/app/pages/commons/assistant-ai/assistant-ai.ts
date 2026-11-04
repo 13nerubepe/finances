@@ -8,7 +8,8 @@ import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Observable } from 'rxjs';
 
-import type { Actif } from '@/app/models/actif-model';
+import type { Actif, ExplicationPic } from '@/app/models/actif-model';
+import { apiErrorMessage } from '@/app/models/api-errors';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 
 type Intention = 'pics' | 'volatilite' | 'actualites' | 'correlations';
@@ -34,14 +35,12 @@ interface Message {
 /** true si l'API renvoie 0.025 pour 2,5 %, comme dans analyse-actif. */
 const RATIOS_EN_FRACTION = true;
 const SEUIL_SENS = 0.3;
-/** Les pics de l'agent sont journaliers : la fenêtre compte 20 bougies d'un jour. */
+/** La volatilité est calculée sur une fenêtre de 20 bougies d'un jour. */
 const FENETRE = 20;
-const SEUIL_PIC = 2;
-const JOURS_PICS = 400;
 const JOURS_ANALYSE = 90;
 const MAX_ACTIFS_CORRELATION = 10;
 const AIDE =
-    'Je n\'ai pas encore de route pour répondre à une question libre. Je peux vous aider avec un symbole, par exemple :\n' +
+    'Vous pouvez aussi utiliser un raccourci avec un symbole, par exemple :\n' +
     '• « pics AAPL »\n• « explique AAPL 2026-10-25 »\n• « volatilité BTC-USD »\n• « corrélation AAPL MSFT »\n• « actualités AAPL »';
 
 function ilYa(jours: number): string {
@@ -77,9 +76,33 @@ export class AssistantAi {
         { id: 'correlations', titre: 'Corrélations', sousTitre: 'Liens entre actifs', icone: 'pi-sitemap', couleur: 'text-purple-500', question: 'Corrélations entre actifs' }
     ];
 
+    /** L'historique n'est chargé qu'à la première ouverture. */
+    private historiqueCharge = false;
+
     basculer(): void {
         this.ouvert = !this.ouvert;
+        if (this.ouvert && !this.historiqueCharge) this.chargerHistorique();
         if (this.ouvert && this.vue === 'chat') this.defiler();
+    }
+
+    private chargerHistorique(): void {
+        this.historiqueCharge = true;
+        this.actifService.getHistorique().subscribe({
+            next: (historique) => {
+                if (!historique.length) return;
+                const anciens: Message[] = historique.map((m) => ({
+                    auteur: m.role === 'user' ? 'user' : 'ia',
+                    texte: m.contenu,
+                    heure: new Date(m.dateCreation)
+                }));
+                this.messages = [...anciens, ...this.messages];
+                this.vue = 'chat';
+                this.cdr.markForCheck();
+                this.defiler();
+            },
+            // Sans historique, l'assistant reste utilisable : on réessaiera à la prochaine ouverture.
+            error: () => (this.historiqueCharge = false)
+        });
     }
 
     onAction(id: string): void {
@@ -104,7 +127,8 @@ export class AssistantAi {
         });
     }
 
-    /** Choisit la route de l'API d'après le symbole, la date et les mots de la question. */
+    /** Choisit la route de l'API d'après le symbole, la date et les mots de la question.
+     *  Sans mot-clé de raccourci, la question part à l'agent LLM. */
     private traiter(question: string, actifs: Actif[], choisie?: Intention): void {
         const symboles = this.trouverSymboles(question, actifs);
         const jour = this.trouverJour(question);
@@ -114,12 +138,12 @@ export class AssistantAi {
 
         if (jour && (symboles[0] ?? contexte)) {
             this.expliquer(symboles[0] ?? contexte!, jour);
-        } else if (intention === 'correlations' || symboles.length >= 2) {
+        } else if (!intention) {
+            this.questionLibre(question, symboles.length ? symboles : contexte ? [contexte] : []);
+        } else if (intention === 'correlations') {
             this.correlations(symboles);
         } else if (intention === 'actualites') {
             this.actualites(symboles[0] ?? contexte);
-        } else if (!intention && !symboles.length) {
-            this.repondre(AIDE);
         } else if (!symboles[0] && !contexte) {
             this.attente = intention ?? 'pics';
             this.repondre('De quel actif s\'agit-il ? Indiquez son symbole, par exemple AAPL.');
@@ -130,18 +154,30 @@ export class AssistantAi {
         }
     }
 
+    /** Question sans raccourci : l'agent LLM répond avec le contexte des portefeuilles de l'utilisateur. */
+    private questionLibre(question: string, symboles: string[]): void {
+        this.actifService.envoyerMessage({ message: question, ...(symboles.length ? { symboles } : {}) }).subscribe({
+            next: (reponse) =>
+                this.repondre(reponse.reponse, {
+                    sources: (reponse.sources ?? []).map((s) => ({ texte: s.titre || s.url, lien: s.url || undefined }))
+                }),
+            error: (erreur: unknown) => this.repondre(`${apiErrorMessage(erreur, 'L\'assistant n\'a pas pu répondre.')}\n\n${AIDE}`)
+        });
+    }
+
+    /** Pics enregistrés en base : ce sont ceux que l'agent sait expliquer. */
     private pics(symbole: string): void {
-        this.charger(this.actifService.getPics(symbole, '1j', FENETRE, SEUIL_PIC, ilYa(JOURS_PICS)), ({ pics }) => {
-            const recents = [...(pics ?? [])].sort((a, b) => b.horodatage_max.localeCompare(a.horodatage_max)).slice(0, 5);
+        this.charger(this.actifService.getPicsJournaliers({ symbole }), (pics) => {
+            const recents = pics.slice(0, 5);
             if (!recents.length) {
-                this.repondre(`Aucun mouvement inhabituel trouvé pour ${symbole} sur la dernière année.`);
+                this.repondre(`Aucun pic journalier enregistré pour ${symbole}.`);
                 return;
             }
             this.repondre(`Derniers pics de ${symbole}. Lequel voulez-vous expliquer ?`, {
-                options: recents.map((pic) => {
-                    const jour = new Date(pic.horodatage_max).toISOString().slice(0, 10);
-                    return { label: `${jour} (${this.pourcent(pic.variation_prix)})`, action: () => this.demanderExplication(symbole, jour) };
-                })
+                options: recents.map((pic) => ({
+                    label: `${pic.date} (${pic.variation === null ? '—' : `${pic.variation.toFixed(2)} %`})${pic.explication_disponible ? ' ✓' : ''}`,
+                    action: () => this.demanderExplication(symbole, pic.date)
+                }))
             });
         });
     }
@@ -262,22 +298,11 @@ export class AssistantAi {
         return actifs.find((a) => a.symbole === segment)?.symbole ?? null;
     }
 
-    /** L'API envoie les sources en un seul texte : liste JSON, ou une source par ligne. */
-    private lireSources(texte: string | null | undefined): Source[] {
-        const brut = texte?.trim();
-        if (!brut) return [];
-
-        let liste: unknown[] = brut.split(/\r?\n/);
-        try {
-            const donnees: unknown = JSON.parse(brut);
-            if (Array.isArray(donnees)) liste = donnees;
-        } catch {
-            // Ce n'est pas du JSON : on garde le découpage par ligne.
-        }
-        return liste
-            .map((s) => String(s).trim())
-            .filter(Boolean)
-            .map((s) => (/^https?:\/\//i.test(s) ? { texte: s, lien: s } : { texte: s }));
+    /** L'API envoie les sources sous forme de liste { titre, url }. */
+    private lireSources(sources: ExplicationPic['sources'] | null | undefined): Source[] {
+        return (sources ?? [])
+            .filter((s) => s?.url || s?.titre)
+            .map((s) => ({ texte: s.titre || s.url, lien: s.url || undefined }));
     }
 
     private pourcent(valeur: unknown): string {

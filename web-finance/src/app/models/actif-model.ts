@@ -197,6 +197,30 @@ export interface Analyse {
     actualites: Actualite[] | null;
 }
 
+/** Un pic de GET /api/pics-journaliers/ : ceux que l'assistant sait expliquer. */
+export interface PicJournalier {
+    id: number;
+    symbole: string;
+    nom: string;
+    date: string;
+    /** Variation du jour en % (déjà multipliée par 100). */
+    variation: number | null;
+    z: number | null;
+    z_volume: number | null;
+    /** Écart à l'ouverture en %. */
+    gap: number | null;
+    volatilite_annuelle: number | null;
+    type_pic: 'specifique' | 'systemique' | '';
+    explication_disponible: boolean;
+}
+
+export interface FiltresPicsJournaliers {
+    symbole?: string;
+    debut?: string;
+    fin?: string;
+    type_pic?: 'specifique' | 'systemique';
+}
+
 /** Réponse de GET /api/agent/pics/{symbole}/{jour}/explication/ */
 export interface ExplicationPic {
     symbole: string;
@@ -204,7 +228,7 @@ export interface ExplicationPic {
     z: number;
     type_pic: string;
     texte: string;
-    sources: string;
+    sources: { titre: string; url: string }[];
     modele: string;
     date_creation: string;
 }
