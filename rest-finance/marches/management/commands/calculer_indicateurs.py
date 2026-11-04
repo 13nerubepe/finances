@@ -56,29 +56,27 @@ class Command(BaseCommand):
 
         for jour, ligne in indique.iterrows():
 
-            if isinstance(ligne["type_pic"],str) :
+            if isinstance(ligne["type_pic"], str):
                 type_pic = ligne["type_pic"]
             else:
                 type_pic = ""
 
-                objet = IndicateurJournalier(
-                    actif=actif,
-                    date=jour,
-                    rendement=nombre(ligne["rendement"]),
-                    volatilite=nombre(ligne["volatilite"]),
-                    volatilite_annuelle=nombre(ligne["volatilite_annuelle"]),
-                    parkinson=nombre(ligne["parkinson"]),
-                    z=nombre(ligne["z"]),
-                    z_volume=nombre(ligne["z_volume"]),
-                    gap=nombre(ligne["gap"]),
-                    beta=nombre(ligne["beta"]),
-                    rendement_anormal=nombre(ligne["rendement_anormal"]),
-                    z_anormal=nombre(ligne["z_anormal"]),
-                    est_pic=bool(ligne["est_pic"]),
-                    type_pic=type_pic,
+            objet = IndicateurJournalier(
+                actif=actif,
+                date=jour,
+                rendement=nombre(ligne["rendement"]),
+                volatilite=nombre(ligne["volatilite"]),
+                volatilite_annuelle=nombre(ligne["volatilite_annuelle"]),
+                parkinson=nombre(ligne["parkinson"]),
+                z=nombre(ligne["z"]),
+                z_volume=nombre(ligne["z_volume"]),
+                gap=nombre(ligne["gap"]),
+                beta=nombre(ligne["beta"]),
+                rendement_anormal=nombre(ligne["rendement_anormal"]),
+                z_anormal=nombre(ligne["z_anormal"]),
+                est_pic=bool(ligne["est_pic"]),
+                type_pic=type_pic,
             )
-
-
             objets.append(objet)
 
         champs_a_mettre_a_jour = COLONNES + ["est_pic","type_pic"]
