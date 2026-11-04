@@ -32,9 +32,18 @@ export interface ArticleClasse extends Actualite {
     resume: string;
 }
 
-interface Groupe {
-    titre: string;
+export interface NoeudActif {
+    cle: string;
+    actif: Actif | null;
     articles: ArticleClasse[];
+}
+
+export interface NoeudJour {
+    cle: string;
+    titre: string;
+    sousTitre: string;
+    nombreArticles: number;
+    actifs: NoeudActif[];
 }
 
 const CATEGORIES: Categorie[] = [
@@ -47,6 +56,8 @@ const CATEGORIES: Categorie[] = [
 const PREFIXE_YAHOO = 'Yahoo Finance - ';
 const SUFFIXES_NOM = /[\s,]+(inc\.?|corp\.?|corporation|co\.?|company|ltd\.?|limited|plc|s\.?a\.?|usd)$/i;
 const ARTICLES_COMPACT = 5;
+const JOUR_INCONNU = 'inconnu';
+const JOURS_PAR_PAGE = 7;
 
 function nomCourt(nom: string): string {
     let resultat = nom.trim();
@@ -85,11 +96,14 @@ export class ActualitesComponent implements OnInit, OnChanges {
     readonly loading = signal(false);
     readonly errorMessage = signal('');
     readonly onglet = signal<CategorieId>('action');
-    readonly actifSelectionne = signal<string | null>(null);
     readonly recherche = signal('');
     readonly premier = signal(0);
-    readonly lignes = signal(10);
-    readonly groupesReplies = signal<Set<string>>(new Set());
+    readonly lignes = signal(JOURS_PAR_PAGE);
+
+    /** Choix faits à la main dans l'arbre ; ils priment sur le mode général. */
+    private readonly noeudsBascules = signal<Map<string, boolean>>(new Map());
+    /** auto : seul le jour le plus récent est ouvert (tous pendant une recherche). */
+    readonly modeArbre = signal<'auto' | 'ouvert' | 'ferme'>('auto');
 
     readonly articlesRecherches = computed(() => {
         const terme = this.recherche().trim().toLowerCase();
@@ -116,46 +130,43 @@ export class ActualitesComponent implements OnInit, OnChanges {
         return this.articlesRecherches().filter((article) => article.categories.includes(onglet));
     });
 
-    readonly actifsOnglet = computed(() => {
-        const compte = new Map<string, { actif: Actif; nombre: number }>();
+    readonly principale = computed(() => (this.compact || this.premier() > 0 ? null : (this.articlesOnglet()[0] ?? null)));
+
+    readonly totalListe = computed(() => Math.max(this.articlesOnglet().length - (this.compact ? 0 : 1), 0));
+
+    readonly articlesCompact = computed(() => this.articlesOnglet().slice(0, ARTICLES_COMPACT));
+
+    /** Arbre Jour → Actif → Articles. L'article « À la une » n'y est pas répété. */
+    readonly arbre = computed<NoeudJour[]>(() => {
         const onglet = this.onglet();
-        for (const article of this.articlesOnglet()) {
-            for (const actif of article.actifs) {
-                if (onglet !== 'general' && actif.type_actif !== onglet) continue;
-                const entree = compte.get(actif.symbole) ?? { actif, nombre: 0 };
-                entree.nombre++;
-                compte.set(actif.symbole, entree);
+        const jours = new Map<string, { date: string | null; articles: Set<number | string>; actifs: Map<string, NoeudActif> }>();
+
+        for (const article of this.articlesOnglet().slice(1)) {
+            const cleJour = this.cleJour(article.date_publication);
+            const jour = jours.get(cleJour) ?? { date: article.date_publication, articles: new Set<number | string>(), actifs: new Map<string, NoeudActif>() };
+            jours.set(cleJour, jour);
+            jour.articles.add(article.id);
+
+            const actifs = onglet === 'general' ? article.actifs : article.actifs.filter((a) => a.type_actif === onglet);
+            for (const actif of actifs.length ? actifs : [null]) {
+                const symbole = actif?.symbole ?? '';
+                const noeud = jour.actifs.get(symbole) ?? { cle: `${cleJour}|${symbole}`, actif, articles: [] };
+                noeud.articles.push(article);
+                jour.actifs.set(symbole, noeud);
             }
         }
-        return [...compte.values()].sort((a, b) => b.nombre - a.nombre || a.actif.symbole.localeCompare(b.actif.symbole));
+
+        return [...jours.entries()]
+            .sort(([a], [b]) => (a === JOUR_INCONNU ? 1 : b === JOUR_INCONNU ? -1 : b.localeCompare(a)))
+            .map(([cle, jour]) => ({
+                cle,
+                ...this.libellesJour(jour.date),
+                nombreArticles: jour.articles.size,
+                actifs: [...jour.actifs.values()].sort((a, b) => Number(!a.actif) - Number(!b.actif) || b.articles.length - a.articles.length || (a.actif?.symbole ?? '').localeCompare(b.actif?.symbole ?? ''))
+            }));
     });
 
-    readonly articlesFiltres = computed(() => {
-        const symbole = this.actifSelectionne();
-        if (!symbole) return this.articlesOnglet();
-        return this.articlesOnglet().filter((article) => article.actifs.some((a) => a.symbole === symbole));
-    });
-
-    readonly principale = computed(() => (this.compact || this.premier() > 0 ? null : (this.articlesFiltres()[0] ?? null)));
-
-    readonly totalListe = computed(() => Math.max(this.articlesFiltres().length - (this.compact ? 0 : 1), 0));
-
-    readonly groupesPage = computed<Groupe[]>(() => {
-        const articles = this.compact
-            ? this.articlesFiltres().slice(0, ARTICLES_COMPACT)
-            : this.articlesFiltres()
-                  .slice(1)
-                  .slice(this.premier(), this.premier() + this.lignes());
-
-        const groupes: Groupe[] = [];
-        for (const article of articles) {
-            const titre = this.titreGroupe(article.date_publication);
-            const groupe = groupes.find((g) => g.titre === titre);
-            if (groupe) groupe.articles.push(article);
-            else groupes.push({ titre, articles: [article] });
-        }
-        return groupes;
-    });
+    readonly joursPage = computed(() => this.arbre().slice(this.premier(), this.premier() + this.lignes()));
 
     ngOnInit(): void {
         this.chargerActualites();
@@ -232,13 +243,9 @@ export class ActualitesComponent implements OnInit, OnChanges {
 
     choisirOnglet(onglet: CategorieId): void {
         this.onglet.set(onglet);
-        this.actifSelectionne.set(null);
         this.premier.set(0);
-    }
-
-    choisirActif(symbole: string | null): void {
-        this.actifSelectionne.set(this.actifSelectionne() === symbole ? null : symbole);
-        this.premier.set(0);
+        this.modeArbre.set('auto');
+        this.noeudsBascules.set(new Map());
     }
 
     rechercher(texte: string): void {
@@ -248,7 +255,6 @@ export class ActualitesComponent implements OnInit, OnChanges {
 
     reinitialiserFiltres(): void {
         this.recherche.set('');
-        this.actifSelectionne.set(null);
         this.premier.set(0);
         this.choisirOngletDisponible();
     }
@@ -259,14 +265,43 @@ export class ActualitesComponent implements OnInit, OnChanges {
         conteneur.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    estReplie(titre: string): boolean {
-        return this.groupesReplies().has(titre);
+    jourOuvert(jour: NoeudJour): boolean {
+        const choix = this.noeudsBascules().get(jour.cle);
+        if (choix !== undefined) return choix;
+        if (this.modeArbre() !== 'auto') return this.modeArbre() === 'ouvert';
+        return !!this.recherche().trim() || jour.cle === this.arbre()[0]?.cle;
     }
 
-    basculerGroupe(titre: string): void {
-        const replies = new Set(this.groupesReplies());
-        if (!replies.delete(titre)) replies.add(titre);
-        this.groupesReplies.set(replies);
+    actifOuvert(noeud: NoeudActif): boolean {
+        return this.noeudsBascules().get(noeud.cle) ?? true;
+    }
+
+    basculerJour(jour: NoeudJour): void {
+        this.definirNoeud(jour.cle, !this.jourOuvert(jour));
+    }
+
+    basculerActif(noeud: NoeudActif): void {
+        this.definirNoeud(noeud.cle, !this.actifOuvert(noeud));
+    }
+
+    basculerTout(): void {
+        this.modeArbre.set(this.modeArbre() === 'ouvert' ? 'ferme' : 'ouvert');
+        this.noeudsBascules.set(new Map());
+    }
+
+    private definirNoeud(cle: string, ouvert: boolean): void {
+        const noeuds = new Map(this.noeudsBascules());
+        noeuds.set(cle, ouvert);
+        this.noeudsBascules.set(noeuds);
+    }
+
+    libelleNoeud(noeud: NoeudActif): string {
+        if (noeud.actif) return this.libelleActif(noeud.actif);
+        return this.onglet() === 'general' ? 'Marchés & économie' : 'Autres articles';
+    }
+
+    categorieNoeud(noeud: NoeudActif): Categorie {
+        return this.categorie(noeud.actif?.type_actif ?? this.onglet());
     }
 
     categorie(id: CategorieId): Categorie {
@@ -296,17 +331,29 @@ export class ActualitesComponent implements OnInit, OnChanges {
         return `${couleur}1f`;
     }
 
-    private titreGroupe(date: string | null): string {
-        if (!date) return 'Date inconnue';
-
+    private cleJour(date: string | null): string {
+        if (!date) return JOUR_INCONNU;
         const jour = new Date(date);
+        if (Number.isNaN(jour.getTime())) return JOUR_INCONNU;
+        return `${jour.getFullYear()}-${String(jour.getMonth() + 1).padStart(2, '0')}-${String(jour.getDate()).padStart(2, '0')}`;
+    }
+
+    private libellesJour(date: string | null): { titre: string; sousTitre: string } {
+        if (this.cleJour(date) === JOUR_INCONNU) return { titre: 'Date inconnue', sousTitre: '' };
+
+        const jour = new Date(date as string);
         const aujourdhui = new Date();
         const hier = new Date();
         hier.setDate(hier.getDate() - 1);
 
-        if (jour.toDateString() === aujourdhui.toDateString()) return "Aujourd'hui";
-        if (jour.toDateString() === hier.toDateString()) return 'Hier';
-        return 'Plus ancien';
+        const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long' };
+        if (jour.getFullYear() !== aujourdhui.getFullYear()) options.year = 'numeric';
+        const texte = jour.toLocaleDateString('fr-FR', options);
+        const majuscule = texte.charAt(0).toUpperCase() + texte.slice(1);
+
+        if (jour.toDateString() === aujourdhui.toDateString()) return { titre: "Aujourd'hui", sousTitre: majuscule };
+        if (jour.toDateString() === hier.toDateString()) return { titre: 'Hier', sousTitre: majuscule };
+        return { titre: majuscule, sousTitre: '' };
     }
 
     private texteSimple(contenu: string | null | undefined): string {
