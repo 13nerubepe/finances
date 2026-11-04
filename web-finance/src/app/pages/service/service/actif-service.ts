@@ -7,10 +7,12 @@ import {
     Actualite,
     CorrelationsResponse, ExplicationPic,
     FiltresCours,
+    FiltresPicsJournaliers,
     Frequence,
     HistoricalPrice,
     HistoricalPriceResponse,
     MessageAssistantIA,
+    PicJournalier,
     PicsResponse,
     ReponseAssistantIA,
     RequeteAssistantIA,
@@ -37,6 +39,7 @@ export class ActifService {
     private actifsUrl = `${this.apiUrl}/actifs/`;
     private coursUrl = `${this.apiUrl}/cours/`;
     private correlationsUrl = `${this.apiUrl}/correlations/`;
+    private picsJournaliersUrl = `${this.apiUrl}/pics-journaliers/`;
     private actualitesUrl = `${this.apiUrl}/actualites/`;
     private sourcesUrl = `${this.apiUrl}/sources/`;
     private assistantUrl = `${this.apiUrl}/assistant-ia/`;
@@ -97,6 +100,19 @@ export class ActifService {
         return this.http.get<PicsResponse>(`${this.actifsUrl}${encodeURIComponent(symbole)}/pics/`, { params });
     }
 
+    // Récupère les pics journaliers enregistrés (ceux que l'assistant explique), les plus récents d'abord
+    getPicsJournaliers(filtres: FiltresPicsJournaliers = {}): Observable<PicJournalier[]> {
+        let params = new HttpParams();
+
+        for (const [cle, valeur] of Object.entries(filtres)) {
+            if (valeur) {
+                params = params.set(cle, valeur);
+            }
+        }
+
+        return this.http.get<PicJournalier[]>(this.picsJournaliersUrl, { params });
+    }
+
     // ---------- CORRÉLATIONS ----------
 
     // Récupère la matrice de corrélation de 2 à 10 actifs
@@ -134,14 +150,12 @@ export class ActifService {
         return this.http.get<SourceActualites[]>(this.sourcesUrl);
     }
 
-    // ---------- ASSISTANT IA : routes à vérifier ----------
+    // ---------- ASSISTANT IA ----------
 
     // Demande à l'agent d'expliquer le pic d'un jour (format AAAA-MM-JJ)
     getExplicationPic(symbole: string, jour: string): Observable<ExplicationPic> {
         return this.http.get<ExplicationPic>(`${this.apiUrl}/agent/pics/${encodeURIComponent(symbole)}/${jour}/explication/`);
     }
-
-    // Envoie une question à l'assistant
 
     // Envoie une question à l'assistant
     envoyerMessage(requete: RequeteAssistantIA): Observable<ReponseAssistantIA> {
