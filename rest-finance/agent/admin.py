@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from agent.models import Analysis
+from .models import Explication
 
-# Register your models here.
-admin.site.register(Analysis)
+
+@admin.register(Explication)
+class ExplicationAdmin(admin.ModelAdmin):
+    list_display = ("pic__actif__symbole", "pic__date", "modele", "date_creation")
+    readonly_fields = ("pic",)

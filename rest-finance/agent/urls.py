@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views
+
+from .views import ExplicationPicView
 
 urlpatterns = [
-    path("analyze/",views.analyse, name="analyze"),
+    path("agent/pics/<str:symbole>/<str:jour>/explication/", ExplicationPicView.as_view(), name="explication-pic"),
 ]
