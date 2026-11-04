@@ -17,7 +17,9 @@
     }
 </nav>
 
-@if (chargement()) {
+@if (sansCours()) {
+    <div class="vide"><i class="pi pi-inbox"></i>Aucun cours de {{ symbole() }} sur cette période : choisis une période plus longue ou un autre actif.</div>
+} @else if (chargement() || enChargement()) {
     <div class="squelette" aria-label="Chargement">
         <span></span><span></span><span></span><span></span>
         <span class="bloc"></span>
@@ -96,6 +98,7 @@
                                 <th class="droite">Score</th>
                                 <th class="droite">Variation du prix</th>
                                 <th class="droite">Bougies</th>
+                                <th><span class="sr-only">Explication</span></th>
                             </tr>
                             </thead>
                             <tbody>
@@ -110,6 +113,13 @@
                                         <td class="droite"><span class="score">{{ decimal(pic.score_max) }}</span></td>
                                         <td class="droite"><strong [class]="classeSigne(pic.variation_prix)">{{ pourcent(pic.variation_prix) }}</strong></td>
                                         <td class="droite">{{ pic.nb_points }}</td>
+                                        <td class="droite">
+                                            <button type="button"
+                                                    class="cursor-pointer whitespace-nowrap rounded border border-surface bg-transparent px-2 py-1 text-xs font-semibold text-primary"
+                                                    (click)="expliquerPic.emit(pic.horodatage_max)">
+                                                <i class="pi pi-sparkles mr-1 text-xs"></i>Expliquer ce pic
+                                            </button>
+                                        </td>
                                     </tr>
                                 }
                             </tbody>

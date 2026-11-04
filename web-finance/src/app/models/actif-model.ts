@@ -196,3 +196,15 @@ export interface Analyse {
     covariances: Record<string, Record<string, number | null>>;
     actualites: Actualite[] | null;
 }
+
+/** Réponse de GET /api/agent/pics/{symbole}/{jour}/explication/ */
+export interface ExplicationPic {
+    symbole: string;
+    date: string;
+    z: number;
+    type_pic: string;
+    texte: string;
+    sources: string;
+    modele: string;
+    date_creation: string;
+}

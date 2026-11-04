@@ -1,10 +1,12 @@
 import { AfterViewInit, ChangeDetectorRef, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 import { catchError, forkJoin, map, of, Subject, Subscription, switchMap } from 'rxjs';
 
 import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
 import { MultiSelect } from 'primeng/multiselect';
 import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
@@ -17,6 +19,7 @@ import {
     CandlestickSeries,
     ColorType,
     createChart,
+    createSeriesMarkers,
     CrosshairMode,
     HistogramSeries,
     LineSeries,
@@ -25,7 +28,7 @@ import {
 } from 'lightweight-charts';
 import type { IChartApi, ISeriesApi, MouseEventParams, SeriesType, UTCTimestamp } from 'lightweight-charts';
 
-import type { Actif, Bougie, FiltresCours, HistoricalPrice } from '@/app/models/actif-model';
+import type { Actif, Bougie, ExplicationPic, FiltresCours, HistoricalPrice } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { AnalyseActif } from '@/app/pages/commons/analyse-actif/analyse-actif';
 
@@ -65,17 +68,37 @@ interface LegendeBase100 {
     valeur: number | null;
 }
 
+interface PicGraphique {
+    debut: string;
+    fin: string;
+    horodatage_max: string;
+}
+
+interface SensPaire {
+    a: string;
+    b: string;
+    correlation: number | null;
+    sens: 'meme' | 'oppose' | 'neutre' | 'inconnu';
+}
+
+/** Au-delà de ce seuil (en valeur absolue), on considère que deux actifs évoluent ensemble. */
+const SEUIL_SENS = 0.3;
+const MIN_RENDEMENTS = 5;
+
 const COULEUR_HAUSSE = '#089981';
 const COULEUR_BAISSE = '#f23645';
 const COULEUR_MM20 = '#f7a600';
 const COULEUR_MM50 = '#ab47bc';
+const COULEUR_PIC = '#f7a600';
+/** Les pics de l'agent sont journaliers : un an couvre toutes les périodes du graphique. */
+const JOURS_PICS = 400;
 
 const STATS_VIDES: StatsActif = { perf: null, volatilite: null, ouverture: null, haut: null, bas: null, dernier: null, volume: null };
 
 @Component({
     selector: 'app-detail-actif',
     standalone: true,
-    imports: [CommonModule, FormsModule, Button, MultiSelect, Select, TableModule, Tag, AnalyseActif],
+    imports: [CommonModule, FormsModule, Button, Dialog, MultiSelect, Select, TableModule, Tag, AnalyseActif],
     templateUrl: './detail-actif.html',
     styleUrl: './detail-actif.scss'
 })
@@ -96,15 +119,17 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     errorMessage = '';
 
     // Périodes
-    periode = '1mo';
+    // Durée en heures : 1 M = 30 jours, 1 A = 365 jours.
+    periode = 720;
     periodes = [
-        { label: '1S', value: '5d' },
-        { label: '1M', value: '1mo' },
-        { label: '3M', value: '3mo' },
-        { label: '6M', value: '6mo' },
-        { label: 'YTD', value: 'ytd' },
-        { label: '1A', value: '1y' },
-        { label: '5A', value: '5y' }
+        { label: '1H', value: 1 },
+        { label: '6H', value: 6 },
+        { label: '1J', value: 24 },
+        { label: '1S', value: 168 },
+        { label: '1M', value: 720 },
+        { label: '3M', value: 2160 },
+        { label: '6M', value: 4320 },
+        { label: '1A', value: 8760 }
     ];
 
     // Graphique
@@ -121,6 +146,16 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
     legendeCours: LegendeCours | null = null;
     legendeBase100: LegendeBase100[] = [];
+    sensEvolution: SensPaire[] = [];
+
+    // Fenêtre d'explication d'un pic
+    fenetreVisible = false;
+    fenetreSymbole = '';
+    fenetreJour = '';
+    fenetreAvecPic = false;
+    explication: ExplicationPic | null = null;
+    explicationEnCours = false;
+    explicationErreur = '';
 
     private readonly tousLesTypes: { label: string; value: TypeGraphe; ohlc: boolean }[] = [
         { label: 'Chandeliers', value: 'candle', ohlc: true },
@@ -137,6 +172,11 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     private seriesGraphique: ISeriesApi<SeriesType>[] = [];
     private observateurTheme?: MutationObserver;
     private avertissementRoute = '';
+    private historique: { serie?: SerieActif; lignes: Bougie[] } = { lignes: [] };
+    private seriePrincipale?: ISeriesApi<SeriesType>;
+    private readonly picsParSymbole = new Map<string, PicGraphique[]>();
+    private readonly explications = new Map<string, ExplicationPic>();
+    private requeteExplication?: Subscription;
 
     private readonly demandeComparaison$ = new Subject<void>();
     private readonly subscriptions = new Subscription();
@@ -177,14 +217,19 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.subscriptions.unsubscribe();
+        this.requeteExplication?.unsubscribe();
         this.observateurTheme?.disconnect();
         document.removeEventListener('fullscreenchange', this.surChangementPleinEcran);
         this.chart?.remove();
     }
 
+    /** Garde le même tableau tant que la série ne change pas, sinon l'analyse se rechargerait sans arrêt. */
     lignesHistorique(): Bougie[] {
-        const serie = this.series.find((s) => s.actif.id === this.reference?.id);
-        return serie ? [...serie.points].reverse() : [];
+        const serie = this.serieReference;
+        if (serie !== this.historique.serie) {
+            this.historique = { serie, lignes: serie ? [...serie.points].reverse() : [] };
+        }
+        return this.historique.lignes;
     }
 
     // --------------------------------------------------
@@ -311,7 +356,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     // PERIODE ET COMMANDES DU GRAPHIQUE
     // --------------------------------------------------
 
-    changerPeriode(value: string): void {
+    changerPeriode(value: number): void {
         this.periode = value;
         this.demanderComparaison();
     }
@@ -367,15 +412,20 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
     private chargerHistoriques() {
         const actifsSelectionnes = [...this.selection];
-        const debut = this.formaterDate(this.calculerDateDebut(this.periode));
-        const fin = this.formaterDate(new Date());
+        const maintenant = Date.now();
+        const debutExact = maintenant - this.periode * 3600000;
+
+        // L'API reçoit des jours entiers, avec une marge d'un jour de chaque côté.
+        // creerSerie coupe ensuite à l'heure exacte, ce qui fait marcher 1H et 6H.
+        const debut = this.formaterDate(new Date(debutExact - 86400000));
+        const fin = this.formaterDate(new Date(maintenant + 86400000));
 
         // Une erreur sur un actif ne doit pas faire disparaître les autres.
         const requetes = actifsSelectionnes.map((actif) => {
             const filtres: FiltresCours = { actif: actif.symbole, debut, fin };
 
             return this.actifService.getAllAssetHistory(filtres).pipe(
-                map((response: any) => this.creerSerie(actif, response.results ?? response, false)),
+                map((response: any) => this.creerSerie(actif, response.results ?? response, false, debutExact)),
                 catchError((err) => {
                     console.error(`Erreur d'historique pour ${actif.symbole} :`, err);
                     return of(this.creerSerie(actif, [], true));
@@ -386,13 +436,13 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         return forkJoin(requetes);
     }
 
-    private creerSerie(actif: Actif, cours: HistoricalPrice[], enErreur: boolean): SerieActif {
+    private creerSerie(actif: Actif, cours: HistoricalPrice[], enErreur: boolean, debutExact = 0): SerieActif {
         const parTemps = new Map<number, Bougie>();
 
         for (const c of cours) {
             const close = this.nombre(c.close);
             const secondes = Math.floor(new Date(c.horodatage).getTime() / 1000);
-            if (close === null || Number.isNaN(secondes)) continue;
+            if (close === null || Number.isNaN(secondes) || secondes * 1000 < debutExact) continue;
 
             parTemps.set(secondes, {
                 time: secondes as UTCTimestamp,
@@ -412,36 +462,9 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     private messageErreur(series: SerieActif[]): string {
         const enErreur = series.filter((s) => s.enErreur).map((s) => s.actif.symbole);
         const historique = enErreur.length ? `Historique indisponible pour : ${enErreur.join(', ')}.` : '';
-        return [this.avertissementRoute, historique].filter(Boolean).join(' ');
-    }
-
-    private calculerDateDebut(periode: string): Date {
-        const date = new Date();
-
-        switch (periode) {
-            case '5d':
-                date.setDate(date.getDate() - 5);
-                break;
-            case '1mo':
-                date.setMonth(date.getMonth() - 1);
-                break;
-            case '3mo':
-                date.setMonth(date.getMonth() - 3);
-                break;
-            case '6mo':
-                date.setMonth(date.getMonth() - 6);
-                break;
-            case 'ytd':
-                return new Date(Date.UTC(date.getFullYear(), 0, 1));
-            case '1y':
-                date.setFullYear(date.getFullYear() - 1);
-                break;
-            case '5y':
-                date.setFullYear(date.getFullYear() - 5);
-                break;
-        }
-
-        return date;
+        const vides = series.filter((s) => !s.enErreur && !s.points.length).map((s) => s.actif.symbole);
+        const sansCours = vides.length ? `Aucun cours sur cette période pour : ${vides.join(', ')}.` : '';
+        return [this.avertissementRoute, historique, sansCours].filter(Boolean).join(' ');
     }
 
     private formaterDate(date: Date): string {
@@ -454,6 +477,51 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
     private calculerStats(): void {
         this.stats = new Map(this.series.map((s) => [s.actif.id, this.statsDe(s.points)]));
+        this.sensEvolution = this.calculerSensEvolution();
+    }
+
+    /** Compare chaque paire d'actifs, de la relation la plus forte à la plus faible. */
+    private calculerSensEvolution(): SensPaire[] {
+        const paires: SensPaire[] = [];
+        this.series.forEach((serieA, i) => {
+            for (const serieB of this.series.slice(i + 1)) {
+                const correlation = this.correlationRendements(serieA, serieB);
+                let sens: SensPaire['sens'] = 'inconnu';
+                if (correlation !== null) {
+                    sens = correlation >= SEUIL_SENS ? 'meme' : correlation <= -SEUIL_SENS ? 'oppose' : 'neutre';
+                }
+                paires.push({ a: serieA.actif.symbole, b: serieB.actif.symbole, correlation, sens });
+            }
+        });
+        return paires.sort((p, q) => Math.abs(q.correlation ?? 0) - Math.abs(p.correlation ?? 0));
+    }
+
+    /** Corrélation des rendements sur les dates communes, car les cryptos cotent aussi le week-end. */
+    private correlationRendements(serieA: SerieActif, serieB: SerieActif): number | null {
+        const communs = serieA.points.filter((p) => serieB.parTemps.has(p.time));
+        const rendementsA: number[] = [];
+        const rendementsB: number[] = [];
+
+        for (let i = 1; i < communs.length; i++) {
+            const precedentB = serieB.parTemps.get(communs[i - 1].time)!.close;
+            if (communs[i - 1].close > 0 && precedentB > 0) {
+                rendementsA.push(communs[i].close / communs[i - 1].close - 1);
+                rendementsB.push(serieB.parTemps.get(communs[i].time)!.close / precedentB - 1);
+            }
+        }
+        if (rendementsA.length < MIN_RENDEMENTS) return null;
+
+        const moyenneA = rendementsA.reduce((s, v) => s + v, 0) / rendementsA.length;
+        const moyenneB = rendementsB.reduce((s, v) => s + v, 0) / rendementsB.length;
+        let covariance = 0;
+        let varianceA = 0;
+        let varianceB = 0;
+        rendementsA.forEach((v, k) => {
+            covariance += (v - moyenneA) * (rendementsB[k] - moyenneB);
+            varianceA += (v - moyenneA) ** 2;
+            varianceB += (rendementsB[k] - moyenneB) ** 2;
+        });
+        return varianceA && varianceB ? this.arrondi(covariance / Math.sqrt(varianceA * varianceB)) : null;
     }
 
     private statsDe(points: Bougie[]): StatsActif {
@@ -466,8 +534,9 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
             perf: points.length > 1 && premier.close ? this.arrondi(((dernier.close - premier.close) / premier.close) * 100) : null,
             volatilite: this.calculerVolatilite(points),
             ouverture: premier.open,
-            haut: Math.max(...points.map((p) => p.high)),
-            bas: Math.min(...points.map((p) => p.low)),
+            // reduce, car Math.max(...) peut planter sur des dizaines de milliers de bougies.
+            haut: points.reduce((max, p) => Math.max(max, p.high), -Infinity),
+            bas: points.reduce((min, p) => Math.min(min, p.low), Infinity),
             dernier: dernier.close,
             volume: dernier.volume
         };
@@ -605,6 +674,12 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     }
 
     private adapterTypesDisponibles(): void {
+        // Une période vide ne doit pas changer le type de graphique choisi.
+        if (!this.series.some((s) => s.points.length)) {
+            this.typesGraphe = this.tousLesTypes;
+            return;
+        }
+
         // Sans vraies données d'ouverture/haut/bas, des chandeliers seraient plats : on les masque.
         const ohlc = this.series.some((s) => s.points.some((p) => p.open !== p.close || p.high !== p.low));
         this.typesGraphe = this.tousLesTypes.filter((t) => ohlc || !t.ohlc);
@@ -628,6 +703,9 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         this.chart.subscribeCrosshairMove((param) => {
             this.majLegende(param);
             this.cdr.markForCheck();
+        });
+        this.chart.subscribeClick((param) => {
+            if (typeof param.time === 'number') this.ouvrirFenetre(param.time);
         });
 
         // Suit le passage clair/sombre de l'application.
@@ -661,6 +739,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
         this.seriesGraphique.forEach((s) => this.chart?.removeSeries(s));
         this.seriesGraphique = [];
+        this.seriePrincipale = undefined;
 
         if (this.mode === 'base100') {
             this.dessinerBase100();
@@ -676,6 +755,156 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
             this.chart.timeScale().fitContent();
         }
         this.majLegende();
+        this.afficherPics();
+    }
+
+    // --------------------------------------------------
+    // PICS ET EXPLICATION
+    // --------------------------------------------------
+
+    /** Charge une seule fois les pics de l'actif, puis les marque sur le graphique. */
+    private afficherPics(): void {
+        const symbole = this.reference?.symbole;
+        if (!symbole) return;
+
+        if (this.picsParSymbole.has(symbole)) {
+            this.dessinerMarqueurs();
+            return;
+        }
+
+        const debut = new Date(Date.now() - JOURS_PICS * 86400000).toISOString();
+        const sub = this.actifService
+            .getPics(symbole, '1j', 20, 2, debut)
+            .pipe(
+                map((reponse): PicGraphique[] => reponse.pics ?? []),
+                catchError(() => of([] as PicGraphique[]))
+            )
+            .subscribe((pics) => {
+                this.picsParSymbole.set(symbole, pics);
+                if (this.reference?.symbole === symbole) this.dessinerMarqueurs();
+            });
+        this.subscriptions.add(sub);
+    }
+
+    private dessinerMarqueurs(): void {
+        const serie = this.serieReference;
+        const principale = this.seriePrincipale;
+        if (!serie?.points.length || !principale) return;
+
+        const debut = serie.points[0].time;
+        const fin = serie.points[serie.points.length - 1].time;
+        const temps = new Set<UTCTimestamp>();
+
+        for (const pic of this.picsParSymbole.get(serie.actif.symbole) ?? []) {
+            const secondes = new Date(pic.horodatage_max).getTime() / 1000;
+            if (secondes < debut - 86400 || secondes > fin + 86400) continue;
+            // Le marqueur doit tomber sur une bougie existante : on prend la plus proche.
+            const proche = serie.points.reduce((a, b) => (Math.abs(b.time - secondes) < Math.abs(a.time - secondes) ? b : a));
+            if (Math.abs(proche.time - secondes) <= 86400) temps.add(proche.time);
+        }
+
+        createSeriesMarkers(
+            principale,
+            [...temps]
+                .sort((a, b) => a - b)
+                .map((time) => ({ time, position: 'aboveBar' as const, shape: 'arrowDown' as const, color: COULEUR_PIC, text: 'Pic' }))
+        );
+    }
+
+    private jourDe(secondes: number): string {
+        return new Date(secondes * 1000).toISOString().slice(0, 10);
+    }
+
+    /** Clic sur un point : demande à l'agent d'expliquer ce jour pour l'actif de référence. */
+    private ouvrirFenetre(secondes: number): void {
+        const symbole = this.reference?.symbole;
+        if (!symbole) return;
+
+        const jour = this.jourDe(secondes);
+        const pic = (this.picsParSymbole.get(symbole) ?? []).find((p) => p.debut.slice(0, 10) <= jour && jour <= p.fin.slice(0, 10));
+
+        this.preparerFenetre(symbole, pic ? this.jourDe(new Date(pic.horodatage_max).getTime() / 1000) : jour, !!pic);
+    }
+
+    /** Bouton « Expliquer ce pic » de l'onglet Mouvements inhabituels. */
+    expliquerPic(horodatage: string): void {
+        const symbole = this.reference?.symbole;
+        if (symbole) this.preparerFenetre(symbole, this.jourDe(new Date(horodatage).getTime() / 1000), true);
+    }
+
+    private preparerFenetre(symbole: string, jour: string, avecPic: boolean): void {
+        // La fenêtre ne peut pas s'afficher par-dessus le plein écran.
+        if (document.fullscreenElement) document.exitFullscreen();
+
+        this.fenetreSymbole = symbole;
+        this.fenetreJour = jour;
+        this.fenetreAvecPic = avecPic;
+        this.fenetreVisible = true;
+        this.explication = null;
+        this.explicationErreur = '';
+        this.explicationEnCours = false;
+        this.requeteExplication?.unsubscribe();
+
+        this.demanderExplication();
+        this.cdr.markForCheck();
+    }
+
+    demanderExplication(): void {
+        const cle = `${this.fenetreSymbole}|${this.fenetreJour}`;
+        const dejaRecue = this.explications.get(cle);
+        if (dejaRecue) {
+            this.explication = dejaRecue;
+            this.cdr.markForCheck();
+            return;
+        }
+
+        this.explicationEnCours = true;
+        this.explicationErreur = '';
+        this.requeteExplication?.unsubscribe(); // Seule la dernière demande compte.
+        this.requeteExplication = this.actifService
+            .getExplicationPic(this.fenetreSymbole, this.fenetreJour)
+            .subscribe({
+                next: (reponse) => {
+                    this.explications.set(cle, reponse);
+                    this.explication = reponse;
+                    this.explicationEnCours = false;
+                    this.cdr.markForCheck();
+                },
+                error: (erreur: HttpErrorResponse) => {
+                    console.error("Erreur de l'agent :", erreur.status, erreur.url, erreur.error);
+                    this.explicationErreur = this.messageAgent(erreur);
+                    this.explicationEnCours = false;
+                    this.cdr.markForCheck();
+                }
+            });
+    }
+
+    /** Affiche la raison donnée par le serveur, pour distinguer une absence de données d'une panne. */
+    private messageAgent(erreur: HttpErrorResponse): string {
+        const detail = typeof erreur.error?.detail === 'string' ? ` (${erreur.error.detail})` : '';
+
+        if (erreur.status === 0) return 'Le serveur ne répond pas. Vérifie que Django est lancé.';
+        if (erreur.status === 401 || erreur.status === 403) return `Accès refusé à l'agent : reconnecte-toi.${detail}`;
+        if (erreur.status === 404) return `L'agent a bien été appelé, mais il n'a pas de données pour ce jour.${detail}`;
+        return `L'agent a répondu par une erreur ${erreur.status}.${detail}`;
+    }
+
+    /** L'API envoie les sources en un seul texte : liste JSON, ou une source par ligne. */
+    get sourcesExplication(): { texte: string; lien: boolean }[] {
+        const texte = this.explication?.sources?.trim() ?? '';
+        if (!texte) return [];
+
+        let liste: unknown[] = texte.split(/\r?\n/);
+        try {
+            const donnees: unknown = JSON.parse(texte);
+            if (Array.isArray(donnees)) liste = donnees;
+        } catch {
+            // Ce n'est pas du JSON : on garde le découpage par ligne.
+        }
+        return liste
+            .map((s) => String(s).trim())
+            .filter(Boolean)
+            .map((s) => ({ texte: s, lien: /^https?:\/\//i.test(s) }));
     }
 
     private dessinerCours(): void {
@@ -733,6 +962,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         }
         principale.priceScale().applyOptions({ scaleMargins: { top: 0.08, bottom: 0.22 } });
         this.seriesGraphique.push(principale);
+        this.seriePrincipale = principale;
 
         this.dessinerVolume(serie.points);
         if (this.mm20) this.dessinerMoyenneMobile(serie.points, 20, COULEUR_MM20);
@@ -811,6 +1041,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
                 ligneTracee = true;
             }
             this.seriesGraphique.push(ligne);
+            if (estReference) this.seriePrincipale = ligne;
         }
     }
 
@@ -832,7 +1063,13 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         const point = serie && (temps !== null ? serie.parTemps.get(temps) : serie.points[serie.points.length - 1]);
         this.legendeCours = point
             ? {
-                date: new Date(point.time * 1000).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
+                date: new Date(point.time * 1000).toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    // Heure seulement pour les courtes périodes, en UTC comme l'axe du graphique.
+                    ...(this.periode <= 168 ? { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' } : {})
+                }),
                 open: point.open,
                 high: point.high,
                 low: point.low,

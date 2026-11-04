@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { catchError, debounceTime, filter, forkJoin, map, Observable, of, switchMap } from 'rxjs';
+import { catchError, debounceTime, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 
 import type { Analyse, Bougie, Frequence, VolatiliteResponse } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
@@ -12,6 +12,7 @@ export type Onglet = 'volatilite' | 'pics' | 'correlation' | 'actualites';
 const RATIOS_EN_FRACTION = true;
 const FENETRE = 20;
 const SEUIL = 2;
+const ANALYSE_VIDE: Analyse = { volatilite: null, pics: null, correlations: null, covariances: {}, actualites: null };
 
 function nombre(valeur: unknown): number | null {
     if (valeur === null || valeur === undefined || valeur === '') return null;
@@ -42,6 +43,10 @@ export class AnalyseActif {
     readonly actifs = input<{ symbole: string }[]>([]);
     /** Bougies affichées : elles donnent les dates de la période choisie */
     readonly lignes = input<Bougie[]>([]);
+    /** La page charge encore les cours : il est trop tôt pour dire qu'il n'y en a aucun. */
+    readonly enChargement = input(false);
+    /** Demande à la page d'expliquer un pic : envoie l'horodatage de son maximum. */
+    readonly expliquerPic = output<string>();
 
     readonly fenetre = FENETRE;
     readonly onglets: { id: Onglet; label: string; icone: string }[] = [
@@ -52,7 +57,7 @@ export class AnalyseActif {
     ];
     readonly onglet = signal<Onglet>('volatilite');
     readonly chargement = signal(true);
-    readonly donnees = signal<Analyse>({ volatilite: null, pics: null, correlations: null, covariances: {}, actualites: null });
+    readonly donnees = signal<Analyse>(ANALYSE_VIDE);
 
     /** L'API accepte 10 actifs au maximum ; la référence est toujours incluse. */
     readonly symboles = computed(() => {
@@ -61,8 +66,13 @@ export class AnalyseActif {
     });
 
     private readonly periode = computed(() => {
-        const temps = this.lignes().map((l) => l.time);
-        return temps.length ? { debut: Math.min(...temps), fin: Math.max(...temps) } : null;
+        // reduce, car Math.min(...) peut planter sur des dizaines de milliers de bougies.
+        const lignes = this.lignes();
+        if (!lignes.length) return null;
+        return {
+            debut: lignes.reduce((min, l) => Math.min(min, l.time), Infinity),
+            fin: lignes.reduce((max, l) => Math.max(max, l.time), -Infinity)
+        };
     });
 
     /** Fréquence adaptée à la durée, pour garder assez de bougies pour l'écart-type glissant. */
@@ -73,6 +83,8 @@ export class AnalyseActif {
         if (jours <= 30) return '1h';
         return '1j';
     });
+
+    readonly sansCours = computed(() => !this.periode() && !this.enChargement());
 
     readonly pics = computed(() =>
         [...(this.donnees().pics?.pics ?? [])].sort((a, b) => b.debut.localeCompare(a.debut))
@@ -122,9 +134,10 @@ export class AnalyseActif {
     constructor() {
         toObservable(this.demande)
             .pipe(
-                filter((cle) => cle !== ''),
                 debounceTime(100),
-                switchMap(() => {
+                switchMap((cle) => {
+                    // Sans cours sur la période, on n'affiche pas l'analyse de la période précédente.
+                    if (!cle) return of(ANALYSE_VIDE);
                     this.chargement.set(true);
                     return this.charger();
                 }),

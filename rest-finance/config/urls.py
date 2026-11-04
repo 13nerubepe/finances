@@ -28,7 +28,6 @@ urlpatterns = [
     path("api/", include("finance.urls")),
 
     path("api/", include("actualites.urls")),
-     path("api/auth/", include("finance.urls")),
     path('api/', include('agent.urls')),
     path('api/', include('marches.urls')),
 

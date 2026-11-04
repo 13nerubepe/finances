@@ -5,7 +5,7 @@ import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 import {
     Actif,
     Actualite,
-    CorrelationsResponse,
+    CorrelationsResponse, ExplicationPic,
     FiltresCours,
     Frequence,
     HistoricalPrice,
@@ -136,6 +136,13 @@ export class ActifService {
 
     // ---------- ASSISTANT IA : routes à vérifier ----------
 
+    // Demande à l'agent d'expliquer le pic d'un jour (format AAAA-MM-JJ)
+    getExplicationPic(symbole: string, jour: string): Observable<ExplicationPic> {
+        return this.http.get<ExplicationPic>(`${this.apiUrl}/agent/pics/${encodeURIComponent(symbole)}/${jour}/explication/`);
+    }
+
+    // Envoie une question à l'assistant
+
     // Envoie une question à l'assistant
     envoyerMessage(requete: RequeteAssistantIA): Observable<ReponseAssistantIA> {
         return this.http.post<ReponseAssistantIA>(`${this.assistantUrl}question/`, requete);
@@ -199,5 +206,16 @@ export class ActifService {
         }
 
         return params;
+    }
+
+    // Cherche les 5 derniers articles qui contiennent un texte
+    rechercherActualites(texte?: string): Observable<Actualite[]> {
+        let params = new HttpParams().set('ordering', '-date_publication');
+
+        if (texte) {
+            params = params.set('search', texte);
+        }
+
+        return this.http.get<Actualite[]>(this.actualitesUrl, { params }).pipe(map((articles) => articles.slice(0, 5)));
     }
 }

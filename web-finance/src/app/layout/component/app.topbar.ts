@@ -5,15 +5,13 @@ import { CommonModule } from '@angular/common';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '@/app/pages/service/service/layout.service';
-import { Avatar } from 'primeng/avatar';
 import { Menu } from 'primeng/menu';
 import { AuthService } from '@/app/pages/service/service/auth.service';
-import { OverlayBadge } from 'primeng/overlaybadge';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator, Avatar, Menu],
+    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator,Menu],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">

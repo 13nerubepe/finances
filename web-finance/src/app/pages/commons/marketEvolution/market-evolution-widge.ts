@@ -25,14 +25,18 @@ export class MarketEvolutionWidget implements OnInit, OnDestroy {
     assets: Actif[] = [];
     selectedAsset: Actif | null = null;
 
+    // Durée en heures, comme sur la page détail : 1 M = 30 jours, 1 A = 365 jours.
     periods = [
-        { label: '1S', value: 7 },
-        { label: '1M', value: 30 },
-        { label: '3M', value: 90 },
-        { label: '6M', value: 180 },
-        { label: '1A', value: 365 }
+        { label: '1H', value: 1 },
+        { label: '6H', value: 6 },
+        { label: '1J', value: 24 },
+        { label: '1S', value: 168 },
+        { label: '1M', value: 720 },
+        { label: '3M', value: 2160 },
+        { label: '6M', value: 4320 },
+        { label: '1A', value: 8760 }
     ];
-    selectedPeriod = 30;
+    selectedPeriod = 720;
 
     loadingAssets = false;
     loadingChart = false;
@@ -84,8 +88,8 @@ export class MarketEvolutionWidget implements OnInit, OnDestroy {
         });
     }
 
-    changerPeriode(jours: number): void {
-        this.selectedPeriod = jours;
+    changerPeriode(heures: number): void {
+        this.selectedPeriod = heures;
         this.loadChart();
     }
 
@@ -93,7 +97,10 @@ export class MarketEvolutionWidget implements OnInit, OnDestroy {
         if (!this.selectedAsset) return;
 
         const fin = new Date();
-        const debut = new Date(fin.getTime() - this.selectedPeriod * 86400000);
+        const debut = new Date(fin.getTime() - this.selectedPeriod * 3600000);
+        // Une courte période n'a pas assez de bougies pour la fenêtre : on en charge au moins 48 h.
+        const debutVolatilite = new Date(fin.getTime() - Math.max(this.selectedPeriod, 48) * 3600000);
+        const frequence = this.selectedPeriod <= 48 ? '15min' : this.selectedPeriod <= 720 ? '1h' : '1j';
         const symbole = this.selectedAsset.symbole;
 
         this.loadingChart = true;
@@ -101,21 +108,24 @@ export class MarketEvolutionWidget implements OnInit, OnDestroy {
         this.chargement?.unsubscribe(); // Une réponse lente ne doit pas écraser une plus récente.
 
         this.chargement = forkJoin({
+            // Jours entiers avec une marge : afficherCours coupe ensuite à l'heure exacte.
             cours: this.actifService.getAllAssetHistory({
                 actif: symbole,
-                debut: debut.toISOString(),
-                fin: fin.toISOString()
+                debut: new Date(debut.getTime() - 86400000).toISOString().slice(0, 10),
+                fin: new Date(fin.getTime() + 86400000).toISOString().slice(0, 10)
             }),
             // La volatilité peut manquer sans empêcher d'afficher la courbe.
             analyse: this.actifService
-                .getVolatilite(symbole, '1j', FENETRE, debut.toISOString(), fin.toISOString())
+                .getVolatilite(symbole, frequence, FENETRE, debutVolatilite.toISOString(), fin.toISOString())
                 .pipe(catchError(() => of(null)))
         }).subscribe({
             next: ({ cours, analyse }) => {
-                this.afficherCours(cours);
+                const visibles = cours.filter((c) => new Date(c.horodatage).getTime() >= debut.getTime());
+                this.afficherCours(visibles);
+                this.errorMessage = visibles.length ? '' : 'Aucun cours sur cette période pour cet actif.';
 
                 const valeur = analyse?.resume?.volatilite_derniere ?? null;
-                this.volatilite = valeur === null ? null : Number(valeur) * (RATIOS_EN_FRACTION ? 100 : 1);
+                this.volatilite = valeur === null || !visibles.length ? null : Number(valeur) * (RATIOS_EN_FRACTION ? 100 : 1);
                 this.loadingChart = false;
                 this.cdr.markForCheck();
             },
@@ -141,9 +151,7 @@ export class MarketEvolutionWidget implements OnInit, OnDestroy {
         this.performance = prix.length > 1 && premier ? ((dernier - premier) / premier) * 100 : null;
         this.chartData = prix.length
             ? {
-                labels: cours.map((c) =>
-                    new Date(c.horodatage).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
-                ),
+                labels: cours.map((c) => this.formaterLabel(c.horodatage)),
                 datasets: [
                     {
                         label: this.selectedAsset?.symbole,
@@ -159,6 +167,18 @@ export class MarketEvolutionWidget implements OnInit, OnDestroy {
                 ]
             }
             : { labels: [], datasets: [] };
+    }
+
+    /** Heure seule sur 1 jour au plus, jour et heure sur 1 semaine, date au-delà. */
+    private formaterLabel(horodatage: string): string {
+        const date = new Date(horodatage);
+        if (this.selectedPeriod <= 24) {
+            return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+        if (this.selectedPeriod <= 168) {
+            return date.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+        }
+        return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
     }
 
     formatNombre(valeur: number): string {

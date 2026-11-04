@@ -164,7 +164,7 @@
                                 <small>C</small> {{ formaterPrix(l.close) }}
                                 ({{ formaterVariation(l.variation) }})
                             </span>
-                            @if (l.volume !== null) {
+                            @if (l.volume > 0) {
                                 <span><small>Vol</small> {{ formaterVolume(l.volume) }}</span>
                             }
                         }
@@ -192,6 +192,7 @@
                 } @else if (reference) {
                     Cours de {{ reference.nom }} sur la période {{ periodeLabel }}.
                 }
+                Clique sur un point pour demander à l'agent d'expliquer ce jour pour {{ reference?.symbole }}.
             </p>
         </section>
 
@@ -331,7 +332,7 @@
                      [tableStyle]="{ 'min-width': '42rem' }">
                 <ng-template #header>
                     <tr>
-                        <th>Date</th>
+                        <th>Date (UTC)</th>
                         <th class="text-right">Ouverture</th>
                         <th class="text-right">Haut</th>
                         <th class="text-right">Bas</th>
@@ -342,7 +343,7 @@
 
                 <ng-template #body let-ligne>
                     <tr>
-                        <td>{{ ligne.time * 1000 | date: 'dd/MM/yyyy HH:mm' }}</td>
+                        <td>{{ ligne.time * 1000 | date: 'dd/MM/yyyy HH:mm' : 'UTC' }}</td>
                         <td class="text-right tv-chiffre">{{ formaterPrix(ligne.open) }}</td>
                         <td class="text-right tv-chiffre">{{ formaterPrix(ligne.high) }}</td>
                         <td class="text-right tv-chiffre">{{ formaterPrix(ligne.low) }}</td>
@@ -429,13 +430,79 @@
                     </tr>
                 </ng-template>
             </p-table>
+
+            @if (sensEvolution.length) {
+                <h2 class="mt-6">Sens d'évolution ({{ periodeLabel }})</h2>
+                <ul class="m-0 flex list-none flex-col p-0">
+                    @for (p of sensEvolution; track p.a + p.b) {
+                        <li class="flex flex-wrap items-center justify-between gap-2 border-b border-surface py-2 text-sm">
+                            <strong>{{ p.a }} / {{ p.b }}</strong>
+                            <span class="tv-chiffre">
+                                @switch (p.sens) {
+                                    @case ('meme') { <span class="hausse">Même sens</span> }
+                                    @case ('oppose') { <span class="baisse">Sens opposés</span> }
+                                    @case ('neutre') { <span class="neutre">Pas de lien net</span> }
+                                    @default { <span class="tv-muet">Données insuffisantes</span> }
+                                }
+                                @if (p.correlation !== null) {
+                                    <span class="tv-muet"> · corrélation {{ formaterVariation(p.correlation, '') }}</span>
+                                }
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
         }
     </section>
 
     <!-- Volatilité, mouvements inhabituels, corrélation et actualités de l'actif de référence -->
     @if (reference; as actif) {
         <section class="tv-panel tv-panneau-tableau">
-            <app-analyse-actif [symbole]="actif.symbole" [actifs]="selection" [lignes]="lignesHistorique()"></app-analyse-actif>
+            <app-analyse-actif [symbole]="actif.symbole" [actifs]="selection" [lignes]="lignesHistorique()" [enChargement]="loading" (expliquerPic)="expliquerPic($event)"></app-analyse-actif>
         </section>
     }
 </div>
+
+<!-- Explication d'un pic, ouverte par un clic sur le graphique -->
+<p-dialog
+    [header]="(fenetreAvecPic ? 'Pic de ' : 'Cours de ') + fenetreSymbole + ' du ' + (fenetreJour | date: 'dd/MM/yyyy')"
+    [(visible)]="fenetreVisible"
+    [modal]="true"
+    [draggable]="false"
+    [dismissableMask]="true"
+    [style]="{ width: '36rem' }"
+    [breakpoints]="{ '640px': '92vw' }">
+    <div aria-live="polite">
+        @if (explicationEnCours) {
+            <p class="m-0"><i class="pi pi-spin pi-spinner mr-2"></i>L'agent analyse ce jour et les actualités de la période…</p>
+        } @else if (explicationErreur) {
+            <p class="m-0 mb-3 text-red-500" role="alert">{{ explicationErreur }}</p>
+            <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" size="small" (onClick)="demanderExplication()" />
+        } @else if (explication) {
+            <p class="m-0 mb-3 whitespace-pre-line leading-relaxed">{{ explication.texte }}</p>
+
+            @if (explication.z !== null) {
+                <p class="m-0 mb-3 text-sm text-muted-color">{{ explication.type_pic }} · score Z : {{ explication.z }}</p>
+            }
+
+            <h3 class="m-0 mb-1 text-sm font-semibold">Sources</h3>
+            @if (sourcesExplication.length) {
+                <ul class="m-0 mb-3 pl-5 text-sm break-words">
+                    @for (s of sourcesExplication; track s.texte) {
+                        <li>
+                            @if (s.lien) {
+                                <a [href]="s.texte" target="_blank" rel="noopener noreferrer">{{ s.texte }}</a>
+                            } @else {
+                                {{ s.texte }}
+                            }
+                        </li>
+                    }
+                </ul>
+            } @else {
+                <p class="m-0 mb-3 text-sm text-muted-color">Aucune actualité citée pour ce pic.</p>
+            }
+
+            <p class="m-0 text-xs text-muted-color">Explication plausible générée par {{ explication.modele }}, à vérifier avec les sources.</p>
+        }
+    </div>
+</p-dialog>
