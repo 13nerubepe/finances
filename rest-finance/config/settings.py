@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'agent',
     'actualites',
     'synchronisation',
+    'portefeuilles',
 ]
 
 REST_FRAMEWORK = {
