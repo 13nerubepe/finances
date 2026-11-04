@@ -2,8 +2,8 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .models import Portefeuille, User
 
-from .models import User, normaliser_telephone, Portefeuille
 
 class PortefeuilleSerializer(serializers.ModelSerializer):
     actifs = serializers.SlugRelatedField(many=True, read_only=True, slug_field="symbole")
@@ -70,15 +70,13 @@ class InscriptionSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**donnees_validees)
 
 
-class ConnexionSerializer(TokenObtainPairSerializer):
-
-# class ConnexionSerializer(serializers.Serializer):
-#     # Le frontend se connecte avec l'e-mail, quel que soit USERNAME_FIELD.
-#     email = serializers.EmailField(write_only=True)
-#     password = serializers.CharField(write_only=True, style={"input_type": "password"})
-#     access = serializers.CharField(read_only=True)
-#     refresh = serializers.CharField(read_only=True)
-#     utilisateur = UserSerializer(read_only=True)
+class ConnexionSerializer(serializers.Serializer):
+    # Le frontend se connecte avec l'e-mail, quel que soit USERNAME_FIELD.
+    email = serializers.EmailField(write_only=True)
+    password = serializers.CharField(write_only=True, style={"input_type": "password"})
+    access = serializers.CharField(read_only=True)
+    refresh = serializers.CharField(read_only=True)
+    utilisateur = UserSerializer(read_only=True)
 
     def validate(self, attrs):
         user = User.objects.filter(email__iexact=attrs["email"].strip()).first()
@@ -92,3 +90,45 @@ class ConnexionSerializer(TokenObtainPairSerializer):
             "refresh": str(refresh),
             "utilisateur": UserSerializer(user).data,
         }
+
+
+class ModifierProfilSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source="prenom", required=False)
+    last_name = serializers.CharField(source="nom", required=False)
+    phone = serializers.CharField(source="telephone", required=False)
+    email = serializers.EmailField(required=False)
+
+    class Meta:
+        model = User
+        fields = ["first_name", "last_name", "email", "phone"]
+
+    def to_internal_value(self, data):
+        data = data.copy()
+        if isinstance(data.get("phone"), str):
+            data["phone"] = data["phone"].replace(" ", "")
+        return super().to_internal_value(data)
+
+    def validate_email(self, valeur):
+        valeur = valeur.strip().lower()
+        if User.objects.filter(email__iexact=valeur).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Cette adresse e-mail est déjà utilisée.")
+        return valeur
+
+    def validate_phone(self, valeur):
+        if User.objects.filter(telephone=valeur).exclude(pk=self.instance.pk).exists():
+            raise serializers.ValidationError("Ce numéro de téléphone est déjà utilisé.")
+        return valeur
+
+
+class ChangerMotDePasseSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate_current_password(self, valeur):
+        if not self.context["request"].user.check_password(valeur):
+            raise serializers.ValidationError("Le mot de passe actuel est incorrect.")
+        return valeur
+
+    def validate_new_password(self, valeur):
+        validate_password(valeur, user=self.context["request"].user)
+        return valeur

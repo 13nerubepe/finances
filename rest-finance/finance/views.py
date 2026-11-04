@@ -1,21 +1,29 @@
 from django.conf import settings
 from drf_spectacular.utils import extend_schema
-from rest_framework import generics, status
+from rest_framework import generics, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .serializers import ConnexionSerializer, InscriptionSerializer, UserSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework.generics import get_object_or_404
-from rest_framework.decorators import action
-
 from marches.models import Actif
-from .models import Portefeuille,Position
+
+from .models import Portefeuille, Position
+from .serializers import (
+    ChangerMotDePasseSerializer,
+    ConnexionSerializer,
+    InscriptionSerializer,
+    ModifierProfilSerializer,
+    PortefeuilleSerializer,
+    PositionSerializer,
+    UserSerializer,
+)
 
 COOKIE_REFRESH = "refresh_token"
 CHEMIN_COOKIE = "/api/auth/"
@@ -31,14 +39,6 @@ def poser_cookie_refresh(response, token):
         samesite="Lax",
         path=CHEMIN_COOKIE,
     )
-from .serializers import (
-    ConnexionSerializer,
-    DeconnexionSerializer,
-    InscriptionSerializer,
-    UserSerializer,
-    PositionSerializer,
-    PortefeuilleSerializer
-)
 
 
 class InscriptionView(generics.CreateAPIView):
@@ -57,7 +57,6 @@ class ConnexionView(TokenObtainPairView):
         poser_cookie_refresh(response, response.data.pop("refresh"))
         return response
 
-class DeconnexionView(generics.GenericAPIView):
 
 class RafraichirView(TokenRefreshView):
     """Lit le token de rafraîchissement dans le cookie."""
@@ -100,13 +99,47 @@ class DeconnexionView(APIView):
         return response
 
 
-class CurrentLogUserView(generics.RetrieveAPIView):
+class CurrentLogUserView(generics.RetrieveUpdateAPIView):
+    """Lit (GET) ou modifie (PATCH) le profil de l'utilisateur connecté."""
 
-    serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "patch", "head", "options"]
 
     def get_object(self):
         return self.request.user
+
+    def get_serializer_class(self):
+        return ModifierProfilSerializer if self.request.method == "PATCH" else UserSerializer
+
+    @extend_schema(request=ModifierProfilSerializer, responses=UserSerializer)
+    def patch(self, request, *args, **kwargs):
+        serializer = ModifierProfilSerializer(request.user, data=request.data, partial=True, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
+
+
+class ChangerMotDePasseView(APIView):
+    """Change le mot de passe, ferme les autres sessions et renouvelle celle-ci."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=ChangerMotDePasseSerializer, responses={200: None})
+    def post(self, request):
+        serializer = ChangerMotDePasseSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.set_password(serializer.validated_data["new_password"])
+        user.save(update_fields=["password"])
+
+        for token in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=token)
+
+        response = Response({"message": "Mot de passe modifié."})
+        poser_cookie_refresh(response, str(RefreshToken.for_user(user)))
+        return response
+
 
 class PortefeuilleViewSet(viewsets.ModelViewSet):
     """Portefeuilles de l'utilisateur connecté (il ne voit jamais ceux des autres)."""
