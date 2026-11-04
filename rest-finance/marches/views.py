@@ -16,8 +16,8 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from . import indicateurs
-from .filters import CoursFilter
-from .models import Actif, CoursHistorique
+from .filters import CoursFilter, PicJournalierFilter
+from .models import Actif, CoursHistorique, IndicateurJournalier
 from .pagination import PaginationCours
 from .serializers import (
     ActifSerializer,
@@ -28,6 +28,7 @@ from .serializers import (
     ParametresVolatiliteSerializer,
     PicsReponseSerializer,
     VolatiliteReponseSerializer,
+    PicJournalierSerializer
 )
 
 PERIODE_PAR_DEFAUT = timedelta(days=7)
@@ -198,4 +199,19 @@ class CorrelationsView(APIView):
                 "correlations": correlations,
                 "observations": observations,
             }
+        )
+class PicsJournaliersView(generics.ListAPIView):
+    """Pics de volatilité journaliers (|z| > SEUIL_PIC), les plus récents d'abord.
+    Ce sont les pics qu'explique l'assistant IA."""
+
+    serializer_class = PicJournalierSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PicJournalierFilter
+    pagination_class = None  # quelques dizaines de pics par an et par actif
+
+    def get_queryset(self):
+        return (
+            IndicateurJournalier.objects.filter(est_pic=True)
+            .select_related("actif", "explication")
+            .order_by("-date", "actif__symbole")
         )

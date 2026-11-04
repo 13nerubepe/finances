@@ -1,4 +1,6 @@
-# Create your tests here.
+
+from django.test import TestCase# Create your tests here.
+from .memoire import contexte_conversation
 from unittest.mock import patch
 
 from django.urls import reverse
@@ -57,3 +59,36 @@ class AssistantTests(APITestCase):
     def test_sans_token_refuse(self, faux_repondre):
         self.client.force_authenticate(None)
         self.assertEqual(self.poser().status_code, status.HTTP_401_UNAUTHORIZED)
+
+@patch("agent.memoire.resumer", return_value="Résumé : AAPL a chuté le 31/07 (z = -4,1).")
+class MemoireTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(telephone="690000000", password="x", nom="A", prenom="B")
+
+    def ajouter(self, nombre):
+        for i in range(nombre):
+            role = "user" if i % 2 == 0 else "assistant"
+            Message.objects.create(utilisateur=self.user, role=role, contenu=f"message {i}")
+
+    def test_pas_de_resume_sous_le_seuil(self, faux_resumer):
+        self.ajouter(19)
+        resume, historique = contexte_conversation(self.user)
+        faux_resumer.assert_not_called()
+        self.assertEqual(resume, "")
+        self.assertEqual(len(historique), 19)  # rien n'est perdu
+
+    def test_au_seuil_on_resume_les_plus_anciens(self, faux_resumer):
+        self.ajouter(20)
+        resume, historique = contexte_conversation(self.user)
+        self.assertEqual(resume, "Résumé : AAPL a chuté le 31/07 (z = -4,1).")
+        self.assertEqual(len(faux_resumer.call_args.args[1]), 10)  # les 10 plus anciens résumés
+        self.assertEqual(len(historique), 10)
+        self.assertEqual(historique[0][1], "message 10")  # la fenêtre commence juste après
+
+    def test_le_nouveau_resume_integre_l_ancien(self, faux_resumer):
+        self.ajouter(20)
+        contexte_conversation(self.user)
+        self.ajouter(10)
+        contexte_conversation(self.user)
+        self.assertEqual(faux_resumer.call_count, 2)
+        self.assertEqual(faux_resumer.call_args.args[0], "Résumé : AAPL a chuté le 31/07 (z = -4,1).")

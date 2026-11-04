@@ -39,3 +39,19 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.utilisateur} ({self.role}) : {self.contenu[:50]}"
+
+class Resume(models.Model):
+    """Résumé des anciens messages d'un utilisateur : l'agent garde le contexte au-delà des derniers messages."""
+
+    utilisateur = models.OneToOneField(
+        "finance.User",
+        on_delete=models.CASCADE,
+        related_name="resume_assistant",
+    )
+    texte = models.TextField(blank=True)
+    dernier_message_id = models.PositiveBigIntegerField(default=0)  # messages déjà inclus dans le résumé
+    date_modification = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Résumé de {self.utilisateur}"
+
