@@ -16,3 +16,26 @@ class Explication(models.Model):
 
     def __str__(self):
         return f"{self.pic.actif.symbole} {self.pic.date}"
+
+class Message(models.Model):
+    """Un message de la conversation entre un utilisateur et l'assistant IA."""
+
+    class Role(models.TextChoices):
+        UTILISATEUR = "user", "Utilisateur"
+        ASSISTANT = "assistant", "Assistant"
+
+    utilisateur = models.ForeignKey(
+        "finance.User",
+        on_delete=models.CASCADE,
+        related_name="messages_assistant",
+    )
+    role = models.CharField(max_length=10, choices=Role.choices)
+    contenu = models.TextField()
+    sources = models.JSONField(default=list, blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["date_creation", "id"]
+
+    def __str__(self):
+        return f"{self.utilisateur} ({self.role}) : {self.contenu[:50]}"
