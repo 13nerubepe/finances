@@ -19,5 +19,5 @@ class ArticleAdmin(admin.ModelAdmin):
     )
     list_filter = ("source",)
     search_fields = ("titre", "contenu")
-    readonly_fields = ("date_creation",)
+    readonly_fields = ("date_creation","pics") #On ne veut pas que l'utilisateur modifie la date de création de l'article, ni les pics associés
     date_hierarchy = "date_publication"

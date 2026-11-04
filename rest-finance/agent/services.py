@@ -1,14 +1,14 @@
 import math
 from datetime import timedelta
 
-from django.db.models import Q
+
 from google import genai
 from google.genai import types
-
-from actualites.models import Article
 from marches.models import IndicateurJournalier
 
 from .models import Explication
+from actualites.services.rss_collector import collecter_pour_pic
+
 
 MODELE = "gemini-2.5-flash"
 recherche_google = types.Tool(google_search=types.GoogleSearch())
@@ -23,16 +23,14 @@ def pourcentage(log_rendement):
     """Convertit un log-rendement en variation en % (ex. 0.05 -> 5.13)."""
     return round((math.exp(log_rendement) - 1) * 100, 2)
 
-
 def articles_du_pic(pic):
-    """Articles qui citent l'actif, publiés entre la veille et le surlendemain du pic."""
-    actif = pic.actif
-    return Article.objects.filter(
-        Q(titre__icontains=actif.symbole) | Q(titre__icontains=actif.nom),
-        date_publication__date__gte=pic.date - timedelta(days=1),
-        date_publication__date__lte=pic.date + timedelta(days=2),
-    ).select_related("source")[:10]
-
+    """Articles rattachés au pic ; si aucun, on les collecte d'abord sur Google News."""
+    if not pic.articles.exists():
+        try:
+            collecter_pour_pic(pic)
+        except OSError:
+            pass  # Google News indisponible : Gemini complétera avec sa recherche web
+    return pic.articles.select_related("source")[:10]
 
 def construire_prompt(pic, articles):
     actif = pic.actif

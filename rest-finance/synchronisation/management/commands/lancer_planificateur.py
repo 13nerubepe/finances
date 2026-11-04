@@ -23,6 +23,8 @@ def import_journalier():
     executer("importer_cours", "^FCHI", type="indice")
     executer("importer_cours", "BTC-USD", "ETH-USD", type="crypto")
     executer("calculer_indicateurs")
+    executer("collecter_articles_pics")
+
 
 
 def synchronisation():
