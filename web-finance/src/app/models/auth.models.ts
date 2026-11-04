@@ -6,6 +6,8 @@ export interface User {
     email: string | null;
     phone: string;
     date_creation: string;
+
+    two_factor_enabled: boolean;
 }
 
 /** Inscription */
@@ -25,10 +27,21 @@ export interface LoginPayload {
 
 /** Réponse de POST /api/auth/connexion/ */
 export interface AccessToken {
-    access: string;
+    access?: string;
     refresh?: string;
     utilisateur?: User;
+
+    // two_factor_required?: boolean;
+    // token_2fa?: string;
 }
+
+/** Résultat de la première étape de connexion */
+export interface LoginResult {
+    deuxFacteursRequis: boolean;
+    token2fa?: string;
+}
+
+
 
 /** Erreurs renvoyées par l'API */
 export interface ApiError {
@@ -45,7 +58,8 @@ export type UserProfile = User;
 
 /** Mise à jour du profil */
 export interface UpdateProfilePayload {
-    full_name: string;
+    first_name: string;
+    last_name: string;
     email: string;
     phone: string;
 }

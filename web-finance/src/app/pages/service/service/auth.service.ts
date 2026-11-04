@@ -3,7 +3,15 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, finalize, map, Observable, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import { environment } from '@/environments/environment';
-import { AccessToken, LoginPayload, RegisterPayload, User, UserProfile } from '@/app/models/auth.models';
+import {
+    AccessToken,
+    ChangePasswordPayload,
+    LoginPayload,
+    RegisterPayload,
+    UpdateProfilePayload,
+    User,
+    UserProfile
+} from '@/app/models/auth.models';
 
 /**
  * Gestion de la session.
@@ -32,7 +40,7 @@ export class AuthService {
     /** Connexion : récupère le token, puis charge l'utilisateur connecté. */
     login(payload: LoginPayload): Observable<User> {
         return this.http.post<AccessToken>(`${this.apiUrl}/connexion/`, payload, { withCredentials: true }).pipe(
-            tap(({ access }) => this.accessToken.set(access)),
+            tap(({ access }) => this.accessToken.set(access ?? null)),
             switchMap(() => this.loadCurrentUser()),
             catchError((error) => {
                 this.clear();
@@ -58,7 +66,7 @@ export class AuthService {
     refresh(): Observable<string> {
         if (!this.refreshInFlight) {
             this.refreshInFlight = this.http.post<AccessToken>(`${this.apiUrl}/rafraichir/`, {}, { withCredentials: true }).pipe(
-                map((response) => response.access),
+                map((response) => response.access ?? ''),
                 tap((access) => this.accessToken.set(access)),
                 catchError((error) => {
                     this.clear();
@@ -98,6 +106,16 @@ export class AuthService {
                 })
             )
             .subscribe();
+    }
+
+    /** Modifie le profil et met à jour l'utilisateur affiché. */
+    updateProfile(payload: UpdateProfilePayload): Observable<UserProfile> {
+        return this.http.patch<UserProfile>(`${this.apiUrl}/profile/`, payload).pipe(tap((user) => this.user.set(user)));
+    }
+
+    /** Le cookie de rafraîchissement est renouvelé par l'API. */
+    changePassword(payload: ChangePasswordPayload): Observable<{ message: string }> {
+        return this.http.post<{ message: string }>(`${this.apiUrl}/mot-de-passe/`, payload, { withCredentials: true });
     }
 
     clear(): void {

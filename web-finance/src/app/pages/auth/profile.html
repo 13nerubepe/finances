@@ -1,49 +1,224 @@
-<div class="card !mb-0 mx-auto w-full" style="max-width: 640px">
+<div class="flex min-h-screen min-w-0 items-center justify-center overflow-x-hidden bg-surface-50 px-4 py-8 dark:bg-surface-950">
+    <div class="flex w-full flex-col items-center justify-center">
 
-    @if (loading()) {
-        <p class="m-0 py-8 text-center text-sm text-muted-color">
-            <i class="pi pi-spin pi-spinner mr-1"></i>
-            Chargement du profil...
-        </p>
-    } @else if (errorMessage()) {
-        <div class="py-8 text-center">
-            <p class="mb-4 mt-0 text-sm text-red-500" role="alert">{{ errorMessage() }}</p>
-            <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" size="small" (onClick)="getProfile()" />
+        <!-- Contour dégradé de la carte -->
+        <div
+            class="w-full min-w-0 p-1"
+            style="
+                max-width: 568px;
+                border-radius: 36px;
+                background: linear-gradient(
+                    180deg,
+                    var(--primary-color) 10%,
+                    rgba(33, 150, 243, 0) 45%
+                );
+            "
+        >
+
+            <!-- Carte du profil -->
+            <div
+                class="w-full bg-surface-0 px-6 py-10 dark:bg-surface-900 sm:px-12 sm:py-14"
+                style="border-radius: 32px"
+            >
+
+                @if (loading()) {
+                    <p class="m-0 py-8 text-center text-sm text-surface-500">
+                        <i class="pi pi-spin pi-spinner mr-1"></i>
+                        Chargement du profil...
+                    </p>
+                } @else if (errorMessage()) {
+                    <div
+                        class="mb-5 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300"
+                        role="alert"
+                    >
+                        <i class="pi pi-exclamation-circle mt-0.5"></i>
+                        <span>{{ errorMessage() }}</span>
+                    </div>
+
+                    <button
+                        pButton
+                        type="button"
+                        class="!w-full !justify-center !rounded-xl !py-3 !font-semibold"
+                        (click)="getProfile()"
+                    >
+                        <span>Réessayer</span>
+                    </button>
+                } @else if (profile()) {
+
+                    <!-- En-tête -->
+                    <div class="mb-6 flex items-center gap-4">
+                        <span class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary text-xl font-semibold text-primary-contrast">
+                            {{ initials() || '?' }}
+                        </span>
+                        <div class="min-w-0">
+                            <h1 class="!m-0 !truncate !text-lg !font-semibold !leading-tight text-surface-900 dark:text-surface-0">
+                                {{ fullName() || 'Utilisateur' }}
+                            </h1>
+                            <p class="m-0 mt-1 text-sm text-surface-500">Mon profil</p>
+                        </div>
+                    </div>
+
+                    <!-- Deux parties : Profil et Sécurité -->
+                    <div class="mb-8 grid grid-cols-2 border-0 border-b border-solid border-surface-200 dark:border-surface-700" role="group" aria-label="Paramètres du compte">
+                        <button
+                            type="button"
+                            class="-mb-px cursor-pointer border-0 border-b-2 border-solid bg-transparent px-3 py-3 text-sm font-semibold"
+                            [ngClass]="onglet() === 'profil' ? 'border-primary text-primary' : 'border-transparent text-surface-500'"
+                            [attr.aria-pressed]="onglet() === 'profil'"
+                            (click)="onglet.set('profil')"
+                        >
+                            Profil
+                        </button>
+                        <button
+                            type="button"
+                            class="-mb-px cursor-pointer border-0 border-b-2 border-solid bg-transparent px-3 py-3 text-sm font-semibold"
+                            [ngClass]="onglet() === 'securite' ? 'border-primary text-primary' : 'border-transparent text-surface-500'"
+                            [attr.aria-pressed]="onglet() === 'securite'"
+                            (click)="onglet.set('securite')"
+                        >
+                            Sécurité
+                        </button>
+                    </div>
+
+                    @if (onglet() === 'profil') {
+                        @if (profileMessage(); as message) {
+                            <div
+                                class="mb-5 flex items-start gap-3 rounded-xl border p-4 text-sm"
+                                [ngClass]="message.type === 'success'
+                                    ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
+                                    : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"
+                                role="alert"
+                            >
+                                <i class="pi mt-0.5" [ngClass]="message.type === 'success' ? 'pi-check-circle' : 'pi-exclamation-circle'"></i>
+                                <span>{{ message.text }}</span>
+                            </div>
+                        }
+
+                        <!-- Formulaire du profil -->
+                        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="flex flex-col gap-5">
+
+                            <!-- Prénom / Nom -->
+                            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                                <div class="flex flex-col gap-2">
+                                    <label for="first_name" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Prénom</label>
+                                    <input pInputText id="first_name" formControlName="first_name" autocomplete="given-name" class="w-full" [invalid]="isInvalid(profileForm, 'first_name')" />
+                                    @if (isInvalid(profileForm, 'first_name')) {
+                                        <small class="text-red-500">Le prénom est obligatoire.</small>
+                                    }
+                                </div>
+
+                                <div class="flex flex-col gap-2">
+                                    <label for="last_name" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Nom</label>
+                                    <input pInputText id="last_name" formControlName="last_name" autocomplete="family-name" class="w-full" [invalid]="isInvalid(profileForm, 'last_name')" />
+                                    @if (isInvalid(profileForm, 'last_name')) {
+                                        <small class="text-red-500">Le nom est obligatoire.</small>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Adresse e-mail -->
+                            <div class="flex flex-col gap-2">
+                                <label for="email" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Adresse e-mail</label>
+                                <input pInputText id="email" type="email" formControlName="email" autocomplete="email" placeholder="nom@entreprise.com" class="w-full" [invalid]="isInvalid(profileForm, 'email')" />
+                                @if (isInvalid(profileForm, 'email')) {
+                                    <small class="text-red-500">Saisissez une adresse e-mail valide.</small>
+                                }
+                            </div>
+
+                            <!-- Téléphone -->
+                            <div class="flex flex-col gap-2">
+                                <label for="phone" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Téléphone</label>
+                                <input pInputText id="phone" type="tel" formControlName="phone" autocomplete="tel" placeholder="+237 6 00 00 00 00" class="w-full" [invalid]="isInvalid(profileForm, 'phone')" />
+                                @if (isInvalid(profileForm, 'phone')) {
+                                    <small class="text-red-500">Saisissez votre numéro de téléphone.</small>
+                                }
+                            </div>
+
+                            <!-- Bouton d'enregistrement -->
+                            <button
+                                pButton
+                                type="submit"
+                                class="mt-2 !w-full !justify-center !rounded-xl !py-3 !font-semibold"
+                                [disabled]="savingProfile() || profileForm.pristine"
+                            >
+                                @if (savingProfile()) {
+                                    <i class="pi pi-spin pi-spinner"></i>
+                                    <span>Enregistrement...</span>
+                                } @else {
+                                    <span>Enregistrer</span>
+                                    <i class="pi pi-arrow-right"></i>
+                                }
+                            </button>
+                        </form>
+
+                        <!-- Date d'inscription -->
+                        <div class="mt-6 flex items-center justify-between gap-3 border-0 border-t border-solid border-surface-200 pt-4 text-sm dark:border-surface-700">
+                            <span class="text-surface-500">Membre depuis</span>
+                            <span class="font-semibold text-surface-900 dark:text-surface-0">{{ profile()?.date_creation | date: 'dd/MM/yyyy' }}</span>
+                        </div>
+
+                    } @else {
+
+                        @if (passwordMessage(); as message) {
+                            <div
+                                class="mb-5 flex items-start gap-3 rounded-xl border p-4 text-sm"
+                                [ngClass]="message.type === 'success'
+                                    ? 'border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950 dark:text-green-300'
+                                    : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300'"
+                                role="alert"
+                            >
+                                <i class="pi mt-0.5" [ngClass]="message.type === 'success' ? 'pi-check-circle' : 'pi-exclamation-circle'"></i>
+                                <span>{{ message.text }}</span>
+                            </div>
+                        }
+
+                        <!-- Formulaire du mot de passe -->
+                        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="flex flex-col gap-5">
+
+                            <div class="flex flex-col gap-2">
+                                <label [attr.for]="'current_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Mot de passe actuel</label>
+                                <p-password formControlName="current_password" inputId="current_password" autocomplete="current-password" placeholder="Entrez votre mot de passe actuel" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'current_password')" styleClass="w-full" inputStyleClass="w-full" />
+                                @if (isInvalid(passwordForm, 'current_password')) {
+                                    <small class="text-red-500">Saisissez votre mot de passe actuel.</small>
+                                }
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <label [attr.for]="'new_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Nouveau mot de passe</label>
+                                <p-password formControlName="new_password" inputId="new_password" autocomplete="new-password" placeholder="Entrez le nouveau mot de passe" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'new_password')" styleClass="w-full" inputStyleClass="w-full" />
+                                <small [class]="isInvalid(passwordForm, 'new_password') ? 'text-red-500' : 'text-surface-500'">
+                                    8 caractères minimum, pas uniquement des chiffres.
+                                </small>
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+                                <label [attr.for]="'confirm_new_password'" class="text-sm font-semibold text-surface-700 dark:text-surface-200">Confirmer le mot de passe</label>
+                                <p-password formControlName="confirm_new_password" inputId="confirm_new_password" autocomplete="new-password" placeholder="Confirmez le nouveau mot de passe" [feedback]="false" [toggleMask]="true" [fluid]="true" [invalid]="isInvalid(passwordForm, 'confirm_new_password') || passwordMismatch()" styleClass="w-full" inputStyleClass="w-full" />
+                                @if (passwordMismatch()) {
+                                    <small class="text-red-500">Les mots de passe ne correspondent pas.</small>
+                                } @else if (isInvalid(passwordForm, 'confirm_new_password')) {
+                                    <small class="text-red-500">Confirmez votre mot de passe.</small>
+                                }
+                            </div>
+
+                            <button
+                                pButton
+                                type="submit"
+                                class="mt-2 !w-full !justify-center !rounded-xl !py-3 !font-semibold"
+                                [disabled]="savingPassword()"
+                            >
+                                @if (savingPassword()) {
+                                    <i class="pi pi-spin pi-spinner"></i>
+                                    <span>Modification...</span>
+                                } @else {
+                                    <span>Modifier le mot de passe</span>
+                                    <i class="pi pi-arrow-right"></i>
+                                }
+                            </button>
+                        </form>
+                    }
+                }
+            </div>
         </div>
-    } @else if (profile(); as user) {
-
-        <!-- Identité -->
-        <header class="mb-6 flex items-center gap-4">
-            <p-avatar [label]="initials()" shape="circle" size="xlarge" />
-            <div class="min-w-0">
-                <h1 class="!m-0 truncate !text-xl !font-semibold !leading-tight">{{ fullName() || 'Utilisateur' }}</h1>
-                <p class="mb-0 mt-1 text-sm text-muted-color">Mon profil</p>
-            </div>
-        </header>
-
-        <!-- Informations -->
-        <dl class="m-0 flex flex-col divide-y divide-[var(--p-content-border-color)] border-y border-surface">
-            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <dt class="text-sm text-muted-color">Prénom</dt>
-                <dd class="m-0 text-sm font-medium">{{ user.first_name || '—' }}</dd>
-            </div>
-            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <dt class="text-sm text-muted-color">Nom</dt>
-                <dd class="m-0 text-sm font-medium">{{ user.last_name || '—' }}</dd>
-            </div>
-            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <dt class="text-sm text-muted-color">Adresse e-mail</dt>
-                <dd class="m-0 break-all text-sm font-medium">{{ user.email || '—' }}</dd>
-            </div>
-            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <dt class="text-sm text-muted-color">Téléphone</dt>
-                <dd class="m-0 text-sm font-medium">{{ user.phone || '—' }}</dd>
-            </div>
-            <div class="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <dt class="text-sm text-muted-color">Membre depuis</dt>
-                <dd class="m-0 text-sm font-medium">{{ user.date_creation | date: 'dd/MM/yyyy' }}</dd>
-            </div>
-        </dl>
-    }
-
+    </div>
 </div>
