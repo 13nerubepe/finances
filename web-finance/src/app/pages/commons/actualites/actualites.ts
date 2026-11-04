@@ -38,10 +38,10 @@ interface Groupe {
 }
 
 const CATEGORIES: Categorie[] = [
-    { id: 'action', libelle: 'Actions', description: 'Entreprises cotées', icone: 'pi-briefcase', couleur: '#2962ff' },
-    { id: 'indice', libelle: 'Indices', description: 'S&P 500, CAC 40…', icone: 'pi-chart-bar', couleur: '#00897b' },
-    { id: 'crypto', libelle: 'Cryptomonnaies', description: 'Bitcoin, Ethereum…', icone: 'pi-bitcoin', couleur: '#ef6c00' },
-    { id: 'general', libelle: 'Marchés & économie', description: 'Macro, taux, conjoncture', icone: 'pi-globe', couleur: '#7b1fa2' }
+    { id: 'action', libelle: 'Actions', description: 'Entreprises cotées', icone: 'pi-briefcase', couleur: 'var(--cat-action)' },
+    { id: 'indice', libelle: 'Indices', description: 'S&P 500, CAC 40…', icone: 'pi-chart-bar', couleur: 'var(--cat-indice)' },
+    { id: 'crypto', libelle: 'Cryptomonnaies', description: 'Bitcoin, Ethereum…', icone: 'pi-bitcoin', couleur: 'var(--cat-crypto)' },
+    { id: 'general', libelle: 'Marchés & économie', description: 'Macro, taux, conjoncture', icone: 'pi-globe', couleur: 'var(--cat-general)' }
 ];
 
 const PREFIXE_YAHOO = 'Yahoo Finance - ';
@@ -129,6 +129,8 @@ export class ActualitesComponent implements OnInit, OnChanges {
         }
         return [...compte.values()].sort((a, b) => b.nombre - a.nombre || a.actif.symbole.localeCompare(b.actif.symbole));
     });
+
+    readonly totalOnglet = computed(() => this.articlesOnglet().length);
 
     readonly articlesFiltres = computed(() => {
         const symbole = this.actifSelectionne();
@@ -288,12 +290,22 @@ export class ActualitesComponent implements OnInit, OnChanges {
         return actif.type_actif === 'indice' ? nomCourt(actif.nom) : actif.symbole.replace(/-USD$/, '');
     }
 
+    sousTitreActif(actif: Actif): string {
+        const court = nomCourt(actif.nom);
+        return court === this.libelleActif(actif) ? actif.symbole : court;
+    }
+
+    part(nombre: number): number {
+        const total = this.totalOnglet();
+        return total ? Math.round((nombre / total) * 100) : 0;
+    }
+
     sourceCourte(article: ArticleClasse): string {
         return (article.source_nom || 'Source inconnue').split(' - ')[0];
     }
 
     teinte(couleur: string): string {
-        return `${couleur}1f`;
+        return `color-mix(in srgb, ${couleur} 12%, transparent)`;
     }
 
     private titreGroupe(date: string | null): string {

@@ -1,3 +1,17 @@
+:host {
+    --cat-action: #2962ff;
+    --cat-indice: #00897b;
+    --cat-crypto: #ef6c00;
+    --cat-general: #7b1fa2;
+}
+
+:host-context(.app-dark) {
+    --cat-action: #5b84ff;
+    --cat-indice: #1aa89a;
+    --cat-crypto: #e0700a;
+    --cat-general: #a65fdc;
+}
+
 .onglets {
     scrollbar-width: none;
 
@@ -80,6 +94,132 @@
         border-color: var(--couleur);
         background: var(--couleur);
         color: #fff;
+    }
+}
+
+.filtre-categorie {
+    --couleur: var(--p-primary-color);
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--p-content-border-color);
+}
+
+.pastille-categorie {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, var(--couleur) 14%, transparent);
+    color: var(--couleur);
+}
+
+.grille-actifs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
+    gap: 0.5rem;
+
+    @media (max-width: 640px) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.tuile-actif {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.625rem 0.75rem 0.7rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.625rem;
+    background: var(--p-content-background);
+    color: var(--p-text-color);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition:
+        border-color 0.15s,
+        background-color 0.15s,
+        box-shadow 0.15s;
+
+    &:hover {
+        border-color: color-mix(in srgb, var(--couleur) 55%, var(--p-content-border-color));
+        background: var(--p-content-hover-background);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--couleur);
+        outline-offset: 2px;
+    }
+
+    &.tuile-active {
+        border-color: var(--couleur);
+        background: color-mix(in srgb, var(--couleur) 7%, var(--p-content-background));
+        box-shadow: 0 0 0 1px var(--couleur);
+    }
+}
+
+.tuile-entete {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.tuile-symbole {
+    overflow: hidden;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tuile-nombre {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.tuile-nom {
+    overflow: hidden;
+    color: var(--p-text-muted-color);
+    font-size: 0.6875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tuile-piste {
+    display: block;
+    height: 4px;
+    margin-top: 0.45rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--p-content-hover-background);
+}
+
+.tuile-barre {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--couleur);
+    transition: width 0.3s ease;
+}
+
+.tuile-actif:not(.tuile-active) .tuile-barre {
+    opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tuile-actif,
+    .tuile-barre {
+        transition: none;
     }
 }
 

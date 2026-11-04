@@ -105,30 +105,51 @@
     } @else {
 
         @if (!compact && categorieActive(); as cat) {
-            <section class="flex flex-col gap-3 rounded-2xl border border-surface p-4"
-                     [style.background]="'linear-gradient(135deg, ' + teinte(cat.couleur) + ', transparent 60%)'">
-                <div class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-xl text-white" [style.background]="cat.couleur">
-                        <i class="pi" [ngClass]="cat.icone"></i>
-                    </span>
-                    <div class="flex flex-col">
-                        <h2 class="!m-0 !text-base !font-semibold !leading-tight">{{ cat.libelle }}</h2>
-                        <span class="text-xs text-muted-color">{{ cat.description }} · {{ compteurs()[cat.id] }} article(s)</span>
+            <section class="filtre-categorie" [style.--couleur]="cat.couleur" aria-label="Filtrer par actif">
+                <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+                    <div class="flex min-w-0 items-center gap-3">
+                        <span class="pastille-categorie">
+                            <i class="pi" [ngClass]="cat.icone"></i>
+                        </span>
+                        <div class="flex min-w-0 flex-col">
+                            <h2 class="!m-0 !text-base !font-semibold !leading-tight">{{ cat.libelle }}</h2>
+                            <span class="truncate text-xs text-muted-color">{{ cat.description }}</span>
+                        </div>
                     </div>
+                    <span class="text-xs tabular-nums text-muted-color">
+                        {{ totalOnglet() }} article(s)@if (actifsOnglet().length) { · {{ actifsOnglet().length }} actif(s) cité(s)}
+                    </span>
                 </div>
 
                 @if (actifsOnglet().length) {
-                    <div class="flex flex-wrap gap-1.5">
-                        <button type="button" class="puce" [class.puce-active]="actifSelectionne() === null"
-                                [style.--couleur]="cat.couleur" (click)="choisirActif(null)">
-                            Tous
+                    <div class="grille-actifs" role="group" aria-label="Actifs de la catégorie">
+                        <button type="button" class="tuile-actif" [class.tuile-active]="actifSelectionne() === null"
+                                [attr.aria-pressed]="actifSelectionne() === null"
+                                [attr.title]="'Afficher les ' + totalOnglet() + ' articles de la catégorie'"
+                                (click)="choisirActif(null)">
+                            <span class="tuile-entete">
+                                <span class="tuile-symbole">Tous les actifs</span>
+                                <span class="tuile-nombre">{{ totalOnglet() }}</span>
+                            </span>
+                            <span class="tuile-nom">{{ cat.libelle }}</span>
+                            <span class="tuile-piste" aria-hidden="true"><span class="tuile-barre" style="width: 100%"></span></span>
                         </button>
+
                         @for (entree of actifsOnglet(); track entree.actif.symbole) {
-                            <button type="button" class="puce" [class.puce-active]="actifSelectionne() === entree.actif.symbole"
+                            <button type="button" class="tuile-actif" [class.tuile-active]="actifSelectionne() === entree.actif.symbole"
                                     [style.--couleur]="categorie(entree.actif.type_actif).couleur"
-                                    [attr.title]="entree.actif.nom" (click)="choisirActif(entree.actif.symbole)">
-                                <span class="font-semibold">{{ libelleActif(entree.actif) }}</span>
-                                <span class="opacity-70">{{ entree.nombre }}</span>
+                                    [attr.aria-pressed]="actifSelectionne() === entree.actif.symbole"
+                                    [attr.aria-label]="entree.actif.nom + ' : ' + entree.nombre + ' article(s) sur ' + totalOnglet()"
+                                    [attr.title]="entree.nombre + ' article(s) sur ' + totalOnglet() + ' (' + part(entree.nombre) + ' %)'"
+                                    (click)="choisirActif(entree.actif.symbole)">
+                                <span class="tuile-entete">
+                                    <span class="tuile-symbole">{{ libelleActif(entree.actif) }}</span>
+                                    <span class="tuile-nombre">{{ entree.nombre }}</span>
+                                </span>
+                                <span class="tuile-nom">{{ sousTitreActif(entree.actif) }}</span>
+                                <span class="tuile-piste" aria-hidden="true">
+                                    <span class="tuile-barre" [style.width.%]="part(entree.nombre)"></span>
+                                </span>
                             </button>
                         }
                     </div>
