@@ -1,3 +1,11 @@
+"""
+Desormais:
+-> test_numero_sans_indicatif_est_normalise ;
+-> test_numero_avec_237_sans_plus_est_normalise ;
+-> test_connexion_avec_numero_sans_indicatif
+
+"""
+
 # from django.test import TestCase
 
 # Create your tests here.

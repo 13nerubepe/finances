@@ -8,17 +8,27 @@ from django.contrib.auth.models import (
 )
 from django.core.validators import RegexValidator
 
-# pour controller le format du num tel
+# pour controller le format du num tel (mobile camerounais : 6 suivi de 8 chiffres)
 validateur_telephone = RegexValidator(
-    regex=r"^\+?\d{8,15}$",
-    message="Le numéro doit etre au format: +2376xxxxxxxx",
+    regex=r"^\+2376\d{8}$",
+    message="Le numéro doit etre au format: 6XXXXXXXX, 2376XXXXXXXX ou +2376XXXXXXXX",
 )
+
+def normaliser_telephone(telephone):
+    """Ramène un numéro au format +237XXXXXXXXX. Ainsi on uniformise les numeros"""
+    telephone = telephone.replace(" ", "")
+    if len(telephone) == 9:
+        telephone = "+237" + telephone
+    elif len(telephone) == 12 and telephone.startswith("237"):
+        telephone = "+" + telephone
+    return telephone
 
 
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
     def _creer(self, telephone, password, **extra):
+        telephone = normaliser_telephone(telephone)
         if not telephone:
             raise ValueError("Le numéro de téléphone est obligatoire.")
         user = self.model(telephone=telephone, **extra)
