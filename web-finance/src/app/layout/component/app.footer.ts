@@ -4,8 +4,10 @@ import { Component } from '@angular/core';
     standalone: true,
     selector: 'app-footer',
     template: `<div class="layout-footer">
-        SAKAI by
-        <a href="https://primeng.org" target="_blank" rel="noopener noreferrer" class="text-primary font-bold hover:underline">PrimeNG</a>
+        <span class="font-bold text-primary">MEFA</span>
+        <span class="text-muted-color">· Suivi et analyse des marchés financiers · © {{ annee }}</span>
     </div>`
 })
-export class AppFooter {}
+export class AppFooter {
+    readonly annee = new Date().getFullYear();
+}

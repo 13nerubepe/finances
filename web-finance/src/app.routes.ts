@@ -14,16 +14,18 @@ export const appRoutes: Routes = [
         // canActivate: [authGuard],
         children: [
 
-            { path: '', component: Dashboard },
+            { path: '', component: Dashboard, title: 'Tableau de bord' },
 
             {
                 path: AppConstantRoute.Actif_PATH,
+                title: 'Actifs',
                 loadComponent: () => import('./app/pages/actif/actif').then((c) => c.ActifComponent),
                 data: { breadcrumb: 'Actif' },
             },
 
             {
                 path: `${AppConstantRoute.Detail_Actif_PATH}/:symbole`,
+                title: 'Détail de l\'actif',
                 loadComponent: () => import('./app/pages/detail-actif/detail-actif')
                     .then((c) => c.DetailActif),
                 data: { breadcrumb: 'Detail-actif' }
@@ -32,21 +34,25 @@ export const appRoutes: Routes = [
 
             {
                 path: AppConstantRoute.Portefeuilles_PATH,
+                title: 'Portefeuilles',
                 loadComponent: () => import('./app/pages/portefeuilles/portefeuilles').then((c) => c.PortefeuillesComponent),
                 data: { breadcrumb: 'Portefeuilles' },
             },
             {
                 path: AppConstantRoute.Profil_PATH,
+                title: 'Profil',
                 loadComponent: () => import('./app/pages/auth/profile').then((c) => c.Profile),
                 data: { breadcrumb: 'Profil' },
             },
             {
                 path: AppConstantRoute.Actualite_PATH,
+                title: 'Actualités',
                 loadComponent: () => import('@/app/pages/commons/actualites/actualites').then((c) => c.ActualitesComponent),
                 data: { breadcrumb: 'Actualité' },
             },
             {
                 path: AppConstantRoute.ComparaisonActif_PATH,
+                title: 'Comparaison d\'actifs',
                 loadComponent: () => import('@/app/pages/commons/comparaison-actif/comparaison-actif').then((c) => c.ComparaisonActifComponent),
                 data: { breadcrumb: 'ComparairéActifs' },
             },
@@ -57,9 +63,10 @@ export const appRoutes: Routes = [
         ]
     },
     { path: 'landing', component: Landing },
-    { path: 'notfound', component: Notfound },
+    { path: 'notfound', component: Notfound, title: 'Page introuvable' },
     {
         path: AppConstantRoute.Register_PATH,
+        title: 'Inscription',
         loadComponent: () => import('./app/pages/auth/register').then((c) => c.Register),
         data: { breadcrumb: 'Register' },
     },
