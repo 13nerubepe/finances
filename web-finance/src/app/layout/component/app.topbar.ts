@@ -113,11 +113,26 @@ import { OverlayBadge } from 'primeng/overlaybadge';
 <!--                        <span>Messages</span>-->
 <!--                    </button>-->
 
-                    <button type="button" class="layout-topbar-action" aria-haspopup="true" (click)="userMenu.toggle($event)">
-                        <p-avatar [label]="initials()" shape="circle" />
-                        <span>{{ displayName() }}</span>
-                        <i class="pi pi-angle-down"></i>
+<!--                    <button type="button" class="layout-topbar-action" aria-haspopup="true" (click)="userMenu.toggle($event)">-->
+<!--                        <p-avatar [label]="initials()" shape="circle" styleClass="!bg-primary !text-primary-contrast" />-->
+<!--                        <span>{{ displayName() }}</span>-->
+<!--                        <i class="pi pi-angle-down"></i>-->
+<!--                    </button>-->
+                    <button
+                        type="button"
+                        class="flex cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent py-1 pl-1 pr-2 hover:bg-surface-100 dark:hover:bg-surface-800"
+                        aria-haspopup="true"
+                        (click)="userMenu.toggle($event)"
+                    >
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-contrast">
+                            {{ initials() }}
+                        </span>
+                        <span class="whitespace-nowrap text-sm font-medium text-surface-900 dark:text-surface-0">
+                            {{ displayName() }}
+                        </span>
+                        <i class="pi pi-angle-down text-sm text-surface-500"></i>
                     </button>
+
                     <p-menu #userMenu [model]="userItems" [popup]="true" appendTo="body" />
                 </div>
             </div>
@@ -128,8 +143,25 @@ export class AppTopbar {
     private router = inject(Router);
     private readonly authService = inject(AuthService);
 
-    displayName = computed(() => this.authService.user()?.email?.split('@')[0] ?? 'Utilisateur');
-    initials = computed(() => this.displayName().slice(0, 2).toUpperCase());
+    displayName = computed(() => {
+        const user = this.authService.user();
+        const nomComplet = `${user?.first_name ?? ''} ${user?.last_name ?? ''}`.trim();
+
+        return nomComplet || user?.email?.split('@')[0] || 'Utilisateur';
+    });
+    initials = computed(() =>
+        this.displayName()
+            .split(' ')
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((partie) => partie[0].toUpperCase())
+            .join('')
+    );
+
+    // displayName = computed(() =>
+    //     this.authService.user()?.email?.split('@')[0] ?? 'Utilisateur');
+    // initials = computed(() =>
+    //     this.displayName().slice(0, 2).toUpperCase());
 
     // Fonction de déconnexion
     seDeconnecter(): void {
