@@ -11,6 +11,7 @@ from rest_framework_simplejwt.settings import api_settings
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from marches.journalier import preparer
 
 from .models import Portefeuille, Position
 from .serializers import (
@@ -184,6 +185,12 @@ class AjoutActifView(generics.GenericAPIView):
         serializer = AjoutActifSerializer(data=request.data, context={"portefeuille": portefeuille})
         serializer.is_valid(raise_exception=True)
         position = serializer.save()
+        if not position.actif.cours_journaliers.exists():
+            try:
+                preparer(position.actif)
+            except Exception:
+                pass  # Yahoo indisponible : le planificateur importera l'actif cette nuit
+
         return Response(PositionSerializer(position).data, status=status.HTTP_201_CREATED)
 
 
