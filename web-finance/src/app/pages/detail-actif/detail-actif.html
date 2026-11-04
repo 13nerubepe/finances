@@ -488,10 +488,10 @@
             <h3 class="m-0 mb-1 text-sm font-semibold">Sources</h3>
             @if (sourcesExplication.length) {
                 <ul class="m-0 mb-3 pl-5 text-sm break-words">
-                    @for (s of sourcesExplication; track s.texte) {
+                    @for (s of sourcesExplication; track $index) {
                         <li>
-                            @if (s.lien) {
-                                <a [href]="s.texte" target="_blank" rel="noopener noreferrer">{{ s.texte }}</a>
+                            @if (s.url) {
+                                <a [href]="s.url" target="_blank" rel="noopener noreferrer">{{ s.texte }}</a>
                             } @else {
                                 {{ s.texte }}
                             }

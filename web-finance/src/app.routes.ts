@@ -31,6 +31,11 @@ export const appRoutes: Routes = [
 
 
             {
+                path: AppConstantRoute.Portefeuilles_PATH,
+                loadComponent: () => import('./app/pages/portefeuilles/portefeuilles').then((c) => c.PortefeuillesComponent),
+                data: { breadcrumb: 'Portefeuilles' },
+            },
+            {
                 path: AppConstantRoute.Profil_PATH,
                 loadComponent: () => import('./app/pages/auth/profile').then((c) => c.Profile),
                 data: { breadcrumb: 'Profil' },

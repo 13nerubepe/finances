@@ -1,5 +1,7 @@
 from decimal import Decimal
-
+from datetime import date
+from unittest.mock import patch
+from marches.models import CoursJournalier
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -148,6 +150,10 @@ class PortefeuilleTests(APITestCase):
         self.autre = User.objects.create_user(telephone="690000001", password="x", nom="C", prenom="D")
         Actif.objects.create(symbole="AAPL", nom="Apple", type_actif=Actif.TypeActif.ACTION)
         self.client.force_authenticate(self.user)
+        simulation = patch("finance.views.preparer")
+        self.faux_preparer = simulation.start()
+        self.addCleanup(simulation.stop)
+
 
     def _creer(self, nom="Tech"):
         return self.client.post(reverse("portefeuille-list"), {"nom": nom}, format="json")
@@ -213,3 +219,16 @@ class PortefeuilleTests(APITestCase):
         self.client.force_authenticate(None)
         r = self.client.get(reverse("portefeuille-list"))
         self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_un_actif_sans_donnees_est_prepare(self):
+        pk = self._creer().data["id"]
+        self._ajouter(pk, symbole="AAPL")
+        self.faux_preparer.assert_called_once()
+
+    def test_un_actif_deja_importe_n_est_pas_reprepare(self):
+        aapl = Actif.objects.get(symbole="AAPL")
+        CoursJournalier.objects.create(actif=aapl, date=date(2026, 7, 31), open=1, high=1, low=1, close=1, volume=1)
+        pk = self._creer().data["id"]
+        self._ajouter(pk, symbole="AAPL")
+        self.faux_preparer.assert_not_called()
+

@@ -889,22 +889,11 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         return `L'agent a répondu par une erreur ${erreur.status}.${detail}`;
     }
 
-    /** L'API envoie les sources en un seul texte : liste JSON, ou une source par ligne. */
-    get sourcesExplication(): { texte: string; lien: boolean }[] {
-        const texte = this.explication?.sources?.trim() ?? '';
-        if (!texte) return [];
-
-        let liste: unknown[] = texte.split(/\r?\n/);
-        try {
-            const donnees: unknown = JSON.parse(texte);
-            if (Array.isArray(donnees)) liste = donnees;
-        } catch {
-            // Ce n'est pas du JSON : on garde le découpage par ligne.
-        }
-        return liste
-            .map((s) => String(s).trim())
-            .filter(Boolean)
-            .map((s) => ({ texte: s, lien: /^https?:\/\//i.test(s) }));
+    /** L'API envoie les sources sous forme de liste { titre, url } (articles puis recherche web). */
+    get sourcesExplication(): { texte: string; url: string }[] {
+        return (this.explication?.sources ?? [])
+            .filter((s) => s?.url || s?.titre)
+            .map((s) => ({ texte: s.titre || s.url, url: s.url }));
     }
 
     private dessinerCours(): void {
