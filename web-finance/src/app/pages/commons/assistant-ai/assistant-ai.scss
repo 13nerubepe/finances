@@ -1,0 +1,49 @@
+.contenu-ia {
+    overflow-wrap: anywhere;
+
+    ::ng-deep {
+        p {
+            margin: 0 0 0.5rem;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        .titre {
+            font-weight: 600;
+        }
+
+        ul,
+        ol {
+            margin: 0 0 0.5rem;
+            padding-left: 1.15rem;
+            list-style: disc;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        ol {
+            list-style: decimal;
+        }
+
+        li + li {
+            margin-top: 0.2rem;
+        }
+
+        a {
+            color: var(--p-primary-color);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        code {
+            padding: 0.05rem 0.3rem;
+            border-radius: 0.25rem;
+            background: var(--p-content-hover-background);
+            font-size: 0.8em;
+        }
+    }
+}

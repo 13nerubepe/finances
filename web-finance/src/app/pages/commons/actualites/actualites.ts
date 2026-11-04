@@ -1,46 +1,172 @@
-import { ChangeDetectorRef, Component, inject, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, computed, inject, Input, OnChanges, OnInit, signal, SimpleChanges } from '@angular/core';
+import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonDirective } from 'primeng/button';
 import { InputText } from 'primeng/inputtext';
 import { Paginator, PaginatorState } from 'primeng/paginator';
 import { Skeleton } from 'primeng/skeleton';
+import { catchError, forkJoin, of } from 'rxjs';
+
 import { ActifService } from '@/app/pages/service/service/actif-service';
-import { Actualite, SourceActualites } from '@/app/models/actif-model';
+import { Actif, Actualite } from '@/app/models/actif-model';
+
+export type CategorieId = 'action' | 'indice' | 'crypto' | 'general';
+type Onglet = CategorieId | 'tout';
+
+interface Categorie {
+    id: CategorieId;
+    libelle: string;
+    description: string;
+    icone: string;
+    couleur: string;
+}
+
+interface ActifIndexe {
+    actif: Actif;
+    nomCourt: string;
+    motifs: RegExp[];
+}
+
+export interface ArticleClasse extends Actualite {
+    actifs: Actif[];
+    categories: CategorieId[];
+    resume: string;
+}
+
+interface Groupe {
+    titre: string;
+    articles: ArticleClasse[];
+}
+
+const CATEGORIES: Categorie[] = [
+    { id: 'action', libelle: 'Actions', description: 'Entreprises cotées', icone: 'pi-briefcase', couleur: '#2962ff' },
+    { id: 'indice', libelle: 'Indices', description: 'S&P 500, CAC 40…', icone: 'pi-chart-bar', couleur: '#00897b' },
+    { id: 'crypto', libelle: 'Cryptomonnaies', description: 'Bitcoin, Ethereum…', icone: 'pi-bitcoin', couleur: '#ef6c00' },
+    { id: 'general', libelle: 'Marchés & économie', description: 'Macro, taux, conjoncture', icone: 'pi-globe', couleur: '#7b1fa2' }
+];
+
+const PREFIXE_YAHOO = 'Yahoo Finance - ';
+const SUFFIXES_NOM = /[\s,]+(inc\.?|corp\.?|corporation|co\.?|company|ltd\.?|limited|plc|s\.?a\.?|usd)$/i;
+const ARTICLES_PAR_CATEGORIE = 5;
+const ARTICLES_COMPACT = 5;
+
+function nomCourt(nom: string): string {
+    let resultat = nom.trim();
+    let nettoye = resultat.replace(SUFFIXES_NOM, '').trim();
+    while (nettoye !== resultat) {
+        resultat = nettoye;
+        nettoye = resultat.replace(SUFFIXES_NOM, '').trim();
+    }
+    return resultat;
+}
+
+function echapper(texte: string): string {
+    return texte.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function motMotif(mot: string, drapeaux: string): RegExp {
+    return new RegExp(`(^|[^\\p{L}\\p{N}])${echapper(mot)}($|[^\\p{L}\\p{N}])`, drapeaux);
+}
 
 @Component({
     selector: 'app-actualites',
     standalone: true,
-    imports: [CommonModule, FormsModule, ButtonDirective, InputText, Skeleton, Paginator],
+    imports: [NgClass, NgTemplateOutlet, FormsModule, ButtonDirective, InputText, Skeleton, Paginator],
     templateUrl: './actualites.html',
     styleUrl: './actualites.scss'
 })
 export class ActualitesComponent implements OnInit, OnChanges {
-    private actifService = inject(ActifService);
-    private cdr = inject(ChangeDetectorRef);
+    private readonly actifService = inject(ActifService);
 
     @Input() symbole?: string;
-    /** Version courte pour le tableau de bord : 5 articles, sans recherche ni pagination. */
     @Input() compact = false;
 
-    actualites: Actualite[] = [];
-    sources: SourceActualites[] = [];
-    sourceSelectionnee: number | null = null;
-    loading = false;
-    errorMessage = '';
-    recherche = '';
-    rechercheAppliquee = '';
+    readonly categories = CATEGORIES;
 
-    // Pagination
-    premier = 0;
-    lignes = 10;
+    readonly articles = signal<ArticleClasse[]>([]);
+    readonly loading = signal(false);
+    readonly errorMessage = signal('');
+    readonly onglet = signal<Onglet>('tout');
+    readonly actifSelectionne = signal<string | null>(null);
+    readonly recherche = signal('');
+    readonly premier = signal(0);
+    readonly lignes = signal(10);
+    readonly groupesReplies = signal<Set<string>>(new Set());
 
-    // Sections repliées
-    groupesReplies = new Set<string>();
+    readonly articlesRecherches = computed(() => {
+        const terme = this.recherche().trim().toLowerCase();
+        if (!terme) return this.articles();
+        return this.articles().filter((article) =>
+            `${article.titre} ${article.resume} ${article.source_nom} ${article.actifs.map((a) => `${a.symbole} ${a.nom}`).join(' ')}`.toLowerCase().includes(terme)
+        );
+    });
+
+    readonly compteurs = computed(() => {
+        const compteurs: Record<Onglet, number> = { tout: this.articlesRecherches().length, action: 0, indice: 0, crypto: 0, general: 0 };
+        for (const article of this.articlesRecherches()) {
+            for (const categorie of article.categories) compteurs[categorie]++;
+        }
+        return compteurs;
+    });
+
+    readonly categorieActive = computed(() => CATEGORIES.find((c) => c.id === this.onglet()) ?? null);
+
+    readonly articlesOnglet = computed(() => {
+        const onglet = this.onglet();
+        if (onglet === 'tout') return this.articlesRecherches();
+        return this.articlesRecherches().filter((article) => article.categories.includes(onglet));
+    });
+
+    readonly actifsOnglet = computed(() => {
+        const compte = new Map<string, { actif: Actif; nombre: number }>();
+        const onglet = this.onglet();
+        for (const article of this.articlesOnglet()) {
+            for (const actif of article.actifs) {
+                if (onglet !== 'tout' && actif.type_actif !== onglet) continue;
+                const entree = compte.get(actif.symbole) ?? { actif, nombre: 0 };
+                entree.nombre++;
+                compte.set(actif.symbole, entree);
+            }
+        }
+        return [...compte.values()].sort((a, b) => b.nombre - a.nombre || a.actif.symbole.localeCompare(b.actif.symbole));
+    });
+
+    readonly articlesFiltres = computed(() => {
+        const symbole = this.actifSelectionne();
+        if (!symbole) return this.articlesOnglet();
+        return this.articlesOnglet().filter((article) => article.actifs.some((a) => a.symbole === symbole));
+    });
+
+    readonly sections = computed(() =>
+        CATEGORIES.map((categorie) => {
+            const articles = this.articlesRecherches().filter((article) => article.categories.includes(categorie.id));
+            return { categorie, total: articles.length, articles: articles.slice(0, ARTICLES_PAR_CATEGORIE) };
+        }).filter((section) => section.total > 0)
+    );
+
+    readonly principale = computed(() => (this.compact || this.premier() > 0 ? null : (this.articlesFiltres()[0] ?? null)));
+
+    readonly totalListe = computed(() => Math.max(this.articlesFiltres().length - (this.compact ? 0 : 1), 0));
+
+    readonly groupesPage = computed<Groupe[]>(() => {
+        const articles = this.compact
+            ? this.articlesFiltres().slice(0, ARTICLES_COMPACT)
+            : this.articlesFiltres()
+                  .slice(1)
+                  .slice(this.premier(), this.premier() + this.lignes());
+
+        const groupes: Groupe[] = [];
+        for (const article of articles) {
+            const titre = this.titreGroupe(article.date_publication);
+            const groupe = groupes.find((g) => g.titre === titre);
+            if (groupe) groupe.articles.push(article);
+            else groupes.push({ titre, articles: [article] });
+        }
+        return groupes;
+    });
 
     ngOnInit(): void {
         this.chargerActualites();
-        this.chargerSources();
     }
 
     ngOnChanges(changes: SimpleChanges): void {
@@ -50,71 +176,125 @@ export class ActualitesComponent implements OnInit, OnChanges {
     }
 
     chargerActualites(): void {
-        this.loading = true;
-        this.errorMessage = '';
-        this.sourceSelectionnee = null;
-        this.premier = 0;
+        this.loading.set(true);
+        this.errorMessage.set('');
+        this.premier.set(0);
 
-        this.actifService.getActualites(this.symbole).subscribe({
-            next: (reponse: any) => {
-                this.actualites = Array.isArray(reponse) ? reponse : (reponse?.results ?? []);
-                this.loading = false;
-                this.cdr.detectChanges();
+        forkJoin({
+            articles: this.actifService.getActualites(this.symbole),
+            actifs: this.actifService.getAssets().pipe(catchError(() => of([] as Actif[])))
+        }).subscribe({
+            next: ({ articles, actifs }) => {
+                const liste: Actualite[] = Array.isArray(articles) ? articles : ((articles as { results?: Actualite[] })?.results ?? []);
+                const index = this.indexer(actifs ?? []);
+                this.articles.set(liste.map((article) => this.classer(article, index)));
+                this.loading.set(false);
             },
             error: (erreur) => {
                 console.error('Erreur lors du chargement des actualités :', erreur);
-                this.actualites = [];
-                this.errorMessage = 'Vérifie ta connexion au serveur, puis réessaie.';
-                this.loading = false;
-                this.cdr.detectChanges();
+                this.articles.set([]);
+                this.errorMessage.set('Vérifie ta connexion au serveur, puis réessaie.');
+                this.loading.set(false);
             }
         });
     }
 
-    chargerSources(): void {
-        this.actifService.getSources().subscribe({
-            next: (reponse: any) => {
-                this.sources = Array.isArray(reponse) ? reponse : (reponse?.results ?? []);
-                this.cdr.detectChanges();
-            },
-            error: (erreur) => console.error('Erreur lors du chargement des sources :', erreur)
+    private indexer(actifs: Actif[]): ActifIndexe[] {
+        return actifs.map((actif) => {
+            const court = nomCourt(actif.nom);
+            const base = actif.symbole.replace(/^\^/, '').split('-')[0];
+            const motifs: RegExp[] = [];
+            if (court.length >= 3) motifs.push(motMotif(court, 'iu'));
+            if (base.length >= 3) motifs.push(motMotif(base, 'u'));
+            return { actif, nomCourt: court, motifs };
         });
     }
 
-    sourcesDisponibles(): SourceActualites[] {
-        return this.sources.filter((source) => this.actualites.some((actualite) => actualite.source === source.id));
+    private classer(article: Actualite, index: ActifIndexe[]): ArticleClasse {
+        const source = article.source_nom ?? '';
+        const cible = source.startsWith(PREFIXE_YAHOO) ? source.slice(PREFIXE_YAHOO.length).trim().toLowerCase() : null;
+        const titre = article.titre ?? '';
+
+        const actifs = index
+            .filter(({ actif, nomCourt, motifs }) => actif.symbole.toLowerCase() === cible || nomCourt.toLowerCase() === cible || motifs.some((motif) => motif.test(titre)))
+            .map(({ actif }) => actif);
+
+        const categories = new Set<CategorieId>(actifs.map((actif) => actif.type_actif));
+        if (article.themes?.includes('Cryptomonnaies')) categories.add('crypto');
+        if (!categories.size) categories.add('general');
+
+        return {
+            ...article,
+            actifs,
+            categories: CATEGORIES.map((c) => c.id).filter((id) => categories.has(id)),
+            resume: this.texteSimple(article.contenu)
+        };
     }
 
-    actualitesFiltrees(): Actualite[] {
-        const terme = this.rechercheAppliquee.trim().toLowerCase();
-
-        return this.actualites.filter((actualite) => {
-            const correspondSource = this.sourceSelectionnee === null || actualite.source === this.sourceSelectionnee;
-            const contenu = `${actualite.titre} ${actualite.contenu} ${actualite.source_nom}`.toLowerCase();
-
-            return correspondSource && contenu.includes(terme);
-        });
+    choisirOnglet(onglet: Onglet): void {
+        this.onglet.set(onglet);
+        this.actifSelectionne.set(null);
+        this.premier.set(0);
     }
 
-    /** Articles de la page affichée, sans l'article principal. */
-    actualitesPage(): Actualite[] {
-        if (this.compact) return this.actualitesFiltrees().slice(0, 5);
-        return this.actualitesFiltrees().slice(1).slice(this.premier, this.premier + this.lignes);
+    choisirActif(symbole: string | null): void {
+        this.actifSelectionne.set(this.actifSelectionne() === symbole ? null : symbole);
+        this.premier.set(0);
     }
 
-    /** Articles de la page, regroupés par date dans l'ordre de la liste. */
-    groupesPage(): { titre: string; articles: Actualite[] }[] {
-        const groupes: { titre: string; articles: Actualite[] }[] = [];
+    rechercher(texte: string): void {
+        this.recherche.set(texte);
+        this.premier.set(0);
+    }
 
-        for (const actualite of this.actualitesPage()) {
-            const titre = this.titreGroupe(actualite.date_publication);
-            const groupe = groupes.find((g) => g.titre === titre);
+    reinitialiserFiltres(): void {
+        this.recherche.set('');
+        this.actifSelectionne.set(null);
+        this.onglet.set('tout');
+        this.premier.set(0);
+    }
 
-            if (groupe) groupe.articles.push(actualite);
-            else groupes.push({ titre, articles: [actualite] });
-        }
+    changerPage(evenement: PaginatorState, conteneur: HTMLElement): void {
+        this.premier.set(evenement.first ?? 0);
+        this.lignes.set(evenement.rows ?? this.lignes());
+        conteneur.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
-        return groupes;
+    estReplie(titre: string): boolean {
+        return this.groupesReplies().has(titre);
+    }
+
+    basculerGroupe(titre: string): void {
+        const replies = new Set(this.groupesReplies());
+        if (!replies.delete(titre)) replies.add(titre);
+        this.groupesReplies.set(replies);
+    }
+
+    categorie(id: CategorieId): Categorie {
+        return CATEGORIES.find((c) => c.id === id)!;
+    }
+
+    categoriePrincipale(article: ArticleClasse): Categorie {
+        const onglet = this.onglet();
+        return this.categorie(onglet !== 'tout' && article.categories.includes(onglet) ? onglet : article.categories[0]);
+    }
+
+    actifsAffiches(article: ArticleClasse): Actif[] {
+        const onglet = this.onglet();
+        const actifs = onglet === 'tout' || onglet === 'general' ? article.actifs : article.actifs.filter((a) => a.type_actif === onglet);
+        return actifs.slice(0, 3);
+    }
+
+    libelleActif(actif: Actif): string {
+        return actif.type_actif === 'indice' ? nomCourt(actif.nom) : actif.symbole.replace(/-USD$/, '');
+    }
+
+    sourceCourte(article: ArticleClasse): string {
+        return (article.source_nom || 'Source inconnue').split(' - ')[0];
+    }
+
+    teinte(couleur: string): string {
+        return `${couleur}1f`;
     }
 
     private titreGroupe(date: string | null): string {
@@ -130,46 +310,7 @@ export class ActualitesComponent implements OnInit, OnChanges {
         return 'Plus ancien';
     }
 
-    estReplie(titre: string): boolean {
-        return this.groupesReplies.has(titre);
-    }
-
-    basculerGroupe(titre: string): void {
-        if (!this.groupesReplies.delete(titre)) this.groupesReplies.add(titre);
-    }
-
-    /** Une couleur stable par source, comme les icônes de la Watchlist. */
-    couleurSource(nom: string | null | undefined): string {
-        const couleurs = ['#2962ff', '#d32f2f', '#00897b', '#7b1fa2', '#ef6c00', '#455a64'];
-        const somme = [...(nom ?? '')].reduce((total, lettre) => total + lettre.charCodeAt(0), 0);
-        return couleurs[somme % couleurs.length];
-    }
-
-    changerPage(evenement: PaginatorState, conteneur: HTMLElement): void {
-        this.premier = evenement.first ?? 0;
-        this.lignes = evenement.rows ?? this.lignes;
-        conteneur.scrollTo({ top: 0 });
-    }
-
-    rechercherActualites(): void {
-        this.rechercheAppliquee = this.recherche;
-        this.premier = 0;
-    }
-
-    changerSource(sourceId: number | null): void {
-        this.sourceSelectionnee = sourceId;
-        this.premier = 0;
-    }
-
-    reinitialiserFiltres(): void {
-        this.recherche = '';
-        this.rechercheAppliquee = '';
-        this.sourceSelectionnee = null;
-        this.premier = 0;
-    }
-
-    /** Les flux RSS contiennent souvent du HTML : on n'affiche que le texte. */
-    texteSimple(contenu: string | null | undefined): string {
+    private texteSimple(contenu: string | null | undefined): string {
         if (!contenu) return '';
         const document = new DOMParser().parseFromString(contenu, 'text/html');
         return (document.body.textContent ?? '').replace(/\s+/g, ' ').trim();
@@ -178,9 +319,12 @@ export class ActualitesComponent implements OnInit, OnChanges {
     tempsEcoule(date: string | null): string {
         if (!date) return '';
 
-        const h = Math.floor((Date.now() - new Date(date).getTime()) / 3600000);
-        if (h < 1) return "Il y a moins d'1 h";
-        if (h < 24) return `Il y a ${h} h`;
-        return `Il y a ${Math.floor(h / 24)} j`;
+        const minutes = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
+        if (minutes < 60) return `Il y a ${Math.max(minutes, 1)} min`;
+        const heures = Math.floor(minutes / 60);
+        if (heures < 24) return `Il y a ${heures} h`;
+        const jours = Math.floor(heures / 24);
+        if (jours < 7) return `Il y a ${jours} j`;
+        return new Date(date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
     }
 }
