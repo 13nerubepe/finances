@@ -1,0 +1,88 @@
+.entete {
+    background:
+        radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--p-primary-color) 12%, transparent), transparent 45%),
+        var(--p-content-background);
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 1rem;
+    background: var(--p-content-background);
+}
+
+.stat-icone {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+}
+
+.retour {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid color-mix(in srgb, #16a34a 30%, transparent);
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, #16a34a 8%, transparent);
+    color: #15803d;
+    font-size: 0.875rem;
+
+    &.retour-erreur {
+        border-color: color-mix(in srgb, #ef4444 30%, transparent);
+        background: color-mix(in srgb, #ef4444 8%, transparent);
+        color: #dc2626;
+    }
+}
+
+.retour-fermer {
+    display: flex;
+    padding: 0.2rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.7;
+
+    &:hover {
+        opacity: 1;
+    }
+}
+
+:host ::ng-deep .tableau-moderne {
+    .p-datatable-header {
+        padding: 0 0 1rem;
+        border: 0;
+        background: transparent;
+    }
+
+    .p-datatable-thead > tr > th {
+        background: transparent;
+        color: var(--p-text-muted-color);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+    }
+
+    .p-datatable-tbody > tr > td {
+        padding-block: 0.85rem;
+    }
+
+    &.p-datatable-sm .p-datatable-tbody > tr > td {
+        padding-block: 0.6rem;
+    }
+
+    .p-datatable-tbody > tr.ligne-active {
+        background: color-mix(in srgb, var(--p-primary-color) 8%, transparent);
+        box-shadow: inset 3px 0 0 var(--p-primary-color);
+    }
+}
