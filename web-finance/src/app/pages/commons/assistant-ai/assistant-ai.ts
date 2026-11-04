@@ -27,6 +27,7 @@ interface OptionMessage {
 interface Message {
     auteur: 'user' | 'ia';
     texte: string;
+    html?: string;
     sources?: Source[];
     options?: OptionMessage[];
     heure: Date;
@@ -42,6 +43,63 @@ const MAX_ACTIFS_CORRELATION = 10;
 const AIDE =
     'Vous pouvez aussi utiliser un raccourci avec un symbole, par exemple :\n' +
     '• « pics AAPL »\n• « explique AAPL 2026-10-25 »\n• « volatilité BTC-USD »\n• « corrélation AAPL MSFT »\n• « actualités AAPL »';
+
+function echapper(texte: string): string {
+    return texte.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function enLigne(texte: string): string {
+    return echapper(texte)
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer">$2</a>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+        .replace(/(^|[^*\w])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
+function formater(texte: string): string {
+    const blocs: string[] = [];
+    let liste: { type: 'ul' | 'ol'; items: string[] } | null = null;
+    let paragraphe: string[] = [];
+
+    const fermerParagraphe = () => {
+        if (paragraphe.length) blocs.push(`<p>${paragraphe.join('<br>')}</p>`);
+        paragraphe = [];
+    };
+    const fermerListe = () => {
+        if (liste) blocs.push(`<${liste.type}>${liste.items.map((item) => `<li>${item}</li>`).join('')}</${liste.type}>`);
+        liste = null;
+    };
+
+    for (const brute of (texte ?? '').replace(/\r/g, '').split('\n')) {
+        const ligne = brute.trim();
+        const puce = ligne.match(/^(?:[-*•])\s+(.*)$/);
+        const numero = ligne.match(/^\d+[.)]\s+(.*)$/);
+        const titre = ligne.match(/^#{1,6}\s+(.*)$/);
+
+        if (!ligne) {
+            fermerParagraphe();
+            fermerListe();
+        } else if (puce || numero) {
+            fermerParagraphe();
+            const type = puce ? 'ul' : 'ol';
+            if (liste && liste.type !== type) fermerListe();
+            liste ??= { type, items: [] };
+            liste.items.push(enLigne((puce ?? numero)![1]));
+        } else if (titre) {
+            fermerParagraphe();
+            fermerListe();
+            blocs.push(`<p class="titre">${enLigne(titre[1])}</p>`);
+        } else {
+            fermerListe();
+            paragraphe.push(enLigne(ligne));
+        }
+    }
+    fermerParagraphe();
+    fermerListe();
+    return blocs.join('');
+}
 
 function ilYa(jours: number): string {
     return new Date(Date.now() - jours * 86400000).toISOString();
@@ -93,6 +151,7 @@ export class AssistantAi {
                 const anciens: Message[] = historique.map((m) => ({
                     auteur: m.role === 'user' ? 'user' : 'ia',
                     texte: m.contenu,
+                    html: m.role === 'user' ? undefined : formater(m.contenu),
                     heure: new Date(m.dateCreation)
                 }));
                 this.messages = [...anciens, ...this.messages];
@@ -315,8 +374,24 @@ export class AssistantAi {
         this.ajouter({ auteur: 'ia', texte, ...extra });
     }
 
+    choisirOption(message: Message, option: OptionMessage): void {
+        if (this.enCours) return;
+        message.options = undefined;
+        option.action();
+    }
+
+    domaine(lien: string | undefined): string {
+        if (!lien) return '';
+        try {
+            return new URL(lien).hostname.replace(/^www\./, '');
+        } catch {
+            return '';
+        }
+    }
+
     private ajouter(message: Omit<Message, 'heure'>): void {
-        this.messages.push({ ...message, heure: new Date() });
+        const html = message.auteur === 'ia' ? formater(message.texte) : undefined;
+        this.messages.push({ ...message, html, heure: new Date() });
         this.cdr.markForCheck();
         this.defiler();
     }
