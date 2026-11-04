@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from .models import User
+from marches.models import Actif
 
 DONNEES_VALIDES = {
     "nom": "Mballa",
@@ -139,3 +140,35 @@ class AuthentificationTests(APITestCase):
             telephone="+237691111111", password="Admin-Solide-2026", nom="A", prenom="B"
         )
         self.assertTrue(admin.is_staff and admin.is_superuser)
+
+class PortefeuilleTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(telephone="690000000", password="x", nom="A", prenom="B")
+        self.autre = User.objects.create_user(telephone="690000001", password="x", nom="C", prenom="D")
+        Actif.objects.create(symbole="AAPL", nom="Apple", type_actif=Actif.TypeActif.ACTION)
+        self.client.force_authenticate(self.user)
+
+    def _creer(self):
+        return self.client.post(reverse("portefeuille-list"), {"nom": "Tech"}).data["id"]
+
+    def test_ajouter_un_actif(self):
+        pk = self._creer()
+        r = self.client.post(reverse("portefeuille-ajouter-actif", args=[pk]), {"symbole": "aapl"})
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+        self.assertEqual(r.data["actifs"], ["AAPL"])
+
+    def test_actif_inconnu(self):
+        pk = self._creer()
+        r = self.client.post(reverse("portefeuille-ajouter-actif", args=[pk]), {"symbole": "XXXX"})
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_portefeuille_d_un_autre_invisible(self):
+        pk = self._creer()
+        self.client.force_authenticate(self.autre)
+        r = self.client.get(reverse("portefeuille-detail", args=[pk]))
+        self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_sans_token_refuse(self):
+        self.client.force_authenticate(None)
+        r = self.client.get(reverse("portefeuille-list"))
+        self.assertEqual(r.status_code, status.HTTP_401_UNAUTHORIZED)
