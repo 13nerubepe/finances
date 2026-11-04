@@ -1,0 +1,15 @@
+Django==6.1.2
+djangorestframework==3.18.3
+djangorestframework-simplejwt==5.5.1
+django-filter==26.2
+drf-spectacular==0.30.0
+django-cors-headers==4.9.0
+python-dotenv==1.2.4
+numpy==2.4.6
+pandas==3.0.6
+yfinance==1.7.0
+feedparser==6.0.14
+APScheduler==3.11.3
+google-genai==2.31.0
+
+# Seulement si DB_ENGINE=postgres (docker-compose) : pip install "psycopg[binary]"

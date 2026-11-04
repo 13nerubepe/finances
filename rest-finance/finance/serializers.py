@@ -1,21 +1,13 @@
+from decimal import Decimal
+
 from django.contrib.auth.password_validation import validate_password
+from django.db import IntegrityError
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .models import Portefeuille, User
+from marches.models import Actif
 
-
-class PortefeuilleSerializer(serializers.ModelSerializer):
-    actifs = serializers.SlugRelatedField(many=True, read_only=True, slug_field="symbole")
-
-    class Meta:
-        model = Portefeuille
-        fields = ["id", "nom", "description", "devise", "actifs", "date_creation"]
-        read_only_fields = ["id", "date_creation"]
-
-
-class PositionSerializer(serializers.Serializer):
-    symbole = serializers.CharField()
+from .models import Portefeuille, Position, User, normaliser_telephone, validateur_telephone
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -33,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
 class InscriptionSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source="prenom")
     last_name = serializers.CharField(source="nom")
-    phone = serializers.CharField(source="telephone")
+    phone = serializers.CharField(source="telephone", validators=[validateur_telephone])
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, style={"input_type": "password"})
 
@@ -43,16 +35,21 @@ class InscriptionSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
     def to_internal_value(self, data):
-        # On retire les espaces du numéro de téléphone
+        # On ramène le numéro au format +2376XXXXXXXX
         data = data.copy()
         if isinstance(data.get("phone"), str):
-            data["phone"] = data["phone"].replace(" ", "")
+            data["phone"] = normaliser_telephone(data["phone"])
         return super().to_internal_value(data)
 
     def validate_email(self, valeur):
         valeur = valeur.strip().lower()
         if User.objects.filter(email__iexact=valeur).exists():
             raise serializers.ValidationError("Cette adresse e-mail est déjà utilisée.")
+        return valeur
+
+    def validate_phone(self, valeur):
+        if User.objects.filter(telephone=valeur).exists():
+            raise serializers.ValidationError("Ce numéro de téléphone est déjà utilisé.")
         return valeur
 
     def validate(self, donnees):
@@ -95,7 +92,7 @@ class ConnexionSerializer(serializers.Serializer):
 class ModifierProfilSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField(source="prenom", required=False)
     last_name = serializers.CharField(source="nom", required=False)
-    phone = serializers.CharField(source="telephone", required=False)
+    phone = serializers.CharField(source="telephone", required=False, validators=[validateur_telephone])
     email = serializers.EmailField(required=False)
 
     class Meta:
@@ -105,7 +102,7 @@ class ModifierProfilSerializer(serializers.ModelSerializer):
     def to_internal_value(self, data):
         data = data.copy()
         if isinstance(data.get("phone"), str):
-            data["phone"] = data["phone"].replace(" ", "")
+            data["phone"] = normaliser_telephone(data["phone"])
         return super().to_internal_value(data)
 
     def validate_email(self, valeur):
@@ -132,3 +129,81 @@ class ChangerMotDePasseSerializer(serializers.Serializer):
     def validate_new_password(self, valeur):
         validate_password(valeur, user=self.context["request"].user)
         return valeur
+
+
+class PositionSerializer(serializers.ModelSerializer):
+    """Un actif dans un portefeuille. Seule la quantité peut être modifiée."""
+
+    symbole = serializers.CharField(source="actif.symbole", read_only=True)
+    nom = serializers.CharField(source="actif.nom", read_only=True)
+    type_actif = serializers.CharField(source="actif.type_actif", read_only=True)
+
+    class Meta:
+        model = Position
+        fields = ["symbole", "nom", "type_actif", "quantite", "date_ajout"]
+        read_only_fields = ["date_ajout"]
+        extra_kwargs = {"quantite": {"coerce_to_string": False}}
+
+
+class PortefeuilleSerializer(serializers.ModelSerializer):
+    nb_actifs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Portefeuille
+        fields = ["id", "nom", "description", "devise", "date_creation", "nb_actifs"]
+        read_only_fields = ["id", "date_creation"]
+
+    def get_nb_actifs(self, portefeuille) -> int:
+        # La liste fournit déjà le nombre (annotation) ; sinon on le compte.
+        nombre = getattr(portefeuille, "nb_actifs", None)
+        return nombre if nombre is not None else portefeuille.positions.count()
+
+    def validate_nom(self, nom):
+        utilisateur = self.context["request"].user
+        doublons = Portefeuille.objects.filter(utilisateur=utilisateur, nom__iexact=nom)
+        if self.instance:
+            doublons = doublons.exclude(pk=self.instance.pk)
+        if doublons.exists():
+            raise serializers.ValidationError("Tu as déjà un portefeuille avec ce nom.")
+        return nom
+
+
+class PortefeuilleDetailSerializer(PortefeuilleSerializer):
+    actifs = PositionSerializer(source="positions", many=True, read_only=True)
+
+    class Meta(PortefeuilleSerializer.Meta):
+        fields = PortefeuilleSerializer.Meta.fields + ["actifs"]
+
+
+class AjoutActifSerializer(serializers.Serializer):
+    symbole = serializers.CharField(help_text="Symbole de l'actif, ex. AAPL ou BTC-USD.")
+    quantite = serializers.DecimalField(
+        max_digits=20,
+        decimal_places=8,
+        min_value=Decimal("0.00000001"),
+        required=False,
+        allow_null=True,
+        help_text="Quantité détenue (facultatif).",
+    )
+
+    def validate_symbole(self, symbole):
+        try:
+            return Actif.objects.get(symbole__iexact=symbole.strip())
+        except Actif.DoesNotExist:
+            raise serializers.ValidationError(f"Actif inconnu : {symbole}.")
+
+    def validate(self, donnees):
+        portefeuille = self.context["portefeuille"]
+        if portefeuille.positions.filter(actif=donnees["symbole"]).exists():
+            raise serializers.ValidationError({"symbole": "Cet actif est déjà dans le portefeuille."})
+        return donnees
+
+    def create(self, donnees_validees):
+        try:
+            return Position.objects.create(
+                portefeuille=self.context["portefeuille"],
+                actif=donnees_validees["symbole"],
+                quantite=donnees_validees.get("quantite"),
+            )
+        except IntegrityError:
+            raise serializers.ValidationError({"symbole": "Cet actif est déjà dans le portefeuille."})
