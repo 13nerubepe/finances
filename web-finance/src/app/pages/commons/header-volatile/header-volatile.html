@@ -1,0 +1,19 @@
+<nav
+    class="flex gap-2 overflow-x-auto pb-1"
+    role="tablist"
+    aria-label="Sections de l'analyse de volatilité">
+
+    @for (onglet of onglets; track onglet.id) {
+        <button
+            type="button"
+            role="tab"
+            class="cursor-pointer whitespace-nowrap rounded-lg border px-4 py-2 text-sm font-medium transition-colors"
+            [class]="onglet.id === ongletActif()
+                ? 'border-primary-200 bg-primary-50 text-primary-700 dark:border-primary-800 dark:bg-primary-950 dark:text-primary-300'
+                : 'border-surface bg-surface-0 hover:border-primary dark:bg-surface-900'"
+            [attr.aria-selected]="onglet.id === ongletActif()"
+            (click)="selectionner(onglet.id)">
+            {{ onglet.label }}
+        </button>
+    }
+</nav>

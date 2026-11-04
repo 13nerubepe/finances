@@ -8,7 +8,7 @@ import Lara from '@primeuix/themes/lara';
 import Nora from '@primeuix/themes/nora';
 import { PrimeNG } from 'primeng/config';
 import { SelectButtonModule } from 'primeng/selectbutton';
-import { LayoutService } from '@/app/layout/service/layout.service';
+import { LayoutService } from '@/app/pages/service/service/layout.service';
 
 const presets = {
     Aura,
@@ -415,6 +415,7 @@ export class AppConfigurator {
     }
 
     updateColors(event: any, type: string, color: any) {
+        console.log('updateColors', type, color);
         if (type === 'primary') {
             this.layoutService.layoutConfig.update((state) => ({ ...state, primary: color.name }));
         } else if (type === 'surface') {

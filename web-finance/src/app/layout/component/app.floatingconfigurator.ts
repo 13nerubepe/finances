@@ -2,7 +2,7 @@ import {Component, computed, inject, input} from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { StyleClassModule } from 'primeng/styleclass';
 import { AppConfigurator } from './app.configurator';
-import { LayoutService } from '@/app/layout/service/layout.service';
+import { LayoutService } from '@/app/pages/service/service/layout.service';
 import {CommonModule} from "@angular/common";
 
 @Component({
@@ -26,6 +26,7 @@ export class AppFloatingConfigurator {
     isDarkTheme = computed(() => this.LayoutService.layoutConfig().darkTheme);
 
     toggleDarkMode() {
+
         this.LayoutService.layoutConfig.update((state) => ({ ...state, darkTheme: !state.darkTheme }));
     }
 

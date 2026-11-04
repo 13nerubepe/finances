@@ -1,0 +1,594 @@
+// Couleurs de marché reprises de TradingView ; le reste suit le thème PrimeNG (clair ou sombre).
+$hausse: #089981;
+$baisse: #f23645;
+$bleu: #2962ff;
+$orange: #f57c00;
+
+$fond: var(--p-content-background, #fff);
+$bordure: var(--p-content-border-color, #e0e3eb);
+$survol: var(--p-content-hover-background, #f0f3fa);
+$texte: var(--p-text-color, #131722);
+$muet: var(--p-text-muted-color, #6a6d78);
+
+:host {
+    display: block;
+    color: $texte;
+}
+
+.tv-page {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.tv-panel {
+    background: $fond;
+    border: 1px solid $bordure;
+    border-radius: 8px;
+    min-width: 0;
+
+    h2 {
+        margin: 0;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+}
+
+.tv-muet { color: $muet; }
+.hausse { color: $hausse; }
+.baisse { color: $baisse; }
+.neutre { color: $muet; }
+.tv-orange { color: $orange; }
+.tv-bleu { color: $bleu; }
+.tv-chiffre { font-variant-numeric: tabular-nums; }
+
+// En-tête
+.tv-entete {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem 2rem;
+    padding: 1rem;
+}
+
+.tv-identite {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+
+    h1 {
+        margin: 0;
+        font-size: 1.375rem;
+        font-weight: 700;
+        line-height: 1.25;
+    }
+}
+
+.tv-identite-details {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.125rem;
+    font-size: 0.8125rem;
+    color: $muet;
+
+    strong { color: $texte; }
+}
+
+.tv-logo {
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.tv-logo-petit {
+    width: 2.25rem;
+    height: 2.25rem;
+}
+
+.tv-logo-texte {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.tv-prix {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.tv-prix-valeur {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.tv-prix-devise {
+    font-size: 0.8125rem;
+    color: $muet;
+}
+
+.tv-prix-variation {
+    font-size: 1.0625rem;
+    font-weight: 600;
+
+    small {
+        font-size: 0.75rem;
+        font-weight: 400;
+        color: $muet;
+    }
+}
+
+.tv-alerte {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid rgba($baisse, 0.4);
+    border-radius: 8px;
+    background: rgba($baisse, 0.08);
+    color: $baisse;
+    font-size: 0.875rem;
+}
+
+// Disposition
+.tv-corps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 20rem;
+    gap: 0.75rem;
+    align-items: stretch;
+}
+
+.tv-lateral {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+// Barre d'outils du graphique
+.tv-panneau-graphique {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tv-outils {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.375rem;
+    padding: 0.375rem 0.5rem;
+    border-bottom: 1px solid $bordure;
+}
+
+.tv-groupe {
+    display: flex;
+    align-items: center;
+    gap: 0.125rem;
+}
+
+.tv-droite { margin-left: auto; }
+
+.tv-separateur {
+    width: 1px;
+    height: 1.25rem;
+    margin: 0 0.25rem;
+    background: $bordure;
+}
+
+.tv-bouton {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.5rem;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: $texte;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+
+    &:hover { background: $survol; }
+
+    &.actif {
+        background: rgba($bleu, 0.12);
+        color: $bleu;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $bleu;
+        outline-offset: 1px;
+    }
+}
+
+.tv-pastille {
+    flex: none;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+}
+
+// Sélection des actifs
+.tv-comparaison {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid $bordure;
+}
+
+.tv-reference {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8125rem;
+    color: $muet;
+    white-space: nowrap;
+}
+
+:host ::ng-deep .tv-champ {
+    width: 12rem;
+    max-width: 100%;
+}
+
+.tv-pastilles {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+}
+
+.tv-puce {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 1.75rem;
+    padding: 0.125rem 0.625rem;
+    border: 1px solid $bordure;
+    border-radius: 999px;
+    background: transparent;
+    color: $texte;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+
+    i {
+        font-size: 0.625rem;
+        color: $muet;
+    }
+
+    &:hover:not(:disabled) {
+        border-color: $baisse;
+
+        i { color: $baisse; }
+    }
+
+    &:disabled { cursor: default; }
+
+    &.reference {
+        border-color: $bleu;
+        background: rgba($bleu, 0.08);
+    }
+
+    &:focus-visible {
+        outline: 2px solid $bleu;
+        outline-offset: 1px;
+    }
+}
+
+.tv-puce-ref {
+    font-size: 0.6875rem;
+    color: $bleu;
+}
+
+.tv-puce-ajout {
+    border-style: dashed;
+
+    &:hover:not(:disabled) {
+        border-color: $bleu;
+        color: $bleu;
+
+        i { color: $bleu; }
+    }
+}
+
+// Zone du graphique
+.tv-zone {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+}
+
+.tv-canvas {
+    width: 100%;
+    height: clamp(26rem, 62vh, 44rem);
+}
+
+.tv-plein-ecran {
+    height: 100vh;
+    border: 0;
+    border-radius: 0;
+
+    .tv-canvas { height: 100%; }
+    .tv-note { display: none; }
+}
+
+.tv-legende {
+    position: absolute;
+    z-index: 3;
+    top: 0.5rem;
+    left: 0.625rem;
+    right: 5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.875rem;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+
+    small {
+        font-size: 0.75rem;
+        color: $muet;
+    }
+
+    .tv-legende-symbole {
+        color: inherit;
+        font-weight: 600;
+    }
+}
+
+.tv-legende-date { color: $muet; }
+
+.tv-chargement {
+    position: absolute;
+    z-index: 4;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0.5rem 0.875rem;
+    border: 1px solid $bordure;
+    border-radius: 6px;
+    background: $fond;
+    font-size: 0.875rem;
+}
+
+.tv-note {
+    margin: 0;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid $bordure;
+    font-size: 0.75rem;
+    color: $muet;
+}
+
+// Liste de comparaison
+.tv-liste {
+    margin: 0;
+    padding: 0 0 0.5rem;
+    list-style: none;
+}
+
+.tv-ligne {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto 4.75rem;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 1rem;
+    border: 0;
+    border-left: 2px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { background: $survol; }
+
+    &.selectionnee {
+        border-left-color: $bleu;
+        background: rgba($bleu, 0.08);
+    }
+
+    &:focus-visible {
+        outline: 2px solid $bleu;
+        outline-offset: -2px;
+    }
+}
+
+.tv-ligne-symbole {
+    overflow: hidden;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tv-ligne-var { text-align: right; }
+
+.tv-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-top: 1px solid $bordure;
+    font-size: 0.8125rem;
+}
+
+// Statistiques
+.tv-fourchette { padding: 0 1rem 0.75rem; }
+
+.tv-fourchette-barre {
+    position: relative;
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, $baisse, $hausse);
+
+    span {
+        position: absolute;
+        top: -3px;
+        width: 2px;
+        height: 10px;
+        margin-left: -1px;
+        background: $texte;
+    }
+}
+
+.tv-fourchette-bornes {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+
+    small {
+        font-size: 0.6875rem;
+        color: $muet;
+    }
+}
+
+.tv-stats {
+    margin: 0;
+    padding: 0 1rem 0.5rem;
+
+    div {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        border-top: 1px solid $bordure;
+        font-size: 0.8125rem;
+    }
+
+    dt { color: $muet; }
+
+    dd {
+        margin: 0;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// Faits marquants
+.tv-faits {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: 0.75rem;
+}
+
+.tv-fait {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 0.875rem 1rem;
+
+    > i { font-size: 1.25rem; }
+
+    span {
+        display: block;
+        font-size: 0.75rem;
+        color: $muet;
+    }
+
+    strong {
+        font-size: 0.9375rem;
+        font-weight: 600;
+    }
+
+    em {
+        margin-left: 0.25rem;
+        font-style: normal;
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+// Tableau
+.tv-panneau-tableau { overflow: hidden; }
+
+.tv-rangee {
+    cursor: pointer;
+
+    &.selectionnee > td { background: rgba($bleu, 0.06); }
+}
+
+.tv-barre {
+    position: relative;
+    flex: 1;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: $survol;
+}
+
+.tv-barre-axe {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    left: 50%;
+    width: 1px;
+    background: $muet;
+}
+
+.tv-barre-valeur {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-radius: 999px;
+
+    &.positive {
+        left: 50%;
+        background: $hausse;
+    }
+
+    &.negative {
+        right: 50%;
+        background: $baisse;
+    }
+}
+
+.tv-barre-texte {
+    width: 4.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+// Écrans plus petits
+@media (max-width: 1100px) {
+    .tv-corps { grid-template-columns: minmax(0, 1fr); }
+
+    .tv-lateral {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .tv-prix-valeur { font-size: 1.625rem; }
+    .tv-canvas { height: 24rem; }
+    .tv-droite { margin-left: 0; }
+    .tv-separateur { display: none; }
+
+    .tv-reference,
+    .tv-comparaison p-multiselect,
+    .tv-reference p-select { flex: 1 1 100%; }
+
+    :host ::ng-deep .tv-champ { width: 100%; }
+}

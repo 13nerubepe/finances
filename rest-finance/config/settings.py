@@ -42,14 +42,42 @@ INSTALLED_APPS = [
 #     DRF
     'rest_framework',
     'django_filters',
+    'drf_spectacular',
+    'rest_framework_simplejwt.token_blacklist',
+
 #     APP
     'finance',
     'marches',
     'agent',
+    'actualites',
+    'corsheaders',
+    'synchronisation',
 ]
 
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'MEFA API',
+    'DESCRIPTION': 'API de suivi et d’analyse de la volatilité des marchés financiers.',
+    'VERSION': '1.0.0',
+}
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:4200",
+    "http://127.0.0.1:4200",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 MIDDLEWARE = [
+
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -137,3 +165,4 @@ MAILERS = {
 }
 AUTH_USER_MODEL = 'finance.User'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+SEUIL_PIC = 3 # Choix consensuel du groupe a calibrer

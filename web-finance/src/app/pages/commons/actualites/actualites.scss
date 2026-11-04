@@ -1,0 +1,18 @@
+
+:host {
+    display: block;
+    min-width: 0;
+}
+
+:host h1,
+:host h2,
+:host h3,
+:host p {
+    overflow-wrap: anywhere;
+}
+
+:host a:focus-visible,
+:host button:focus-visible {
+    outline: 2px solid var(--p-primary-color);
+    outline-offset: 2px;
+}

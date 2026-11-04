@@ -4,12 +4,13 @@ import { RouterModule } from '@angular/router';
 import { AppTopbar } from './app.topbar';
 import { AppSidebar } from './app.sidebar';
 import { AppFooter } from './app.footer';
-import { LayoutService } from '@/app/layout/service/layout.service';
+import { LayoutService } from '@/app/pages/service/service/layout.service';
+import { AssistantAi } from '@/app/pages/commons/assistant-ai/assistant-ai';
 
 @Component({
     selector: 'app-layout',
     standalone: true,
-    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter],
+    imports: [CommonModule, AppTopbar, AppSidebar, RouterModule, AppFooter, AssistantAi],
     template: `<div class="layout-wrapper" [ngClass]="containerClass()">
         <app-topbar></app-topbar>
         <app-sidebar></app-sidebar>
@@ -20,6 +21,7 @@ import { LayoutService } from '@/app/layout/service/layout.service';
             <app-footer></app-footer>
         </div>
         <div class="layout-mask"></div>
+        <app-assistant-ai></app-assistant-ai>
     </div> `
 })
 export class AppLayout {
@@ -46,5 +48,5 @@ export class AppLayout {
             'layout-overlay-active': state.overlayMenuActive,
             'layout-mobile-active': state.mobileMenuActive
         };
-    })
+    });
 }
