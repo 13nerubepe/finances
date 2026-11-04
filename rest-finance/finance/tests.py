@@ -1,11 +1,3 @@
-"""
-Desormais:
--> test_numero_sans_indicatif_est_normalise ;
--> test_numero_avec_237_sans_plus_est_normalise ;
--> test_connexion_avec_numero_sans_indicatif
-
-"""
-
 # from django.test import TestCase
 
 # Create your tests here.
@@ -37,6 +29,19 @@ class InscriptionTests(APITestCase):
         r = self.client.post(reverse("inscription"), donnees)
         self.assertEqual(r.status_code, status.HTTP_201_CREATED)
         self.assertEqual(r.data["telephone"], "+237690000000")
+
+    def test_numero_sans_indicatif_est_normalise(self):
+        donnees = {**DONNEES_VALIDES, "telephone": "696543193"}
+        r = self.client.post(reverse("inscription"), donnees)
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["telephone"], "+237696543193")
+
+    def test_numero_avec_237_sans_plus_est_normalise(self):
+        donnees = {**DONNEES_VALIDES, "telephone": "237696543193"}
+        r = self.client.post(reverse("inscription"), donnees)
+        self.assertEqual(r.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(r.data["telephone"], "+237696543193")
+
 
     def test_telephone_invalide(self):
         donnees = {**DONNEES_VALIDES, "telephone": "0690000000"}
@@ -84,6 +89,13 @@ class AuthentificationTests(APITestCase):
         self.assertIn("access", r.data)
         self.assertIn("refresh", r.data)
         self.assertEqual(r.data["utilisateur"]["telephone"], "+237690000000")
+    
+    def test_connexion_avec_numero_sans_indicatif(self):
+        r = self.client.post(
+            reverse("connexion"), {**self.identifiants, "telephone": "690000000"}
+        )
+        self.assertEqual(r.status_code, status.HTTP_200_OK)
+
 
     def test_connexion_mauvais_mot_de_passe(self):
         r = self.client.post(
