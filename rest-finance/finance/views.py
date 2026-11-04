@@ -48,6 +48,8 @@ class DeconnexionView(generics.GenericAPIView):
 class CurrentLogUserView(generics.RetrieveAPIView):
 
     serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
 
     def get_object(self):
         return self.request.user
