@@ -1,21 +1,31 @@
-from django.shortcuts import render
-from django.http import JsonResponse
-from .services import analyze_asset
+from datetime import date
+
+from drf_spectacular.utils import extend_schema
 from google.genai import errors
+from rest_framework import status
+from rest_framework.generics import get_object_or_404
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-# Create your views here.
-def analyse(request):
-    asset = request.GET.get("asset")
-    if not asset:
-        return JsonResponse({"error":"Parametre 'asset' manquant"},status=400)
+from marches.models import IndicateurJournalier
 
-    try:
-        result = analyze_asset(asset)
-    except errors.APIErrors as e:
-        return JsonResponse({"error": "Erreur IA", "details":str(e)}, status=503)
-    except Exception as e:
-        return JsonResponse({"error":"Erreur interne", "details": str(e)},status=500)
+from .serializers import ExplicationSerializer
+from .services import expliquer_pic
 
-    if "error" in result:
-        return JsonResponse({"error":"Erreur d'analyse", "details":result},status=404)
-    return JsonResponse(analyze_asset(asset))
+
+class ExplicationPicView(APIView):
+    """Explication d'un pic journalier : générée au premier appel, puis lue en base."""
+
+    @extend_schema(responses=ExplicationSerializer)
+    def get(self, request, symbole, jour):
+        try:
+            jour = date.fromisoformat(jour)
+        except ValueError:
+            return Response({"detail": "Date attendue au format AAAA-MM-JJ."}, status=status.HTTP_400_BAD_REQUEST)
+
+        pic = get_object_or_404(IndicateurJournalier, actif__symbole=symbole.upper(), date=jour, est_pic=True)
+        try:
+            explication = expliquer_pic(pic)
+        except errors.APIError as erreur:
+            return Response({"detail": f"Erreur de l'IA : {erreur}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response(ExplicationSerializer(explication).data)
