@@ -325,7 +325,7 @@
         </div>
 
         @if (vueTableau === 'historique') {
-            <h2>Historique {{ reference ? 'de ' + reference.symbole : '' }} ({{ periodeLabel }})</h2>
+            <h2>Historique {{ reference ? 'de ' + reference?.symbole : '' }} ({{ periodeLabel }})</h2>
 
             <p-table [value]="lignesHistorique()" [loading]="loading" size="small" [paginator]="true" [rows]="10"
                      [tableStyle]="{ 'min-width': '42rem' }">
