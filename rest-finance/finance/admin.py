@@ -3,7 +3,8 @@ from django.contrib import admin
 # Register your models here.
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import User
+from .models import Portefeuille, Position, User
+
 
 
 @admin.register(User)
@@ -29,3 +30,13 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+class PositionInline(admin.TabularInline):
+    model = Position
+    extra = 1
+
+
+@admin.register(Portefeuille)
+class PortefeuilleAdmin(admin.ModelAdmin):
+    list_display = ("nom", "utilisateur", "devise", "date_creation")
+    inlines = [PositionInline]

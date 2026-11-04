@@ -70,70 +70,70 @@ class User(AbstractBaseUser, PermissionsMixin):
         return f"{self.prenom} {self.nom} ({self.telephone})"
 
 
-#     class Portefeuille(models.Model):
-#
-#         utilisateur = models.ForeignKey(
-#             "finance.User",
-#             on_delete=models.CASCADE,
-#             related_name="portefeuilles"
-#         )
-#
-#         nom = models.CharField(max_length=100)
-#
-#         description = models.TextField(blank=True)
-#
-#         devise = models.CharField(
-#             max_length=10,
-#             default="USD"
-#         )
-#
-#         actifs = models.ManyToManyField(
-#             "marches.Actif",
-#             through="Position",
-#             related_name="portefeuilles"
-#         )
-#
-#         date_creation = models.DateTimeField(auto_now_add=True)
-#
-#         date_modification = models.DateTimeField(auto_now=True)
-#
-#         class Meta:
-#             ordering = ["-date_creation"]
-#             verbose_name = "Portefeuille"
-#             verbose_name_plural = "Portefeuilles"
-#
-#         def __str__(self):
-#             return f"{self.nom} - {self.utilisateur}"
-#
-#
-#     class Position(models.Model):
-#         """
-#         Association entre un portefeuille et un actif surveillé.
-#         Ce modèle ne représente pas une transaction financière.
-#         """
-#
-#         portefeuille = models.ForeignKey(
-#             Portefeuille,
-#             on_delete=models.CASCADE,
-#             related_name="positions"
-#         )
-#
-#         actif = models.ForeignKey(
-#             "marches.Actif",
-#             on_delete=models.CASCADE,
-#             related_name="positions"
-#         )
-#
-#         date_ajout = models.DateTimeField(auto_now_add=True)
-#
-#         class Meta:
-#             ordering = ["-date_ajout"]
-#             constraints = [
-#                 models.UniqueConstraint(
-#                     fields=["portefeuille", "actif"],
-#                     name="position_unique_portefeuille_actif"
-#                 )
-#             ]
-#
-#         def __str__(self):
-#             return f"{self.portefeuille.nom} - {self.actif.symbole}"
+class Portefeuille(models.Model):
+
+        utilisateur = models.ForeignKey(
+            "finance.User",
+            on_delete=models.CASCADE,
+            related_name="portefeuilles"
+        )
+
+        nom = models.CharField(max_length=100)
+
+        description = models.TextField(blank=True)
+
+        devise = models.CharField(
+            max_length=10,
+            default="USD"
+        )
+
+        actifs = models.ManyToManyField(
+            "marches.Actif",
+            through="Position",
+            related_name="portefeuilles"
+        )
+
+        date_creation = models.DateTimeField(auto_now_add=True)
+
+        date_modification = models.DateTimeField(auto_now=True)
+
+        class Meta:
+            ordering = ["-date_creation"]
+            verbose_name = "Portefeuille"
+            verbose_name_plural = "Portefeuilles"
+
+        def __str__(self):
+            return f"{self.nom} - {self.utilisateur}"
+
+
+class Position(models.Model):
+        """
+        Association entre un portefeuille et un actif surveillé.
+        Ce modèle ne représente pas une transaction financière.
+        """
+
+        portefeuille = models.ForeignKey(
+            Portefeuille,
+            on_delete=models.CASCADE,
+            related_name="positions"
+        )
+
+        actif = models.ForeignKey(
+            "marches.Actif",
+            on_delete=models.CASCADE,
+            related_name="positions"
+        )
+
+        date_ajout = models.DateTimeField(auto_now_add=True)
+
+        class Meta:
+            ordering = ["-date_ajout"]
+            constraints = [
+                models.UniqueConstraint(
+                    fields=["portefeuille", "actif"],
+                    name="position_unique_portefeuille_actif"
+                )
+            ]
+
+        def __str__(self):
+            return f"{self.portefeuille.nom} - {self.actif.symbole}"

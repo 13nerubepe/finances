@@ -2,7 +2,20 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
-from .models import User, normaliser_telephone
+
+from .models import User, normaliser_telephone, Portefeuille
+
+class PortefeuilleSerializer(serializers.ModelSerializer):
+    actifs = serializers.SlugRelatedField(many=True, read_only=True, slug_field="symbole")
+
+    class Meta:
+        model = Portefeuille
+        fields = ["id", "nom", "description", "devise", "actifs", "date_creation"]
+        read_only_fields = ["id", "date_creation"]
+
+
+class PositionSerializer(serializers.Serializer):
+    symbole = serializers.CharField()
 
 
 class UserSerializer(serializers.ModelSerializer):
