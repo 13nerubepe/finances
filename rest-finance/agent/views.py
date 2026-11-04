@@ -1,4 +1,5 @@
 from datetime import date
+from .memoire import contexte_conversation
 
 from drf_spectacular.utils import extend_schema
 from google.genai import errors
@@ -18,8 +19,6 @@ from .serializers import (
     ReponseSerializer,
 )
 from .services import expliquer_pic
-
-NB_MESSAGES_MEMOIRE = 10  # derniers messages renvoyés à l'agent pour qu'il suive la conversation
 
 class ExplicationPicView(APIView):
     """Explication d'un pic journalier : générée au premier appel, puis lue en base."""
@@ -57,14 +56,13 @@ class QuestionAssistantView(APIView):
         serializer = QuestionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        derniers = Message.objects.filter(utilisateur=request.user).order_by("-date_creation", "-id")
-        historique = [(m.role, m.contenu) for m in reversed(list(derniers[:NB_MESSAGES_MEMOIRE]))]
-
         try:
+            resume, historique = contexte_conversation(request.user)
             resultat = repondre(
                 construire_question(serializer.validated_data),
                 historique,
                 decrire_portefeuilles(request.user),
+                resume,
             )
         except Exception as erreur:  # quota Gemini, réseau... : on prévient le front sans planter
             return Response(

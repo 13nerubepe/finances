@@ -22,6 +22,10 @@ Règles :
 - Si une information n'est pas disponible, dis-le simplement.
 - Tu n'es pas un conseiller financier : ne recommande jamais d'acheter ou de vendre.
 
+Résumé des échanges plus anciens avec cet utilisateur :
+{resume}
+
+
 Portefeuilles de l'utilisateur :
 {portefeuilles}"""
 
@@ -61,11 +65,17 @@ def sources_utilisees(messages):
     return sources
 
 
-def repondre(question, historique=(), portefeuilles="aucun portefeuille"):
+def repondre(question, historique=(), portefeuilles="aucun portefeuille", resume=""):
     """Pose une question à l'agent.
-    historique : échanges précédents, sous la forme [("user", texte), ("assistant", texte), ...].
+    historique : échanges récents, sous la forme [("user", texte), ("assistant", texte), ...].
+    resume : résumé des échanges plus anciens.
     Renvoie {"reponse": texte, "sources": [...]}."""
-    consignes = CONSIGNES.format(aujourdhui=date.today().strftime("%d/%m/%Y"), portefeuilles=portefeuilles)
+    consignes = CONSIGNES.format(
+        aujourdhui=date.today().strftime("%d/%m/%Y"),
+        portefeuilles=portefeuilles,
+        resume=resume or "aucun (début de conversation)",
+    )
+
     agent = create_agent(
         ChatGoogleGenerativeAI(model=MODELE, temperature=0.2),
         OUTILS,
