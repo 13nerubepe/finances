@@ -22,6 +22,7 @@ def import_journalier():
     executer("importer_cours", "AAPL", "MSFT", "TSLA", indice="^GSPC")
     executer("importer_cours", "^FCHI", type="indice")
     executer("importer_cours", "BTC-USD", "ETH-USD", type="crypto")
+    executer("preparer_actifs_portefeuilles")
     executer("calculer_indicateurs")
     executer("collecter_articles_pics")
 
