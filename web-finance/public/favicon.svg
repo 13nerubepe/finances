@@ -1,0 +1,13 @@
+<svg viewBox="0 0 54 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="mefa-orange" x1="5" y1="0" x2="48" y2="40" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#FFB52E" />
+            <stop offset="50%" stop-color="#FF7900" />
+            <stop offset="100%" stop-color="#E94B00" />
+        </linearGradient>
+    </defs>
+    <path d="M5 32V11C5 6 11 4 14 8L27 20L40 8C43 4 49 6 49 11V28L42 24V14L30 25C28 27 26 27 24 25L12 14V32H5Z" fill="url(#mefa-orange)" />
+    <path d="M15 32V26H19V32H15Z M22 32V22H27V32H22Z M30 32V17H35V32H30Z" fill="url(#mefa-orange)" />
+    <path d="M4 34C17 40 32 33 44 19" stroke="url(#mefa-orange)" stroke-width="2.5" stroke-linecap="round" />
+    <path d="M39 17L49 13L47 24L44 21L41 24Z" fill="#FF9A00" />
+</svg>
