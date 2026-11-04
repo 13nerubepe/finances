@@ -7,11 +7,12 @@ import { AppConfigurator } from './app.configurator';
 import { LayoutService } from '@/app/pages/service/service/layout.service';
 import { Menu } from 'primeng/menu';
 import { AuthService } from '@/app/pages/service/service/auth.service';
+import { Notifications } from '@/app/pages/commons/notifications/notifications';
 
 @Component({
     selector: 'app-topbar',
     standalone: true,
-    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator,Menu],
+    imports: [RouterModule, CommonModule, StyleClassModule, AppConfigurator, Notifications, Menu],
     template: ` <div class="layout-topbar">
         <div class="layout-topbar-logo-container">
             <button class="layout-menu-button layout-topbar-action" (click)="layoutService.onMenuToggle()">
@@ -74,6 +75,7 @@ import { AuthService } from '@/app/pages/service/service/auth.service';
 
         <div class="layout-topbar-actions">
             <div class="layout-config-menu">
+                <app-notifications />
                 <button type="button" class="layout-topbar-action" (click)="toggleDarkMode()">
                     <i [ngClass]="{ 'pi': true, 'pi-moon': layoutService.isDarkTheme(), 'pi-sun': !layoutService.isDarkTheme() }"></i>
                 </button>
@@ -99,23 +101,16 @@ import { AuthService } from '@/app/pages/service/service/auth.service';
 
             <div class="layout-topbar-menu hidden lg:block">
                 <div class="layout-topbar-menu-content">
-<!--                    <button type="button" class="layout-topbar-action" title="Notifications">-->
-<!--                        <p-overlaybadge value="2" severity="danger">-->
-<!--                            <i class="pi pi-bell"></i>-->
-<!--                        </p-overlaybadge>-->
-<!--                        <span>Notifications</span>-->
-<!--                    </button>-->
+                    <!--                    <button type="button" class="layout-topbar-action">-->
+                    <!--                        <i class="pi pi-inbox"></i>-->
+                    <!--                        <span>Messages</span>-->
+                    <!--                    </button>-->
 
-<!--                    <button type="button" class="layout-topbar-action">-->
-<!--                        <i class="pi pi-inbox"></i>-->
-<!--                        <span>Messages</span>-->
-<!--                    </button>-->
-
-<!--                    <button type="button" class="layout-topbar-action" aria-haspopup="true" (click)="userMenu.toggle($event)">-->
-<!--                        <p-avatar [label]="initials()" shape="circle" styleClass="!bg-primary !text-primary-contrast" />-->
-<!--                        <span>{{ displayName() }}</span>-->
-<!--                        <i class="pi pi-angle-down"></i>-->
-<!--                    </button>-->
+                    <!--                    <button type="button" class="layout-topbar-action" aria-haspopup="true" (click)="userMenu.toggle($event)">-->
+                    <!--                        <p-avatar [label]="initials()" shape="circle" styleClass="!bg-primary !text-primary-contrast" />-->
+                    <!--                        <span>{{ displayName() }}</span>-->
+                    <!--                        <i class="pi pi-angle-down"></i>-->
+                    <!--                    </button>-->
                     <button
                         type="button"
                         class="flex cursor-pointer items-center gap-2 rounded-full border-0 bg-transparent py-1 pl-1 pr-2 hover:bg-surface-100 dark:hover:bg-surface-800"
