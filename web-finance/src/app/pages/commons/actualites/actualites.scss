@@ -1,3 +1,99 @@
+.onglets {
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+.onglet {
+    --couleur: var(--p-primary-color);
+
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--p-text-muted-color);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition:
+        background-color 0.2s,
+        border-color 0.2s,
+        color 0.2s;
+
+    &:hover {
+        border-color: var(--couleur);
+        color: var(--p-text-color);
+    }
+
+    &.onglet-actif {
+        border-color: var(--couleur);
+        background: var(--couleur);
+        color: #fff;
+
+        .onglet-compteur {
+            background: rgb(255 255 255 / 0.22);
+            color: #fff;
+        }
+    }
+}
+
+.onglet-compteur {
+    min-width: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--p-content-hover-background);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.25rem;
+    text-align: center;
+}
+
+.puce {
+    --couleur: var(--p-primary-color);
+
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.65rem;
+    border: 1px solid var(--p-content-border-color);
+    border-radius: 0.5rem;
+    background: var(--p-content-background);
+    color: var(--p-text-color);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition:
+        border-color 0.2s,
+        background-color 0.2s,
+        color 0.2s;
+
+    &:hover {
+        border-color: var(--couleur);
+    }
+
+    &.puce-active {
+        border-color: var(--couleur);
+        background: var(--couleur);
+        color: #fff;
+    }
+}
+
+.badge-actif {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.05rem 0.4rem;
+    border-radius: 0.3rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.1rem;
+    white-space: nowrap;
+}
+
 :host ::ng-deep .pagination-compacte {
     font-size: 0.8125rem;
 
