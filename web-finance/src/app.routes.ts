@@ -5,11 +5,13 @@ import { Documentation } from './app/pages/documentation/documentation';
 import { Landing } from './app/pages/landing/landing';
 import { Notfound } from './app/pages/notfound/notfound';
 import { AppConstantRoute } from '@/app/constants';
+import { authGuard } from '@/app/pages/service/service/auth.guard';
 
 export const appRoutes: Routes = [
     {
         path: '',
         component: AppLayout,
+        canActivate: [authGuard],
         children: [
 
             { path: '', component: Dashboard },
@@ -19,11 +21,6 @@ export const appRoutes: Routes = [
                 loadComponent: () => import('./app/pages/actif/actif').then((c) => c.ActifComponent),
                 data: { breadcrumb: 'Actif' },
             },
-            // {
-            //     path: AppConstantRoute.Detail_Actif_PATH,
-            //     loadComponent: () => import('./app/pages/detail-actif/detail-actif').then((c) => c.DetailActif),
-            //     data: { breadcrumb: 'Detail-actif' },
-            // },
 
             {
                 path: `${AppConstantRoute.Detail_Actif_PATH}/:symbole`,

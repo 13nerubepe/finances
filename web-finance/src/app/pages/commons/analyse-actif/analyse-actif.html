@@ -1,0 +1,213 @@
+<header class="entete">
+    <div>
+        <h2>Analyse de {{ symbole() }}</h2>
+        <p>Bougies {{ frequence() }} · écart-type sur {{ fenetre }} bougies</p>
+    </div>
+</header>
+
+<nav class="onglets" aria-label="Analyse de l'actif">
+    @for (o of onglets; track o.id) {
+        <button type="button" [class.actif]="onglet() === o.id" [attr.aria-current]="onglet() === o.id ? 'page' : null" (click)="onglet.set(o.id)">
+            <i [class]="'pi ' + o.icone"></i>
+            <span>{{ o.label }}</span>
+            @if (o.id === 'pics' && pics().length) {
+                <span class="compteur">{{ pics().length }}</span>
+            }
+        </button>
+    }
+</nav>
+
+@if (sansCours()) {
+    <div class="vide"><i class="pi pi-inbox"></i>Aucun cours de {{ symbole() }} sur cette période : choisis une période plus longue ou un autre actif.</div>
+} @else if (chargement() || enChargement()) {
+    <div class="squelette" aria-label="Chargement">
+        <span></span><span></span><span></span><span></span>
+        <span class="bloc"></span>
+    </div>
+} @else {
+    @switch (onglet()) {
+        @case ('volatilite') {
+            @if (donnees().volatilite; as v) {
+                <dl class="indicateurs">
+                    <div><dt>Volatilité actuelle</dt><dd>{{ pourcent(v.resume.volatilite_derniere) }}</dd></div>
+                    <div><dt>Volatilité moyenne</dt><dd>{{ pourcent(v.resume.volatilite_moyenne) }}</dd></div>
+                    <div><dt>Amplitude</dt><dd>{{ pourcent(v.resume.amplitude_periode) }}</dd></div>
+                    <div><dt>Rendement</dt><dd [class]="classeSigne(v.resume.rendement_periode)">{{ pourcent(v.resume.rendement_periode) }}</dd></div>
+                </dl>
+
+                @if (courbe(); as c) {
+                    <div class="titre-bloc">
+                        <h3>Écart-type glissant</h3>
+                        <ul class="legende">
+                            <li><span class="cle-trait"></span>Volatilité</li>
+                            @if (c.limite) {
+                                <li><span class="cle-seuil"></span>Seuil de pic</li>
+                            }
+                            <li><span class="cle-pic"></span>Pic</li>
+                        </ul>
+                    </div>
+
+                    <div class="graphique">
+                        <div class="trace">
+                            @for (g of c.graduations; track g.y) {
+                                <div class="grille" [style.top.%]="g.y"><span>{{ g.texte }}</span></div>
+                            }
+                            <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img"
+                                 [attr.aria-label]="'Volatilité de ' + symbole() + ' dans le temps'">
+                                <defs>
+                                    <linearGradient id="aire-volatilite" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0" stop-color="#2962ff" stop-opacity=".22" />
+                                        <stop offset="1" stop-color="#2962ff" stop-opacity="0" />
+                                    </linearGradient>
+                                </defs>
+                                <polygon [attr.points]="c.aire" fill="url(#aire-volatilite)" />
+                                <polyline [attr.points]="c.trace" class="ligne" vector-effect="non-scaling-stroke" />
+                            </svg>
+                            @if (c.limite; as l) {
+                                <div class="seuil" [style.top.%]="l.y" [title]="'Seuil de pic : ' + l.texte"></div>
+                            }
+                            @for (r of c.reperes; track r.x) {
+                                <span class="repere" [style.left.%]="r.x" [style.top.%]="r.y" [title]="r.titre"></span>
+                            }
+                        </div>
+                        <div class="dates">
+                            @for (d of c.dates; track d) {
+                                <span>{{ d | date: 'dd/MM/yy HH:mm' }}</span>
+                            }
+                        </div>
+                    </div>
+                } @else {
+                    <div class="vide"><i class="pi pi-chart-line"></i>Pas assez de bougies pour calculer l'écart-type sur cette période.</div>
+                }
+            } @else {
+                <div class="vide erreur"><i class="pi pi-exclamation-triangle"></i>Impossible de charger la volatilité.</div>
+            }
+        }
+
+        @case ('pics') {
+            @if (donnees().pics; as p) {
+                <p class="aide">Un pic correspond à une volatilité supérieure à la moyenne + {{ p.seuil }} × l'écart-type.</p>
+                @if (pics().length) {
+                    <div class="defilement">
+                        <table class="tableau">
+                            <thead>
+                            <tr>
+                                <th>Période</th>
+                                <th>Maximum atteint</th>
+                                <th class="droite">Volatilité max</th>
+                                <th class="droite">Score</th>
+                                <th class="droite">Variation du prix</th>
+                                <th class="droite">Bougies</th>
+                                <th><span class="sr-only">Explication</span></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                @for (pic of pics(); track pic.debut) {
+                                    <tr>
+                                        <td>
+                                            {{ pic.debut | date: 'dd/MM/yy HH:mm' }}
+                                            <span class="secondaire">→ {{ pic.fin | date: 'dd/MM/yy HH:mm' }}</span>
+                                        </td>
+                                        <td>{{ pic.horodatage_max | date: 'dd/MM/yy HH:mm' }}</td>
+                                        <td class="droite">{{ pourcent(pic.volatilite_max) }}</td>
+                                        <td class="droite"><span class="score">{{ decimal(pic.score_max) }}</span></td>
+                                        <td class="droite"><strong [class]="classeSigne(pic.variation_prix)">{{ pourcent(pic.variation_prix) }}</strong></td>
+                                        <td class="droite">{{ pic.nb_points }}</td>
+                                        <td class="droite">
+                                            <button type="button"
+                                                    class="cursor-pointer whitespace-nowrap rounded border border-surface bg-transparent px-2 py-1 text-xs font-semibold text-primary"
+                                                    (click)="expliquerPic.emit(pic.horodatage_max)">
+                                                <i class="pi pi-sparkles mr-1 text-xs"></i>Expliquer ce pic
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                } @else {
+                    <div class="vide"><i class="pi pi-check-circle"></i>Aucun mouvement inhabituel sur cette période.</div>
+                }
+            } @else {
+                <div class="vide erreur"><i class="pi pi-exclamation-triangle"></i>Impossible de charger les mouvements inhabituels.</div>
+            }
+        }
+
+        @case ('correlation') {
+            @if (symboles().length < 2) {
+                <div class="vide"><i class="pi pi-plus-circle"></i>Ajoute au moins un autre actif pour afficher les matrices.</div>
+            } @else {
+                <div class="matrices">
+                    <section>
+                        <div class="titre-bloc">
+                            <h3>Corrélation</h3>
+                            <span class="echelle"><small>-1</small><i></i><small>+1</small></span>
+                        </div>
+                        @if (donnees().correlations; as c) {
+                            <div class="defilement">
+                                <table class="matrice">
+                                    <thead><tr><th></th>@for (s of symboles(); track s) { <th>{{ s }}</th> }</tr></thead>
+                                    <tbody>
+                                        @for (a of symboles(); track a) {
+                                            <tr>
+                                                <th>{{ a }}</th>
+                                                @for (b of symboles(); track b) {
+                                                    <td [style.background]="couleurCorrelation(c.correlations[a]?.[b])"
+                                                        [title]="(c.observations[a]?.[b] ?? '—') + ' observations'">{{ decimal(c.correlations[a]?.[b]) }}</td>
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        } @else {
+                            <div class="vide erreur"><i class="pi pi-exclamation-triangle"></i>Impossible de charger les corrélations.</div>
+                        }
+                    </section>
+
+                    <section>
+                        <div class="titre-bloc"><h3>Covariance des rendements</h3></div>
+                        <div class="defilement">
+                            <table class="matrice">
+                                <thead><tr><th></th>@for (s of symboles(); track s) { <th>{{ s }}</th> }</tr></thead>
+                                <tbody>
+                                    @for (a of symboles(); track a) {
+                                        <tr>
+                                            <th>{{ a }}</th>
+                                            @for (b of symboles(); track b) {
+                                                <td>{{ scientifique(donnees().covariances[a]?.[b]) }}</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            }
+        }
+
+        @case ('actualites') {
+            @if (donnees().actualites; as articles) {
+                <div class="articles">
+                    @for (a of articles; track a.id) {
+                        <a class="article" [href]="a.lien" target="_blank" rel="noopener noreferrer">
+                            <span class="article-texte">
+                                <strong>{{ a.titre }}</strong>
+                                <small>
+                                    {{ a.source_nom }}
+                                    @if (a.date_publication) { · {{ a.date_publication | date: 'dd/MM/yyyy HH:mm' }} }
+                                </small>
+                            </span>
+                            <i class="pi pi-external-link"></i>
+                        </a>
+                    } @empty {
+                        <div class="vide"><i class="pi pi-inbox"></i>Aucune actualité disponible pour cet actif.</div>
+                    }
+                </div>
+            } @else {
+                <div class="vide erreur"><i class="pi pi-exclamation-triangle"></i>Impossible de charger les actualités.</div>
+            }
+        }
+    }
+}

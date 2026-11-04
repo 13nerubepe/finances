@@ -1,18 +1,17 @@
+:host ::ng-deep .pagination-compacte {
+    font-size: 0.8125rem;
 
-:host {
-    display: block;
-    min-width: 0;
-}
+    .p-paginator-page,
+    .p-paginator-first,
+    .p-paginator-prev,
+    .p-paginator-next,
+    .p-paginator-last {
+        min-width: 2rem;
+        height: 2rem;
+    }
 
-:host h1,
-:host h2,
-:host h3,
-:host p {
-    overflow-wrap: anywhere;
-}
-
-:host a:focus-visible,
-:host button:focus-visible {
-    outline: 2px solid var(--p-primary-color);
-    outline-offset: 2px;
+    .p-select-label {
+        padding-block: 0.25rem;
+        font-size: 0.8125rem;
+    }
 }

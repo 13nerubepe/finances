@@ -1,91 +1,62 @@
-
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of, map, throwError, expand, reduce, EMPTY } from 'rxjs';
+import { EMPTY, Observable, expand, map, reduce } from 'rxjs';
 
 import {
     Actif,
     Actualite,
-    ActualiteResponse,
-    AlerteRisque,
-    AnalyseVolatiliteParams,
+    CorrelationsResponse, ExplicationPic,
     FiltresCours,
+    Frequence,
     HistoricalPrice,
-    IndicateursVolatilite,
-    MatriceCorrelation,
+    HistoricalPriceResponse,
     MessageAssistantIA,
-    MouvementInhabituel,
-    NouvelleTransaction,
-    PointVolatilite,
-    Portefeuille,
-    PortfolioDistributionResponse,
-    PositionPortefeuille,
-    HistoriquePortefeuille,
-    PerformancePortefeuille,
-    RendementActif,
+    PicsResponse,
     ReponseAssistantIA,
     RequeteAssistantIA,
-    ResultatAnalyseVolatilite,
+    SourceActualites,
+    TopMover,
     TopMoversResponse,
-    Transaction, HistoricalPriceResponse
+    VolatiliteResponse
 } from '@/app/models/actif-model';
-
 import { User } from '@/app/models/auth.models';
 import { environment } from '@/environments/environment';
-import { TOP_MOVERS_MOCK } from '@/app/DATA/topmoves-mock.data';
-import { ACTUALITES_MOCK } from '@/app/DATA/actualites-mock.data';
-import { RESULTAT_ANALYSE_VOLATILITE_MOCK } from '@/app/DATA/volatile-mock.data';
 
 @Injectable({
     providedIn: 'root'
 })
 export class ActifService {
+    private http = inject(HttpClient);
 
-    private readonly http = inject(HttpClient);
+    // Utilisateur connecté
+    user = signal<User | null>(null);
 
-    readonly user = signal<User | null>(null);
+    // Adresse de base de l'API, sans slash à la fin
+    private apiUrl = environment.apiUrl.replace(/\/+$/, '');
 
-    // Évite les doubles slashs dans les URL.
-    private readonly apiUrl = environment.apiUrl.replace(/\/+$/, '');
+    private actifsUrl = `${this.apiUrl}/actifs/`;
+    private coursUrl = `${this.apiUrl}/cours/`;
+    private correlationsUrl = `${this.apiUrl}/correlations/`;
+    private actualitesUrl = `${this.apiUrl}/actualites/`;
+    private sourcesUrl = `${this.apiUrl}/sources/`;
+    private assistantUrl = `${this.apiUrl}/assistant-ia/`;
 
-    // Passe à false lorsque tu veux utiliser les API Django.
-    private readonly useMockData = false;
+    // ---------- ACTIFS ----------
 
-    // URL des ressources
-    private readonly actifsUrl = `${this.apiUrl}/actifs/`;
-    private readonly coursUrl = `${this.apiUrl}/cours/`;
-    private readonly volatiliteUrl = `${this.apiUrl}/volatilite/`;
-    private readonly alertesUrl = `${this.apiUrl}/alertes/`;
-    private readonly portefeuillesUrl = `${this.apiUrl}/portefeuilles/`;
-    private readonly positionsUrl = `${this.apiUrl}/positions-portefeuille/`;
-    private readonly transactionsUrl = `${this.apiUrl}/transactions/`;
-    private readonly historiquePortefeuilleUrl =
-        `${this.apiUrl}/historique-portefeuilles/`;
-    private readonly performancesUrl =
-        `${this.apiUrl}/performances-portefeuille/`;
-    private readonly actualitesUrl = `${this.apiUrl}/actualites/`;
-    private readonly assistantUrl = `${this.apiUrl}/assistant-ia/`;
-
-    // =========================================================
-    // 1. ACTIFS FINANCIERS
-    // =========================================================
-
+    // Récupère la liste des actifs
     getAssets(): Observable<Actif[]> {
-
         return this.http.get<Actif[]>(this.actifsUrl);
     }
 
-    getAssetById(id: number): Observable<Actif> {
-
-        return this.http.get<Actif>(`${this.actifsUrl}${id}/`);
+    // Récupère un actif avec son symbole, par exemple AAPL
+    getAssetBySymbole(symbole: string): Observable<Actif> {
+        return this.http.get<Actif>(`${this.actifsUrl}${encodeURIComponent(symbole)}/`);
     }
 
-    // =========================================================
-    // 2. COURS HISTORIQUES
-    // =========================================================
+    // ---------- COURS ----------
 
+    // Récupère une page de cours
     getAssetHistory(filtres: FiltresCours): Observable<HistoricalPriceResponse> {
-
         let params = new HttpParams()
             .set('actif', filtres.actif)
             .set('ordre', '-horodatage')
@@ -99,754 +70,152 @@ export class ActifService {
             params = params.set('fin', filtres.fin);
         }
 
-        return this.http.get<HistoricalPriceResponse>(
-            `${this.apiUrl}/cours/`,
-            { params }
-        );
+        return this.http.get<HistoricalPriceResponse>(this.coursUrl, { params });
     }
 
+    // Récupère toutes les pages et trie les cours du plus ancien au plus récent
     getAllAssetHistory(filtres: FiltresCours): Observable<HistoricalPrice[]> {
         return this.getAssetHistory(filtres).pipe(
-            // tant qu'il y a une page suivante, on la récupère
-            expand(r => (r.next ? this.http.get<HistoricalPriceResponse>(r.next) : EMPTY)),
-            map(r => r.results),
-            reduce((acc, rows) => acc.concat(rows), [] as HistoricalPrice[]),
-            // l'API renvoie du plus récent au plus ancien : on inverse
-            map(rows => rows.sort((a, b) => a.horodatage.localeCompare(b.horodatage)))
+            expand((reponse) => (reponse.next ? this.http.get<HistoricalPriceResponse>(reponse.next) : EMPTY)),
+            map((reponse) => reponse.results),
+            reduce((cours, page) => cours.concat(page), [] as HistoricalPrice[]),
+            map((cours) => cours.sort((a, b) => a.horodatage.localeCompare(b.horodatage)))
         );
     }
 
+    // ---------- VOLATILITÉ ET PICS ----------
 
-
-    // getAssetBySymbol(symbol: string): Observable<Actif> {
-        // const params = new HttpParams().set('symbol', symbol);
-        //
-        // return this.http.get<Actif>(
-        //     `${this.actifsUrl}by-symbol/`,
-        //     { params }
-        // );
-
-        // const actif = ACTIFS_MOCK.find(
-        //     item => item.symbol.toUpperCase() === symbol.toUpperCase()
-        // );
-        //
-        // if (!actif) {
-        //     return throwError(
-        //         () => new Error(`Aucun actif trouvé pour le symbole ${symbol}`)
-        //     );
-        // }
-        //
-        // return of(actif);
-    // }
-
-    // rechercherActifs(recherche: string): Observable<Actif[]> {
-    //     // const params = new HttpParams().set('search', recherche);
-    //     //
-    //     // return this.http.get<Actif[]>(
-    //     //     this.actifsUrl,
-    //     //     { params }
-    //     // );
-    //
-    //     if (this.useMockData) {
-    //         const terme = recherche.trim().toLowerCase();
-    //
-    //         const actifs = ACTIFS_MOCK.filter(actif =>
-    //             actif.name.toLowerCase().includes(terme) ||
-    //             actif.symbol.toLowerCase().includes(terme)
-    //         );
-    //
-    //         return of(actifs);
-    //     }
-    //
-    //     const params = new HttpParams().set('search', recherche);
-    //
-    //     return this.http.get<Actif[]>(
-    //         this.actifsUrl,
-    //         { params }
-    //     );
-    // }
-
-    // actualiserActif(symbol: string): Observable<Actif> {
-    //     // return this.http.post<Actif>(
-    //     //     `${this.actifsUrl}actualiser/`,
-    //     //     { symbol }
-    //     // );
-    //
-    //     if (this.useMockData) {
-    //         const actif = ACTIFS_MOCK.find(
-    //             item => item.symbol.toUpperCase() === symbol.toUpperCase()
-    //         );
-    //
-    //         if (!actif) {
-    //             return throwError(
-    //                 () => new Error(`Aucun actif trouvé pour le symbole ${symbol}`)
-    //             );
-    //         }
-    //
-    //         // Retourne l'actif simulé sans modifier les données originales.
-    //         return of({ ...actif });
-    //     }
-    //
-    //     return this.http.post<Actif>(
-    //         `${this.actifsUrl}actualiser/`,
-    //         { symbol }
-    //     );
-    // }
-
-
-
-    //     let params = new HttpParams()
-    //         .set('actifId', filtres.actifId.toString())
-    //         .set('dateDebut', filtres.dateDebut)
-    //         .set('dateFin', filtres.dateFin);
-    //
-    //     if (filtres.frequence) {
-    //         params = params.set('frequence', filtres.frequence);
-    //     }
-    //
-    //     return this.http.get<HistoricalPrice[]>(
-    //         `${this.coursUrl}historique/`,
-    //         { params }
-    //     );
-    // }
-
-    // getCoursById(id: number): Observable<HistoricalPrice> {
-        // return this.http.get<HistoricalPrice>(
-        //     `${this.coursUrl}${id}/`
-        // );
-
-        // if (this.useMockData) {
-        //     const cours = Object.values(COURS_HISTORIQUES_MOCK)
-        //         .flat()
-        //         .find(item => item.id === id);
-        //
-        //     if (!cours) {
-        //         return throwError(
-        //             () => new Error(`Cours avec l'identifiant ${id} introuvable`)
-        //         );
-        //     }
-        //
-        //     return of(cours);
-        // }
-        //
-        // return this.http.get<HistoricalPrice>(
-        //     `${this.coursUrl}${id}/`
-        // );
-    // }
-
-    // synchroniserCours(actifId: number): Observable<HistoricalPrice[]> {
-    //     // return this.http.post<HistoricalPrice[]>(
-    //     //     `${this.coursUrl}synchroniser/`,
-    //     //     { actifId }
-    //     // );
-    //
-    //     if (this.useMockData) {
-    //         const historique = COURS_HISTORIQUES_MOCK[actifId] ?? [];
-    //
-    //         if (historique.length === 0) {
-    //             return throwError(
-    //                 () => new Error(
-    //                     `Aucun historique disponible pour l'actif ${actifId}`
-    //                 )
-    //             );
-    //         }
-    //
-    //         // Retourne une copie des cours simulés.
-    //         return of([...historique]);
-    //     }
-    //
-    //     return this.http.post<HistoricalPrice[]>(
-    //         `${this.coursUrl}synchroniser/`,
-    //         { actifId }
-    //     );
-    // }
-
-    // =========================================================
-    // 3. ANALYSE DE VOLATILITÉ
-    // =========================================================
-
-    analyser(
-        params: AnalyseVolatiliteParams): Observable<ResultatAnalyseVolatilite> {
-        // return this.http.post<ResultatAnalyseVolatilite>(
-        //     `${this.volatiliteUrl}analyse/`,
-        //     params
-        // );
-
-        if (this.useMockData) {
-            return of(RESULTAT_ANALYSE_VOLATILITE_MOCK);
-        }
-
-        return this.http.post<ResultatAnalyseVolatilite>(
-            `${this.volatiliteUrl}analyse/`,
-            params
-        );
+    // Récupère le rendement, l'écart-type glissant et l'amplitude d'un actif
+    getVolatilite(symbole: string, frequence: Frequence = '1j', fenetre = 20, debut?: string, fin?: string): Observable<VolatiliteResponse> {
+        const params = this.creerParamsAnalyse(frequence, fenetre, debut, fin);
+        return this.http.get<VolatiliteResponse>(`${this.actifsUrl}${encodeURIComponent(symbole)}/volatilite/`, { params });
     }
 
-    // getAnalyse(params: AnalyseVolatiliteParams): Observable<ResultatAnalyseVolatilite> {
-    //     // let httpParams = new HttpParams()
-    //     //     .set('actifs', params.actifs.join(','))
-    //     //     .set('periode', params.periode);
-    //     //
-    //     // if (params.frequence) {
-    //     //     httpParams = httpParams.set(
-    //     //         'frequence',
-    //     //         params.frequence
-    //     //     );
-    //     // }
-    //     //
-    //     // return this.http.get<ResultatAnalyseVolatilite>(
-    //     //     `${this.volatiliteUrl}analyse/`,
-    //     //     { params: httpParams }
-    //     // );
-    //
-    //     if (this.useMockData) {
-    //         return of(RESULTAT_ANALYSE_VOLATILITE_MOCK);
-    //     }
-    //
-    //     let httpParams = new HttpParams()
-    //         .set('actifs', params.actifs.join(','))
-    //         .set('periode', params.periode.toString());
-    //
-    //     if (params.frequence) {
-    //         httpParams = httpParams.set(
-    //             'frequence',
-    //             params.frequence
-    //         );
-    //     }
-    //
-    //     return this.http.get<ResultatAnalyseVolatilite>(
-    //         `${this.volatiliteUrl}analyse/`,
-    //         { params: httpParams }
-    //     );
-    // }
-    //
-    // analyserVolatilite(
-    //     params: AnalyseVolatiliteParams
-    // ): Observable<ResultatAnalyseVolatilite> {
-    //     return this.http.post<ResultatAnalyseVolatilite>(
-    //         `${this.volatiliteUrl}analyse/`,
-    //         {
-    //             actifs: params.actifs,
-    //             periode: params.periode,
-    //             frequence: params.frequence ?? 'daily'
-    //         }
-    //     );
-    // }
+    // Récupère les mouvements inhabituels d'un actif
+    getPics(symbole: string, frequence: Frequence = '1j', fenetre = 20, seuil = 2, debut?: string, fin?: string): Observable<PicsResponse> {
+        const params = this.creerParamsAnalyse(frequence, fenetre, debut, fin).set('seuil', seuil);
+        return this.http.get<PicsResponse>(`${this.actifsUrl}${encodeURIComponent(symbole)}/pics/`, { params });
+    }
 
-    // getActifsDisponibles(): Observable<ActifOption[]> {
-    //     return this.http.get<ActifOption[]>(
-    //         `${this.volatiliteUrl}actifs/`
-    //     );
-    // }
+    // ---------- CORRÉLATIONS ----------
 
-    getVolatiliteGlissante(
-        symbol: string,
-        fenetre = 20,
-        frequence: 'daily' | 'weekly' | 'monthly' = 'daily'
-    ): Observable<PointVolatilite[]> {
-        const params = new HttpParams()
-            .set('symbol', symbol)
-            .set('fenetre', fenetre)
+    // Récupère la matrice de corrélation de 2 à 10 actifs
+    getCorrelations(symboles: string[], frequence: Frequence = '1j', debut?: string, fin?: string): Observable<CorrelationsResponse> {
+        let params = new HttpParams()
+            .set('actifs', symboles.join(','))
             .set('frequence', frequence);
 
-        return this.http.get<PointVolatilite[]>(
-            `${this.volatiliteUrl}glissante/`,
-            { params }
-        );
-    }
-
-    getIndicateurs(
-        symbol: string,
-        periode = 30
-    ): Observable<IndicateursVolatilite> {
-        const params = new HttpParams()
-            .set('symbol', symbol)
-            .set('periode', periode);
-
-        return this.http.get<IndicateursVolatilite>(
-            `${this.volatiliteUrl}indicateurs/`,
-            { params }
-        );
-    }
-
-    // =========================================================
-    // 4. RENDEMENTS, CORRÉLATIONS ET COVARIANCES
-    // =========================================================
-
-    getRendements(
-        symboles: string[],
-        dateDebut: string,
-        dateFin: string
-    ): Observable<RendementActif[]> {
-        const params = new HttpParams()
-            .set('symboles', symboles.join(','))
-            .set('dateDebut', dateDebut)
-            .set('dateFin', dateFin);
-
-        return this.http.get<RendementActif[]>(
-            `${this.volatiliteUrl}rendements/`,
-            { params }
-        );
-    }
-
-    calculerRendements(
-        symboles: string[],
-        periode: number
-    ): Observable<RendementActif[]> {
-        return this.http.post<RendementActif[]>(
-            `${this.volatiliteUrl}rendements/calculer/`,
-            { symboles, periode }
-        );
-    }
-
-    getMatrice(
-        symboles: string[],
-        periode = 30
-    ): Observable<MatriceCorrelation> {
-        return this.http.post<MatriceCorrelation>(
-            `${this.volatiliteUrl}matrice/`,
-            {
-                actifs: symboles,
-                periode
-            }
-        );
-    }
-
-    getCorrelations(
-        symboles: string[],
-        periode = 30
-    ): Observable<ResultatAnalyseVolatilite['correlations']> {
-        return this.http.post<
-            ResultatAnalyseVolatilite['correlations']
-        >(
-            `${this.volatiliteUrl}correlations/`,
-            {
-                actifs: symboles,
-                periode
-            }
-        );
-    }
-
-    // =========================================================
-    // 5. MOUVEMENTS INHABITUELS
-    // =========================================================
-
-    getMouvements(
-        symbol?: string,
-        dateDebut?: string,
-        dateFin?: string
-    ): Observable<MouvementInhabituel[]> {
-        let params = new HttpParams();
-
-        if (symbol) {
-            params = params.set('symbol', symbol);
+        if (debut) {
+            params = params.set('debut', debut);
         }
 
-        if (dateDebut) {
-            params = params.set('dateDebut', dateDebut);
+        if (fin) {
+            params = params.set('fin', fin);
         }
 
-        if (dateFin) {
-            params = params.set('dateFin', dateFin);
+        return this.http.get<CorrelationsResponse>(this.correlationsUrl, { params });
+    }
+
+    // ---------- ACTUALITÉS ----------
+
+    // Récupère toutes les actualités, ou celles d'un actif si le symbole est donné
+    getActualites(symbole?: string): Observable<Actualite[]> {
+        let params = new HttpParams().set('ordering', '-date_publication');
+
+        if (symbole) {
+            params = params.set('symbole', symbole);
         }
 
-        return this.http.get<MouvementInhabituel[]>(
-            `${this.volatiliteUrl}mouvements-inhabituels/`,
-            { params }
-        );
+        return this.http.get<Actualite[]>(this.actualitesUrl, { params });
     }
 
-    detecter(
-        symboles: string[],
-        seuilVariation = 3
-    ): Observable<MouvementInhabituel[]> {
-        return this.http.post<MouvementInhabituel[]>(
-            `${this.volatiliteUrl}detecter/`,
-            {
-                symboles,
-                seuilVariation
-            }
-        );
+    // Récupère les sources RSS
+    getSources(): Observable<SourceActualites[]> {
+        return this.http.get<SourceActualites[]>(this.sourcesUrl);
     }
 
-    // =========================================================
-    // 6. ALERTES DE RISQUE
-    // =========================================================
+    // ---------- ASSISTANT IA : routes à vérifier ----------
 
-    getAlertes(
-        symbol?: string,
-        niveau?: AlerteRisque['niveau']
-    ): Observable<AlerteRisque[]> {
-        let params = new HttpParams();
-
-        if (symbol) {
-            params = params.set('symbol', symbol);
-        }
-
-        if (niveau) {
-            params = params.set('niveau', niveau);
-        }
-
-        return this.http.get<AlerteRisque[]>(
-            this.alertesUrl,
-            { params }
-        );
+    // Demande à l'agent d'expliquer le pic d'un jour (format AAAA-MM-JJ)
+    getExplicationPic(symbole: string, jour: string): Observable<ExplicationPic> {
+        return this.http.get<ExplicationPic>(`${this.apiUrl}/agent/pics/${encodeURIComponent(symbole)}/${jour}/explication/`);
     }
 
-    creerAlerte(
-        alerte: Omit<AlerteRisque, 'date'>
-    ): Observable<AlerteRisque> {
-        return this.http.post<AlerteRisque>(
-            this.alertesUrl,
-            alerte
-        );
+    // Envoie une question à l'assistant
+
+    // Envoie une question à l'assistant
+    envoyerMessage(requete: RequeteAssistantIA): Observable<ReponseAssistantIA> {
+        return this.http.post<ReponseAssistantIA>(`${this.assistantUrl}question/`, requete);
     }
 
-    supprimerAlerte(id: number): Observable<void> {
-        return this.http.delete<void>(
-            `${this.alertesUrl}${id}/`
-        );
-    }
-
-    // =========================================================
-    // 7. PORTEFEUILLES
-    // =========================================================
-
-    getPortefeuilles(): Observable<Portefeuille[]> {
-        return this.http.get<Portefeuille[]>(
-            this.portefeuillesUrl
-        );
-    }
-
-    getPortefeuille(id: number): Observable<Portefeuille> {
-        return this.http.get<Portefeuille>(
-            `${this.portefeuillesUrl}${id}/`
-        );
-    }
-
-    creerPortefeuille(
-        data: Pick<Portefeuille, 'nom' | 'devise'>
-    ): Observable<Portefeuille> {
-        return this.http.post<Portefeuille>(
-            this.portefeuillesUrl,
-            data
-        );
-    }
-
-    modifierPortefeuille(
-        id: number,
-        data: Partial<Portefeuille>
-    ): Observable<Portefeuille> {
-        return this.http.patch<Portefeuille>(
-            `${this.portefeuillesUrl}${id}/`,
-            data
-        );
-    }
-
-    supprimerPortefeuille(id: number): Observable<void> {
-        return this.http.delete<void>(
-            `${this.portefeuillesUrl}${id}/`
-        );
-    }
-
-    // =========================================================
-    // 8. POSITIONS DE PORTEFEUILLE
-    // =========================================================
-
-    getPositions(
-        portefeuilleId: number
-    ): Observable<PositionPortefeuille[]> {
-        const params = new HttpParams()
-            .set('portefeuilleId', portefeuilleId);
-
-        return this.http.get<PositionPortefeuille[]>(
-            this.positionsUrl,
-            { params }
-        );
-    }
-
-    getPosition(id: number): Observable<PositionPortefeuille> {
-        return this.http.get<PositionPortefeuille>(
-            `${this.positionsUrl}${id}/`
-        );
-    }
-
-    ajouterPosition(
-        data: Pick<
-            PositionPortefeuille,
-            'portefeuilleId' | 'actifId' | 'quantite' | 'prixAchat'
-        >
-    ): Observable<PositionPortefeuille> {
-        return this.http.post<PositionPortefeuille>(
-            this.positionsUrl,
-            data
-        );
-    }
-
-    modifierPosition(
-        id: number,
-        data: Partial<PositionPortefeuille>
-    ): Observable<PositionPortefeuille> {
-        return this.http.patch<PositionPortefeuille>(
-            `${this.positionsUrl}${id}/`,
-            data
-        );
-    }
-
-    supprimerPosition(id: number): Observable<void> {
-        return this.http.delete<void>(
-            `${this.positionsUrl}${id}/`
-        );
-    }
-
-    // =========================================================
-    // 9. TRANSACTIONS
-    // =========================================================
-
-    getTransactions(
-        portefeuilleId: number,
-        dateDebut?: string,
-        dateFin?: string
-    ): Observable<Transaction[]> {
-        let params = new HttpParams()
-            .set('portefeuilleId', portefeuilleId);
-
-        if (dateDebut) {
-            params = params.set('dateDebut', dateDebut);
-        }
-
-        if (dateFin) {
-            params = params.set('dateFin', dateFin);
-        }
-
-        return this.http.get<Transaction[]>(
-            this.transactionsUrl,
-            { params }
-        );
-    }
-
-    getTransaction(id: number): Observable<Transaction> {
-        return this.http.get<Transaction>(
-            `${this.transactionsUrl}${id}/`
-        );
-    }
-
-    creerTransaction(
-        data: NouvelleTransaction
-    ): Observable<Transaction> {
-        return this.http.post<Transaction>(
-            this.transactionsUrl,
-            data
-        );
-    }
-
-    supprimerTransaction(id: number): Observable<void> {
-        return this.http.delete<void>(
-            `${this.transactionsUrl}${id}/`
-        );
-    }
-
-    // =========================================================
-    // 10. HISTORIQUE DU PORTEFEUILLE
-    // =========================================================
-
-    getHistoriquePortefeuille(
-        portefeuilleId: number,
-        dateDebut?: string,
-        dateFin?: string
-    ): Observable<HistoriquePortefeuille[]> {
-        let params = new HttpParams()
-            .set('portefeuilleId', portefeuilleId);
-
-        if (dateDebut) {
-            params = params.set('dateDebut', dateDebut);
-        }
-
-        if (dateFin) {
-            params = params.set('dateFin', dateFin);
-        }
-
-        return this.http.get<HistoriquePortefeuille[]>(
-            this.historiquePortefeuilleUrl,
-            { params }
-        );
-    }
-
-    enregistrerPoint(
-        data: Omit<HistoriquePortefeuille, 'historiqueId'>
-    ): Observable<HistoriquePortefeuille> {
-        return this.http.post<HistoriquePortefeuille>(
-            this.historiquePortefeuilleUrl,
-            data
-        );
-    }
-
-    // =========================================================
-    // 11. PERFORMANCE DU PORTEFEUILLE
-    // =========================================================
-
-    getPerformance(
-        portefeuilleId: number,
-        dateDebut: string,
-        dateFin: string
-    ): Observable<PerformancePortefeuille> {
-        const params = new HttpParams()
-            .set('portefeuilleId', portefeuilleId)
-            .set('dateDebut', dateDebut)
-            .set('dateFin', dateFin);
-
-        return this.http.get<PerformancePortefeuille>(
-            this.performancesUrl,
-            { params }
-        );
-    }
-
-    recalculer(
-        portefeuilleId: number,
-        dateDebut: string,
-        dateFin: string
-    ): Observable<PerformancePortefeuille> {
-        return this.http.post<PerformancePortefeuille>(
-            `${this.performancesUrl}calculer/`,
-            {
-                portefeuilleId,
-                dateDebut,
-                dateFin
-            }
-        );
-    }
-
-    // =========================================================
-    // 12. ACTUALITÉS FINANCIÈRES
-    // Une seule méthode getActualites()
-    // =========================================================
-
-    getActualites(
-        categorie = 'Toutes',
-        recherche = ''
-    ): Observable<Actualite[]> {
-        if (this.useMockData) {
-            let resultats = [...ACTUALITES_MOCK];
-
-            if (categorie !== 'Toutes') {
-                resultats = resultats.filter(
-                    actualite => actualite.categorie === categorie
-                );
-            }
-
-            if (recherche.trim()) {
-                const terme = recherche.trim().toLowerCase();
-
-                resultats = resultats.filter(actualite =>
-                    actualite.titre.toLowerCase().includes(terme) ||
-                    actualite.resume.toLowerCase().includes(terme) ||
-                    actualite.contenu.toLowerCase().includes(terme)
-                );
-            }
-
-            return of(resultats);
-        }
-
-        let params = new HttpParams();
-
-        if (categorie !== 'Toutes') {
-            params = params.set('categorie', categorie);
-        }
-
-        if (recherche.trim()) {
-            params = params.set('search', recherche.trim());
-        }
-
-        return this.http.get<Actualite[] | ActualiteResponse>(
-            this.actualitesUrl,
-            { params }
-        ).pipe(
-            map(response =>
-                Array.isArray(response)
-                    ? response
-                    : response.results
-            )
-        );
-    }
-
-    getActualiteById(id: number): Observable<Actualite> {
-        return this.http.get<Actualite>(
-            `${this.actualitesUrl}${id}/`
-        );
-    }
-
-    rechercherActualites(
-        recherche: string,
-        categorie?: string
-    ): Observable<Actualite[]> {
-        return this.getActualites(
-            categorie || 'Toutes',
-            recherche
-        );
-    }
-
-    actualiserFluxRSS(): Observable<{
-        message: string;
-        count?: number;
-    }> {
-        return this.http.post<{
-            message: string;
-            count?: number;
-        }>(
-            `${this.actualitesUrl}actualiser-rss/`,
-            {}
-        );
-    }
-
-    // =========================================================
-    // 13. ASSISTANT IA
-    // =========================================================
-
-    envoyerMessage(
-        requete: RequeteAssistantIA
-    ): Observable<ReponseAssistantIA> {
-        return this.http.post<ReponseAssistantIA>(
-            `${this.assistantUrl}question/`,
-            requete
-        );
-    }
-
+    // Récupère l'historique de la conversation
     getHistorique(): Observable<MessageAssistantIA[]> {
-        return this.http.get<MessageAssistantIA[]>(
-            `${this.assistantUrl}historique/`
-        );
+        return this.http.get<MessageAssistantIA[]>(`${this.assistantUrl}historique/`);
     }
 
-    supprimerHistorique(): Observable<void> {
-        return this.http.delete<void>(
-            `${this.assistantUrl}historique/`
-        );
-    }
+    // ---------- TABLEAU DE BORD ----------
 
-    supprimerMessage(id: number): Observable<void> {
-        return this.http.delete<void>(
-            `${this.assistantUrl}historique/${id}/`
-        );
-    }
-
-    // =========================================================
-    // 14. DONNÉES DU TABLEAU DE BORD
-    // =========================================================
-
-    // getPortfolioDistribution(): Observable<PortfolioDistributionResponse> {
-    //     // return this.http.get<PortfolioDistributionResponse>(
-    //     //     `${this.portefeuillesUrl}repartition/`
-    //     // );
-    //     return of(PORTFOLIO_DISTRIBUTION_MOCK);
-    // }
-
+    // Calcule les 5 plus fortes hausses et baisses à partir de la liste des actifs
     getTopMovers(): Observable<TopMoversResponse> {
-        if (this.useMockData) {
-            return of(TOP_MOVERS_MOCK as TopMoversResponse);
+        return this.getAssets().pipe(
+            map((actifs) => {
+                const mouvements: TopMover[] = actifs
+                    .filter((actif) => actif.variation !== undefined && actif.variation !== null)
+                    .map((actif) => {
+                        const prix = Number(actif.prix_actuel ?? 0);
+                        const variation = Number(actif.variation);
+                        const prixPrecedent = prix / (1 + variation / 100);
+
+                        return {
+                            symbol: actif.symbole,
+                            name: actif.nom,
+                            price: prix,
+                            change: prix - prixPrecedent,
+                            changePercent: variation
+                        };
+                    });
+
+                return {
+                    gainers: mouvements
+                        .filter((actif) => actif.changePercent > 0)
+                        .sort((a, b) => b.changePercent - a.changePercent)
+                        .slice(0, 5),
+                    losers: mouvements
+                        .filter((actif) => actif.changePercent < 0)
+                        .sort((a, b) => a.changePercent - b.changePercent)
+                        .slice(0, 5)
+                };
+            })
+        );
+    }
+
+    // ---------- OUTIL INTERNE ----------
+
+    // Prépare les paramètres communs à la volatilité et aux pics
+    private creerParamsAnalyse(frequence: Frequence, fenetre: number, debut?: string, fin?: string): HttpParams {
+        let params = new HttpParams()
+            .set('frequence', frequence)
+            .set('fenetre', fenetre);
+
+        if (debut) {
+            params = params.set('debut', debut);
         }
 
-        return this.http.get<TopMoversResponse>(
-            `${this.apiUrl}/marche/top-movers/`
-        );
+        if (fin) {
+            params = params.set('fin', fin);
+        }
+
+        return params;
+    }
+
+    // Cherche les 5 derniers articles qui contiennent un texte
+    rechercherActualites(texte?: string): Observable<Actualite[]> {
+        let params = new HttpParams().set('ordering', '-date_publication');
+
+        if (texte) {
+            params = params.set('search', texte);
+        }
+
+        return this.http.get<Actualite[]>(this.actualitesUrl, { params }).pipe(map((articles) => articles.slice(0, 5)));
     }
 }

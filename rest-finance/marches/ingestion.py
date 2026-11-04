@@ -16,7 +16,7 @@ INTERVALLE = "5m"
 JOURS_MAX = 59
 
 # Première récupération : cinq jours
-JOURS_INITIAL = 5
+JOURS_INITIAL = 15
 
 COLONNES = ["open", "high", "low", "close", "volume"]
 

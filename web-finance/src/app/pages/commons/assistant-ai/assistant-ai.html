@@ -50,19 +50,13 @@
                 (click)="vue = 'accueil'">
             </button>
 
-<!--            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-300">-->
-<!--                <i class="pi pi-sparkles text-xl"></i>-->
-<!--            </div>-->
-
             <div>
-                <h3 class="m-0 text-lg">Assistant IA</h3>
+                <h3 class="!m-0 !text-base !font-semibold !leading-tight">Assistant IA</h3>
                 <div class="mt-1 flex items-center gap-2">
                     <span class="h-2 w-2 rounded-full bg-green-500"></span>
                     <span class="text-xs text-surface-500 dark:text-surface-400">À votre service</span>
                 </div>
             </div>
-
-<!--            <p-tag value="IA" icon="pi pi-bolt" severity="warn" [rounded]="true"></p-tag>-->
         </div>
     </ng-template>
 
@@ -78,10 +72,8 @@
                         Bonjour et bienvenue !
                     </p>
                     <p class="mb-0 mt-2 text-sm leading-6 text-surface-600 dark:text-surface-300">
-                        Je suis votre assistant financier intelligent. Je peux vous aider à
-                        suivre les marchés financiers, analyser les tendances, consulter les
-                        actualités économiques et mieux comprendre les opportunités
-                        d’investissement afin de prendre des décisions financières éclairées.
+                        Je vous aide à comprendre les mouvements de vos actifs, notamment les pics
+                        de volatilité, à partir des actualités financières.
                     </p>
                 </div>
             </div>
@@ -91,35 +83,24 @@
         <!-- Actions rapides -->
         <div class="mt-5">
             <div class="mb-3 flex items-center justify-between">
-                <h4 class="m-0 text-sm font-semibold text-surface-900 dark:text-surface-0">
+                <h4 class="!m-0 !text-sm !font-semibold !leading-tight text-surface-900 dark:text-surface-0">
                     Comment puis-je vous aider ?
                 </h4>
-<!--                <span class="text-xs text-surface-500">Actions rapides</span>-->
             </div>
 
-<!--            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">-->
-
-<!--                <button-->
-<!--                    *ngFor="let a of actions"-->
-<!--                    pButton-->
-<!--                    type="button"-->
-<!--                    class="!flex !w-full !items-center !justify-start !gap-3 !rounded-xl !border !border-surface-200 !bg-white !px-4 !py-3 !text-left !text-surface-700 hover:!border-primary hover:!bg-primary/5 dark:!border-surface-700 dark:!bg-surface-900 dark:!text-surface-200 dark:hover:!bg-surface-800"-->
-<!--                    (click)="onAction(a.id)"-->
-<!--                >-->
-<!--                    <i-->
-<!--                        class="pi text-lg"-->
-<!--                        [ngClass]="a.icone + ' ' + a.couleur"-->
-<!--                    ></i>-->
-
-<!--                    <span class="flex flex-col gap-1">-->
-<!--                <span class="text-sm font-medium">{{ a.titre }}</span>-->
-<!--                <span class="text-xs font-normal text-surface-500">-->
-<!--                    {{ a.sousTitre }}-->
-<!--                </span>-->
-<!--            </span>-->
-<!--                </button>-->
-
-<!--            </div>-->
+            <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <button
+                    *ngFor="let a of actions"
+                    type="button"
+                    class="flex cursor-pointer items-center gap-3 rounded-xl border border-surface-200 bg-transparent px-3 py-2.5 text-left transition-colors hover:border-primary dark:border-surface-700"
+                    (click)="onAction(a.id)">
+                    <i class="pi" [ngClass]="a.icone + ' ' + a.couleur"></i>
+                    <span class="flex min-w-0 flex-col">
+                        <span class="text-sm font-medium text-surface-900 dark:text-surface-0">{{ a.titre }}</span>
+                        <span class="truncate text-xs text-surface-500">{{ a.sousTitre }}</span>
+                    </span>
+                </button>
+            </div>
         </div>
 
 
@@ -141,14 +122,6 @@
                 (click)="envoyer(saisie)">
             </button>
         </div>
-
-        <!-- Pied -->
-<!--        <div class="mt-5 flex items-center gap-2 border-t border-surface-200 pt-4 dark:border-surface-700">-->
-<!--            <i class="pi pi-info-circle text-xs text-surface-400"></i>-->
-<!--            <p class="m-0 text-xs text-surface-500 dark:text-surface-400">-->
-<!--                Sélectionnez une action ou posez une question pour commencer.-->
-<!--            </p>-->
-<!--        </div>-->
     </ng-container>
 
     <!-- ===== VUE CHAT ===== -->

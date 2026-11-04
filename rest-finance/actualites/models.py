@@ -37,6 +37,12 @@ class Article(models.Model):
     )
     themes = models.JSONField(default=list, blank=True)
     date_creation = models.DateTimeField(auto_now_add=True)
+    pics = models.ManyToManyField(
+        "marches.IndicateurJournalier",
+        blank=True,
+        related_name="articles",
+    )
+
 
     class Meta:
         ordering = ["-date_publication", "-date_creation"]

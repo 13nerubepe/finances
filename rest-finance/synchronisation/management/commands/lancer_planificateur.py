@@ -23,6 +23,8 @@ def import_journalier():
     executer("importer_cours", "^FCHI", type="indice")
     executer("importer_cours", "BTC-USD", "ETH-USD", type="crypto")
     executer("calculer_indicateurs")
+    executer("collecter_articles_pics")
+
 
 
 def synchronisation():
@@ -54,7 +56,7 @@ class Command(BaseCommand):
 
         planificateur.add_job(import_journalier, "interval", hours=5)
         planificateur.add_job(synchronisation, "interval", minutes=5)
-        planificateur.add_job(collecte_rss, "interval", minutes=5)
+        planificateur.add_job(collecte_rss, "interval", hours=1)
 
         self.stdout.write(self.style.SUCCESS("Planificateur démarré."))
         planificateur.start()
