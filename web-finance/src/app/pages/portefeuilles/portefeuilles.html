@@ -1,60 +1,52 @@
+<p-toast />
 <p-confirmdialog [style]="{ width: '26rem' }" [breakpoints]="{ '575px': '95vw' }" />
 
-<div class="flex flex-col gap-6">
-    <section class="card !mb-0 entete overflow-hidden">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-center gap-4">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-contrast shadow-sm">
-                    <i class="pi pi-wallet text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="!m-0 !text-2xl !font-semibold tracking-tight">Mes portefeuilles</h1>
-                    <p class="m-0 mt-1 text-sm text-muted-color">Regroupez vos actifs, suivez leurs pics de volatilité et les actualités associées.</p>
-                </div>
-            </div>
-
-            <p-button label="Nouveau portefeuille" icon="pi pi-plus" [rounded]="true" styleClass="!px-5 shadow-sm" (onClick)="ouvrirCreation()" />
+<div class="card !mb-0 flex flex-col gap-6">
+    <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <h1 class="!m-0 !text-xl !font-semibold">Mes portefeuilles</h1>
+            <p class="m-0 mt-1 text-sm text-muted-color">Regroupez vos actifs et suivez leurs pics de volatilité.</p>
         </div>
+        <p-button label="Nouveau portefeuille" icon="pi pi-plus" (onClick)="ouvrirCreation()" />
+    </header>
 
-        <div class="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div class="stat">
-                <span class="stat-icone bg-indigo-500/10 text-indigo-500"><i class="pi pi-folder"></i></span>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-border border border-surface p-4">
+            <div class="flex items-center gap-3">
+                <p-avatar icon="pi pi-folder" shape="circle" size="large" />
                 <div class="flex min-w-0 flex-col">
-                    <span class="text-xs font-medium uppercase tracking-wide text-muted-color">Portefeuilles</span>
-                    <span class="text-xl font-semibold tabular-nums">{{ portefeuilles().length }}</span>
-                </div>
-            </div>
-            <div class="stat">
-                <span class="stat-icone bg-emerald-500/10 text-emerald-500"><i class="pi pi-chart-pie"></i></span>
-                <div class="flex min-w-0 flex-col">
-                    <span class="text-xs font-medium uppercase tracking-wide text-muted-color">Actifs suivis</span>
-                    <span class="text-xl font-semibold tabular-nums">{{ totalActifs() }}</span>
-                </div>
-            </div>
-            <div class="stat">
-                <span class="stat-icone bg-amber-500/10 text-amber-500"><i class="pi pi-clock"></i></span>
-                <div class="flex min-w-0 flex-col">
-                    <span class="text-xs font-medium uppercase tracking-wide text-muted-color">Dernier créé</span>
-                    <span class="truncate text-base font-semibold">{{ plusRecent()?.nom ?? '—' }}</span>
+                    <span class="text-sm text-muted-color">Portefeuilles</span>
+                    <span class="text-2xl font-semibold tabular-nums">{{ portefeuilles().length }}</span>
                 </div>
             </div>
         </div>
-    </section>
 
-    <section class="card !mb-0">
-        @if (messageListe(); as m) {
-            <div class="retour mb-4" [class.retour-erreur]="m.type === 'error'" role="status">
-                <i class="pi" [class]="m.type === 'error' ? 'pi-times-circle' : 'pi-check-circle'"></i>
-                <span class="grow">{{ m.text }}</span>
-                <button type="button" class="retour-fermer" aria-label="Fermer" (click)="messageListe.set(null)"><i class="pi pi-times"></i></button>
+        <div class="rounded-border border border-surface p-4">
+            <div class="flex items-center gap-3">
+                <p-avatar icon="pi pi-chart-pie" shape="circle" size="large" />
+                <div class="flex min-w-0 flex-col">
+                    <span class="text-sm text-muted-color">Actifs suivis</span>
+                    <span class="text-2xl font-semibold tabular-nums">{{ totalActifs() }}</span>
+                </div>
             </div>
-        }
+        </div>
 
+        <div class="rounded-border border border-surface p-4">
+            <div class="flex items-center gap-3">
+                <p-avatar icon="pi pi-clock" shape="circle" size="large" />
+                <div class="flex min-w-0 flex-col">
+                    <span class="text-sm text-muted-color">Dernier créé</span>
+                    <span class="truncate text-lg font-semibold">{{ plusRecent()?.nom ?? '—' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section>
         @if (erreurListe()) {
-            <div class="flex flex-col items-center gap-3 py-10 text-center">
-                <span class="flex h-12 w-12 items-center justify-center rounded-full bg-red-500/10 text-red-500"><i class="pi pi-exclamation-triangle text-lg"></i></span>
-                <p class="m-0 text-sm text-red-500" role="alert">{{ erreurListe() }}</p>
-                <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" size="small" (onClick)="chargerPortefeuilles()" />
+            <div class="flex flex-col items-center gap-4 py-8">
+                <p-message severity="error" [text]="erreurListe()" />
+                <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="chargerPortefeuilles()" />
             </div>
         } @else {
             <p-table
@@ -63,20 +55,21 @@
                 [loading]="chargementListe()"
                 [rowHover]="true"
                 dataKey="id"
+                selectionMode="single"
+                [metaKeySelection]="false"
+                [selection]="selection()"
+                (onRowSelect)="selectionnerLigne($event.data)"
+                (onRowUnselect)="fermerDetail()"
                 [globalFilterFields]="['nom', 'description', 'devise']"
                 [paginator]="portefeuilles().length > 10"
                 [rows]="10"
-                styleClass="tableau-moderne"
                 [tableStyle]="{ 'min-width': '48rem' }">
                 <ng-template #caption>
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <h2 class="!m-0 !text-lg !font-semibold">Liste des portefeuilles</h2>
-                            <span class="text-xs text-muted-color">Cliquez sur une ligne pour afficher son contenu.</span>
-                        </div>
+                        <span class="text-lg font-semibold">Liste des portefeuilles</span>
                         <p-iconfield iconPosition="left" styleClass="sm:w-72">
                             <p-inputicon styleClass="pi pi-search" />
-                            <input pInputText type="text" class="w-full !rounded-xl" placeholder="Rechercher un portefeuille" aria-label="Rechercher un portefeuille" (input)="filtrer(dt, $event)" />
+                            <input pInputText type="text" class="w-full" placeholder="Rechercher" aria-label="Rechercher un portefeuille" (input)="filtrer(dt, $event)" />
                         </p-iconfield>
                     </div>
                 </ng-template>
@@ -87,41 +80,31 @@
                         <th pSortableColumn="devise" class="w-28">Devise <p-sortIcon field="devise" /></th>
                         <th pSortableColumn="nb_actifs" class="w-32">Actifs <p-sortIcon field="nb_actifs" /></th>
                         <th pSortableColumn="date_creation" class="w-40">Créé le <p-sortIcon field="date_creation" /></th>
-                        <th class="w-52 !text-right">Actions</th>
+                        <th class="w-44 !text-right">Actions</th>
                     </tr>
                 </ng-template>
 
                 <ng-template #body let-p>
-                    <tr class="cursor-pointer" [class.ligne-active]="selection()?.id === p.id" (click)="afficher(p)">
+                    <tr [pSelectableRow]="p" class="cursor-pointer">
                         <td>
                             <div class="flex min-w-0 items-center gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white" [style.background]="couleur(p)">
-                                    {{ initiales(p.nom) }}
-                                </span>
+                                <p-avatar [label]="initiales(p.nom)" shape="circle" size="large" [style.background-color]="couleur(p)" [style.color]="'#fff'" />
                                 <div class="flex min-w-0 flex-col">
                                     <span class="truncate font-semibold">{{ p.nom }}</span>
-                                    <span class="max-w-md truncate text-xs text-muted-color">{{ p.description || 'Aucune description' }}</span>
+                                    <span class="max-w-md truncate text-sm text-muted-color">{{ p.description || 'Aucune description' }}</span>
                                 </div>
                             </div>
                         </td>
-                        <td><p-tag [value]="p.devise" severity="secondary" [rounded]="true" /></td>
-                        <td>
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
-                                <i class="pi pi-chart-pie text-[10px]"></i>{{ p.nb_actifs }}
-                            </span>
-                        </td>
+                        <td><p-tag [value]="p.devise" severity="secondary" /></td>
+                        <td><p-tag [value]="'' + p.nb_actifs" icon="pi pi-chart-pie" severity="info" /></td>
                         <td class="text-sm text-muted-color">{{ p.date_creation | date: 'dd MMM yyyy' }}</td>
                         <td class="text-right" (click)="$event.stopPropagation()">
-                            <div class="inline-flex items-center gap-1">
-                                <p-button icon="pi pi-eye" [rounded]="true" [text]="true" severity="secondary" [loading]="idEnChargement() === p.id"
-                                          pTooltip="Afficher" tooltipPosition="top" ariaLabel="Afficher le portefeuille" (onClick)="afficher(p)" />
-                                <p-button icon="pi pi-plus-circle" [rounded]="true" [text]="true" severity="success"
-                                          pTooltip="Ajouter un actif" tooltipPosition="top" ariaLabel="Ajouter un actif" (onClick)="ouvrirAjout(p)" />
-                                <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="info"
-                                          pTooltip="Modifier" tooltipPosition="top" ariaLabel="Modifier le portefeuille" (onClick)="ouvrirModification(p)" />
-                                <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
-                                          pTooltip="Supprimer" tooltipPosition="top" ariaLabel="Supprimer le portefeuille" (onClick)="confirmerSuppression(p)" />
-                            </div>
+                            <p-button icon="pi pi-plus" [rounded]="true" [text]="true" severity="success"
+                                      pTooltip="Ajouter un actif" tooltipPosition="top" ariaLabel="Ajouter un actif" (onClick)="ouvrirAjout(p)" />
+                            <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="secondary"
+                                      pTooltip="Modifier" tooltipPosition="top" ariaLabel="Modifier le portefeuille" (onClick)="ouvrirModification(p)" />
+                            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
+                                      pTooltip="Supprimer" tooltipPosition="top" ariaLabel="Supprimer le portefeuille" (onClick)="confirmerSuppression(p)" />
                         </td>
                     </tr>
                 </ng-template>
@@ -130,12 +113,12 @@
                     <tr>
                         <td colspan="5">
                             <div class="flex flex-col items-center gap-3 py-12 text-center">
-                                <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary"><i class="pi pi-wallet text-2xl"></i></span>
+                                <p-avatar icon="pi pi-wallet" shape="circle" size="xlarge" />
                                 <div>
                                     <p class="m-0 font-semibold">Aucun portefeuille</p>
-                                    <p class="m-0 mt-1 text-sm text-muted-color">Créez votre premier portefeuille pour commencer à suivre vos actifs.</p>
+                                    <p class="m-0 mt-1 text-sm text-muted-color">Créez votre premier portefeuille pour suivre vos actifs.</p>
                                 </div>
-                                <p-button label="Créer un portefeuille" icon="pi pi-plus" [rounded]="true" size="small" (onClick)="ouvrirCreation()" />
+                                <p-button label="Créer un portefeuille" icon="pi pi-plus" size="small" (onClick)="ouvrirCreation()" />
                             </div>
                         </td>
                     </tr>
@@ -146,55 +129,31 @@
 
     <div #detail class="scroll-mt-24">
         @if (selection(); as pf) {
-            <div class="flex flex-col gap-6">
-                <section class="card !mb-0">
+            <div class="flex flex-col gap-6 border-t border-surface pt-6">
+                <section>
                     <div class="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div class="flex min-w-0 items-center gap-4">
-                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-base font-bold text-white" [style.background]="couleur(pf)">
-                                {{ initiales(pf.nom) }}
-                            </span>
+                            <p-avatar [label]="initiales(pf.nom)" shape="circle" size="large" [style.background-color]="couleur(pf)" [style.color]="'#fff'" />
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h2 class="!m-0 !text-xl !font-semibold">{{ pf.nom }}</h2>
-                                    <p-tag [value]="pf.devise" severity="secondary" [rounded]="true" />
+                                    <p-tag [value]="pf.devise" severity="secondary" />
                                 </div>
                                 <p class="m-0 mt-1 whitespace-pre-line text-sm text-muted-color">{{ pf.description || 'Aucune description' }}</p>
                             </div>
                         </div>
                         <div class="flex shrink-0 flex-wrap gap-2">
-                            <p-button label="Ajouter un actif" icon="pi pi-plus" size="small" [rounded]="true" (onClick)="ouvrirAjout(pf)" />
-                            <p-button label="Modifier" icon="pi pi-pencil" severity="secondary" [outlined]="true" size="small" [rounded]="true" (onClick)="ouvrirModification(pf)" />
+                            <p-button label="Ajouter un actif" icon="pi pi-plus" size="small" (onClick)="ouvrirAjout(pf)" />
+                            <p-button label="Modifier" icon="pi pi-pencil" severity="secondary" [outlined]="true" size="small" (onClick)="ouvrirModification(pf)" />
                             <p-button icon="pi pi-times" severity="secondary" [text]="true" [rounded]="true" size="small" pTooltip="Fermer" tooltipPosition="top" ariaLabel="Fermer le détail" (onClick)="fermerDetail()" />
                         </div>
                     </div>
 
                     @if (repartition().length) {
-                        <div class="mb-5 flex flex-col gap-2">
-                            <div class="flex h-2 overflow-hidden rounded-full bg-surface-100 dark:bg-surface-800">
-                                @for (t of repartition(); track t.id) {
-                                    <span class="h-full" [style.width.%]="t.part" [style.background]="t.couleur"></span>
-                                }
-                            </div>
-                            <div class="flex flex-wrap gap-4 text-xs text-muted-color">
-                                @for (t of repartition(); track t.id) {
-                                    <span class="inline-flex items-center gap-1.5">
-                                        <span class="h-2 w-2 rounded-full" [style.background]="t.couleur"></span>
-                                        {{ t.libelle }} · {{ t.nombre }} ({{ t.part | number: '1.0-0' }} %)
-                                    </span>
-                                }
-                            </div>
-                        </div>
+                        <p-metergroup class="mb-5 block" [value]="repartition()" [max]="pf.actifs.length"></p-metergroup>
                     }
 
-                    @if (message(); as m) {
-                        <div class="retour mb-4" [class.retour-erreur]="m.type === 'error'" role="status">
-                            <i class="pi" [class]="m.type === 'error' ? 'pi-times-circle' : 'pi-check-circle'"></i>
-                            <span class="grow">{{ m.text }}</span>
-                            <button type="button" class="retour-fermer" aria-label="Fermer" (click)="message.set(null)"><i class="pi pi-times"></i></button>
-                        </div>
-                    }
-
-                    <p-table [value]="pf.actifs" [loading]="chargementDetail()" dataKey="symbole" [rowHover]="true" styleClass="tableau-moderne p-datatable-sm" [tableStyle]="{ 'min-width': '40rem' }">
+                    <p-table [value]="pf.actifs" [loading]="chargementDetail()" dataKey="symbole" [rowHover]="true" size="small" [tableStyle]="{ 'min-width': '40rem' }">
                         <ng-template #header>
                             <tr>
                                 <th>Actif</th>
@@ -207,26 +166,15 @@
                         <ng-template #body let-position>
                             <tr>
                                 <td>
-                                    <div class="flex items-center gap-3">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                                              [style.background]="type(position.type_actif).couleur + '1f'" [style.color]="type(position.type_actif).couleur">
-                                            <i class="pi text-sm" [class]="type(position.type_actif).icone"></i>
-                                        </span>
-                                        <div class="flex flex-col">
-                                            <a [routerLink]="['/detail-actif', position.symbole]" class="font-semibold hover:underline">{{ position.symbole }}</a>
-                                            <span class="text-xs text-muted-color">{{ position.nom }}</span>
-                                        </div>
-                                    </div>
+                                    <a [routerLink]="['/detail-actif', position.symbole]" class="font-semibold hover:underline">{{ position.symbole }}</a>
+                                    <div class="text-sm text-muted-color">{{ position.nom }}</div>
                                 </td>
                                 <td>
-                                    <span class="rounded-full px-2.5 py-1 text-xs font-semibold"
-                                          [style.background]="type(position.type_actif).couleur + '1f'" [style.color]="type(position.type_actif).couleur">
-                                        {{ type(position.type_actif).libelle }}
-                                    </span>
+                                    <p-tag [value]="type(position.type_actif).libelle" [icon]="'pi ' + type(position.type_actif).icone" [severity]="type(position.type_actif).severite" />
                                 </td>
                                 <td>
                                     <div class="flex items-center gap-1">
-                                        <p-inputnumber [(ngModel)]="quantites[position.symbole]" [min]="0" [maxFractionDigits]="8" placeholder="—" inputStyleClass="w-28 !py-1.5" />
+                                        <p-inputnumber [(ngModel)]="quantites[position.symbole]" [min]="0" [maxFractionDigits]="8" placeholder="—" inputStyleClass="w-28" size="small" [inputId]="'quantite-' + position.symbole" [ariaLabel]="'Quantité de ' + position.symbole"></p-inputnumber>
                                         @if (quantiteModifiee(position)) {
                                             <p-button icon="pi pi-check" size="small" [rounded]="true" [text]="true" severity="success" pTooltip="Enregistrer" ariaLabel="Enregistrer la quantité" (onClick)="enregistrerQuantite(position)" />
                                         }
@@ -234,8 +182,6 @@
                                 </td>
                                 <td class="text-sm text-muted-color">{{ position.date_ajout | date: 'dd MMM yyyy' }}</td>
                                 <td class="text-right">
-                                    <p-button icon="pi pi-external-link" [rounded]="true" [text]="true" severity="secondary" pTooltip="Voir l'actif" tooltipPosition="top"
-                                              ariaLabel="Voir l'actif" [routerLink]="['/detail-actif', position.symbole]" />
                                     <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" pTooltip="Retirer" tooltipPosition="top"
                                               ariaLabel="Retirer l'actif" (onClick)="retirerActif(position)" />
                                 </td>
@@ -245,9 +191,8 @@
                             <tr>
                                 <td colspan="5">
                                     <div class="flex flex-col items-center gap-3 py-8 text-center">
-                                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-surface-100 text-muted-color dark:bg-surface-800"><i class="pi pi-inbox text-xl"></i></span>
                                         <p class="m-0 text-sm text-muted-color">Aucun actif dans ce portefeuille.</p>
-                                        <p-button label="Ajouter un actif" icon="pi pi-plus" size="small" [rounded]="true" [outlined]="true" (onClick)="ouvrirAjout(pf)" />
+                                        <p-button label="Ajouter un actif" icon="pi pi-plus" size="small" [outlined]="true" (onClick)="ouvrirAjout(pf)" />
                                     </div>
                                 </td>
                             </tr>
@@ -255,19 +200,18 @@
                     </p-table>
                 </section>
 
-                <section class="card !mb-0">
-                    <div class="mb-4 flex items-center gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-500"><i class="pi pi-bolt"></i></span>
-                        <div>
-                            <h3 class="!m-0 !text-lg !font-semibold">Pics de volatilité récents</h3>
-                            <p class="m-0 text-sm text-muted-color">Journées inhabituelles des 90 derniers jours pour les actifs de ce portefeuille.</p>
-                        </div>
+                <section>
+                    <div class="mb-4">
+                        <h3 class="!m-0 !text-lg !font-semibold">Pics de volatilité récents</h3>
+                        <p class="m-0 mt-1 text-sm text-muted-color">Journées inhabituelles des {{ joursPics }} derniers jours pour ce portefeuille.</p>
                     </div>
 
-                    @if (!picsDuPortefeuille().length) {
-                        <div class="rounded-xl border border-dashed border-surface px-4 py-6 text-center text-sm text-muted-color">Aucun pic récent sur ces actifs.</div>
+                    @if (erreurPics()) {
+                        <p-message severity="error" [text]="erreurPics()" />
+                    } @else if (!picsDuPortefeuille().length) {
+                        <p-message severity="secondary" text="Aucun pic récent sur ces actifs." />
                     } @else {
-                        <p-table [value]="picsDuPortefeuille()" dataKey="id" [rowHover]="true" styleClass="tableau-moderne p-datatable-sm" [tableStyle]="{ 'min-width': '36rem' }"
+                        <p-table [value]="picsDuPortefeuille()" dataKey="id" [rowHover]="true" size="small" [tableStyle]="{ 'min-width': '36rem' }"
                                  [paginator]="picsDuPortefeuille().length > 10" [rows]="10">
                             <ng-template #header>
                                 <tr>
@@ -286,16 +230,16 @@
                                         @if (pic.variation === null) {
                                             —
                                         } @else {
-                                            <span class="inline-flex items-center gap-1 font-semibold tabular-nums" [class]="pic.variation >= 0 ? 'text-green-600' : 'text-red-500'">
-                                                <i class="pi text-[10px]" [class]="pic.variation >= 0 ? 'pi-arrow-up-right' : 'pi-arrow-down-right'"></i>
-                                                {{ pic.variation | number: '1.2-2' }} %
-                                            </span>
+                                            <p-tag
+                                                [value]="(pic.variation | number: '1.2-2') + ' %'"
+                                                [icon]="pic.variation >= 0 ? 'pi pi-arrow-up-right' : 'pi pi-arrow-down-right'"
+                                                [severity]="pic.variation >= 0 ? 'success' : 'danger'" />
                                         }
                                     </td>
                                     <td class="tabular-nums">{{ pic.z === null ? '—' : (pic.z | number: '1.1-1') }}</td>
                                     <td>
                                         @if (pic.type_pic) {
-                                            <p-tag [value]="pic.type_pic === 'systemique' ? 'Systémique' : 'Spécifique'" [severity]="pic.type_pic === 'systemique' ? 'warn' : 'info'" [rounded]="true" />
+                                            <p-tag [value]="pic.type_pic === 'systemique' ? 'Systémique' : 'Spécifique'" [severity]="pic.type_pic === 'systemique' ? 'warn' : 'info'" />
                                         } @else {
                                             —
                                         }
@@ -327,7 +271,7 @@
         </div>
 
         @if (erreurFenetre()) {
-            <p class="m-0 text-sm text-red-500" role="alert">{{ erreurFenetre() }}</p>
+            <p-message severity="error" [text]="erreurFenetre()" />
         }
 
         <div class="flex justify-end gap-2 pt-1">
@@ -337,18 +281,8 @@
     </form>
 </p-dialog>
 
-<p-dialog [visible]="ajoutVisible()" (visibleChange)="ajoutVisible.set($event)" [modal]="true" [draggable]="false"
+<p-dialog [header]="'Ajouter un actif à « ' + (cibleAjout()?.nom ?? '') + ' »'" [visible]="ajoutVisible()" (visibleChange)="ajoutVisible.set($event)" [modal]="true" [draggable]="false"
           [style]="{ width: '32rem' }" [breakpoints]="{ '575px': '95vw' }">
-    <ng-template #header>
-        <div class="flex items-center gap-3">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/10 text-green-600"><i class="pi pi-plus-circle"></i></span>
-            <div class="flex flex-col">
-                <span class="text-base font-semibold">Ajouter un actif</span>
-                <span class="text-xs text-muted-color">au portefeuille « {{ cibleAjout()?.nom }} »</span>
-            </div>
-        </div>
-    </ng-template>
-
     <form class="flex flex-col gap-4" (ngSubmit)="ajouterActif()">
         <div class="flex flex-col gap-1.5">
             <label for="actif-ajout" class="text-sm font-medium">Actif</label>
@@ -356,31 +290,24 @@
                       placeholder="Choisir un actif" styleClass="w-full" appendTo="body" emptyFilterMessage="Aucun actif trouvé" emptyMessage="Tous les actifs sont déjà dans ce portefeuille">
                 <ng-template #item let-option>
                     <div class="flex w-full items-center gap-3">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
-                              [style.background]="type(option.actif.type_actif).couleur + '1f'" [style.color]="type(option.actif.type_actif).couleur">
-                            <i class="pi text-xs" [class]="type(option.actif.type_actif).icone"></i>
-                        </span>
                         <div class="flex min-w-0 flex-col">
                             <span class="font-semibold">{{ option.actif.symbole }}</span>
-                            <span class="truncate text-xs text-muted-color">{{ option.actif.nom }}</span>
+                            <span class="truncate text-sm text-muted-color">{{ option.actif.nom }}</span>
                         </div>
-                        <span class="ml-auto text-xs text-muted-color">{{ type(option.actif.type_actif).libelle }}</span>
+                        <p-tag class="ml-auto" [value]="type(option.actif.type_actif).libelle" [severity]="type(option.actif.type_actif).severite" />
                     </div>
                 </ng-template>
             </p-select>
         </div>
         <div class="flex flex-col gap-1.5">
             <label for="quantite-ajout" class="text-sm font-medium">Quantité <span class="font-normal text-muted-color">(facultatif)</span></label>
-            <p-inputnumber inputId="quantite-ajout" name="quantite" [(ngModel)]="quantiteAjout" [min]="0" [maxFractionDigits]="8" styleClass="w-full" inputStyleClass="w-full" placeholder="0" />
+            <p-inputnumber inputId="quantite-ajout" name="quantite" [(ngModel)]="quantiteAjout" [min]="0" [maxFractionDigits]="8" styleClass="w-full" inputStyleClass="w-full" placeholder="0"></p-inputnumber>
         </div>
 
-        <div class="flex items-start gap-2 rounded-xl bg-surface-100 px-3 py-2.5 text-xs text-muted-color dark:bg-surface-800">
-            <i class="pi pi-info-circle mt-0.5"></i>
-            <span>Un nouvel actif est importé et analysé automatiquement : l'ajout peut prendre quelques secondes.</span>
-        </div>
+        <p-message severity="info" size="small" icon="pi pi-info-circle" text="Un nouvel actif est importé et analysé automatiquement : l'ajout peut prendre quelques secondes." />
 
         @if (erreurAjout()) {
-            <p class="m-0 text-sm text-red-500" role="alert">{{ erreurAjout() }}</p>
+            <p-message severity="error" [text]="erreurAjout()" />
         }
 
         <div class="flex justify-end gap-2 pt-1">

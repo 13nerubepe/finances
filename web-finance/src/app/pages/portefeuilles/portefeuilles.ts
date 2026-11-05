@@ -3,18 +3,23 @@ import { Component, computed, ElementRef, inject, OnInit, signal, ViewChild } fr
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ConfirmationService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
+import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DialogModule } from 'primeng/dialog';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
+import { MeterGroupModule } from 'primeng/metergroup';
 import { SelectModule } from 'primeng/select';
 import { Table, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
+import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 import { catchError, EMPTY, Subject, switchMap, tap } from 'rxjs';
 
@@ -24,16 +29,21 @@ import type { Portefeuille, PortefeuilleDetail, PortefeuilleSaisie, Position } f
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { PortefeuilleService } from '@/app/pages/service/service/portefeuille-service';
 
-type Feedback = { type: 'success' | 'error'; text: string } | null;
+interface TypeActif {
+    libelle: string;
+    icone: string;
+    couleur: string;
+    severite: 'info' | 'success' | 'warn' | 'secondary';
+}
 
 /** Période des pics affichés pour les actifs du portefeuille. */
 const JOURS_PICS = 90;
 const SAISIE_VIDE: PortefeuilleSaisie = { nom: '', description: '', devise: 'USD' };
 
-const TYPES: Record<string, { libelle: string; icone: string; couleur: string }> = {
-    action: { libelle: 'Action', icone: 'pi-briefcase', couleur: '#2962ff' },
-    indice: { libelle: 'Indice', icone: 'pi-chart-bar', couleur: '#00897b' },
-    crypto: { libelle: 'Crypto', icone: 'pi-bitcoin', couleur: '#ef6c00' }
+const TYPES: Record<string, TypeActif> = {
+    action: { libelle: 'Action', icone: 'pi-briefcase', couleur: '#2962ff', severite: 'info' },
+    indice: { libelle: 'Indice', icone: 'pi-chart-bar', couleur: '#00897b', severite: 'success' },
+    crypto: { libelle: 'Crypto', icone: 'pi-bitcoin', couleur: '#ef6c00', severite: 'warn' }
 };
 
 const COULEURS = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316'];
@@ -51,42 +61,43 @@ function versNombre(valeur: unknown): number | null {
         DecimalPipe,
         FormsModule,
         RouterLink,
+        AvatarModule,
         ButtonModule,
+        CardModule,
         ConfirmDialogModule,
         DialogModule,
         IconFieldModule,
         InputIconModule,
         InputNumberModule,
         InputTextModule,
+        MessageModule,
+        MeterGroupModule,
         SelectModule,
         TableModule,
         TagModule,
         TextareaModule,
+        ToastModule,
         TooltipModule
     ],
-    providers: [ConfirmationService],
-    templateUrl: './portefeuilles.html',
-    styleUrl: './portefeuilles.scss'
+    providers: [ConfirmationService, MessageService],
+    templateUrl: './portefeuilles.html'
 })
 export class PortefeuillesComponent implements OnInit {
     private readonly portefeuilleService = inject(PortefeuilleService);
     private readonly actifService = inject(ActifService);
     private readonly confirmation = inject(ConfirmationService);
+    private readonly messages = inject(MessageService);
 
     @ViewChild('detail') detail?: ElementRef<HTMLElement>;
 
-    readonly types = TYPES;
     readonly joursPics = JOURS_PICS;
 
     readonly portefeuilles = signal<Portefeuille[]>([]);
     readonly chargementListe = signal(false);
     readonly erreurListe = signal('');
-    readonly messageListe = signal<Feedback>(null);
 
     readonly selection = signal<PortefeuilleDetail | null>(null);
     readonly chargementDetail = signal(false);
-    readonly idEnChargement = signal<number | null>(null);
-    readonly message = signal<Feedback>(null);
 
     readonly fenetreVisible = signal(false);
     readonly enregistrement = signal(false);
@@ -128,12 +139,17 @@ export class PortefeuillesComponent implements OnInit {
             .sort((a, b) => String(b.date).localeCompare(String(a.date)));
     });
 
+    /** Format attendu par p-metergroup. */
     readonly repartition = computed(() => {
         const positions = this.selection()?.actifs ?? [];
         return Object.entries(TYPES)
-            .map(([id, type]) => ({ id, ...type, nombre: positions.filter((p) => p.type_actif === id).length }))
-            .filter((t) => t.nombre > 0)
-            .map((t) => ({ ...t, part: (t.nombre / positions.length) * 100 }));
+            .map(([id, type]) => ({
+                label: type.libelle,
+                value: positions.filter((p) => p.type_actif === id).length,
+                color: type.couleur,
+                icon: `pi ${type.icone}`
+            }))
+            .filter((t) => t.value > 0);
     });
 
     /** Seule la dernière demande compte ; `null` annule une demande en cours. */
@@ -142,10 +158,7 @@ export class PortefeuillesComponent implements OnInit {
     constructor() {
         this.demandeDetail
             .pipe(
-                tap((demande) => {
-                    this.chargementDetail.set(demande !== null);
-                    this.idEnChargement.set(demande?.id ?? null);
-                }),
+                tap((demande) => this.chargementDetail.set(demande !== null)),
                 switchMap((demande) => {
                     if (!demande) return EMPTY;
                     return this.portefeuilleService.getPortefeuille(demande.id).pipe(
@@ -153,13 +166,11 @@ export class PortefeuillesComponent implements OnInit {
                             this.selection.set(detail);
                             this.quantites = Object.fromEntries(detail.actifs.map((p) => [p.symbole, versNombre(p.quantite)]));
                             this.chargementDetail.set(false);
-                            this.idEnChargement.set(null);
                             if (demande.defiler) setTimeout(() => this.detail?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' }));
                         }),
                         catchError((erreur) => {
-                            this.messageListe.set({ type: 'error', text: apiErrorMessage(erreur, 'Impossible de charger ce portefeuille.') });
+                            this.notifier('error', apiErrorMessage(erreur, 'Impossible de charger ce portefeuille.'));
                             this.chargementDetail.set(false);
-                            this.idEnChargement.set(null);
                             return EMPTY;
                         })
                     );
@@ -174,7 +185,7 @@ export class PortefeuillesComponent implements OnInit {
         this.chargerPics();
         this.actifService.getAssets().subscribe({
             next: (actifs) => this.actifs.set(actifs),
-            error: (erreur) => this.messageListe.set({ type: 'error', text: apiErrorMessage(erreur, 'Impossible de charger la liste des actifs.') })
+            error: (erreur) => this.notifier('error', apiErrorMessage(erreur, 'Impossible de charger la liste des actifs.'))
         });
     }
 
@@ -201,15 +212,17 @@ export class PortefeuillesComponent implements OnInit {
         table.filterGlobal((evenement.target as HTMLInputElement).value, 'contains');
     }
 
+    selectionnerLigne(donnees: Portefeuille | Portefeuille[] | undefined): void {
+        if (donnees && !Array.isArray(donnees)) this.afficher(donnees);
+    }
+
     afficher(portefeuille: Portefeuille, defiler = true): void {
-        this.message.set(null);
         this.demandeDetail.next({ id: portefeuille.id, defiler });
     }
 
     fermerDetail(): void {
         this.demandeDetail.next(null);
         this.selection.set(null);
-        this.message.set(null);
     }
 
     ouvrirCreation(): void {
@@ -247,7 +260,7 @@ export class PortefeuillesComponent implements OnInit {
             next: (portefeuille) => {
                 this.enregistrement.set(false);
                 this.fenetreVisible.set(false);
-                this.messageListe.set({ type: 'success', text: edition ? `« ${portefeuille.nom} » a été modifié.` : `« ${portefeuille.nom} » a été créé.` });
+                this.notifier('success', edition ? `« ${portefeuille.nom} » a été modifié.` : `« ${portefeuille.nom} » a été créé.`);
                 this.chargerPortefeuilles();
                 if (edition && this.selection()?.id === edition.id) this.afficher(portefeuille, false);
             },
@@ -271,10 +284,10 @@ export class PortefeuillesComponent implements OnInit {
                 this.portefeuilleService.supprimerPortefeuille(portefeuille.id).subscribe({
                     next: () => {
                         if (this.selection()?.id === portefeuille.id) this.fermerDetail();
-                        this.messageListe.set({ type: 'success', text: `« ${portefeuille.nom} » a été supprimé.` });
+                        this.notifier('success', `« ${portefeuille.nom} » a été supprimé.`);
                         this.chargerPortefeuilles();
                     },
-                    error: (erreur) => this.messageListe.set({ type: 'error', text: apiErrorMessage(erreur, 'Suppression impossible.') })
+                    error: (erreur) => this.notifier('error', apiErrorMessage(erreur, 'Suppression impossible.'))
                 })
         });
     }
@@ -309,16 +322,11 @@ export class PortefeuillesComponent implements OnInit {
             next: (position) => {
                 this.ajoutEnCours.set(false);
                 this.ajoutVisible.set(false);
-                const texte = `${position.symbole} a été ajouté à « ${portefeuille.nom} ».`;
+                this.notifier('success', `${position.symbole} a été ajouté à « ${portefeuille.nom} ».`);
                 this.chargerPortefeuilles();
                 // Un actif tout juste importé peut apporter de nouveaux pics.
                 this.chargerPics();
-                if (this.selection()?.id === portefeuille.id) {
-                    this.afficher(portefeuille, false);
-                    this.message.set({ type: 'success', text: texte });
-                } else {
-                    this.messageListe.set({ type: 'success', text: texte });
-                }
+                if (this.selection()?.id === portefeuille.id) this.afficher(portefeuille, false);
             },
             error: (erreur) => {
                 this.ajoutEnCours.set(false);
@@ -338,9 +346,9 @@ export class PortefeuillesComponent implements OnInit {
         this.portefeuilleService.modifierQuantite(portefeuille.id, position.symbole, this.quantites[position.symbole] ?? null).subscribe({
             next: (maj) => {
                 this.selection.update((actuel) => (actuel?.id === portefeuille.id ? { ...actuel, actifs: actuel.actifs.map((p) => (p.symbole === maj.symbole ? maj : p)) } : actuel));
-                this.message.set({ type: 'success', text: `Quantité de ${maj.symbole} enregistrée.` });
+                this.notifier('success', `Quantité de ${maj.symbole} enregistrée.`);
             },
-            error: (erreur) => this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Modification impossible.') })
+            error: (erreur) => this.notifier('error', apiErrorMessage(erreur, 'Modification impossible.'))
         });
     }
 
@@ -361,9 +369,9 @@ export class PortefeuillesComponent implements OnInit {
                     next: () => {
                         this.afficher(portefeuille, false);
                         this.chargerPortefeuilles();
-                        this.message.set({ type: 'success', text: `${position.symbole} a été retiré.` });
+                        this.notifier('success', `${position.symbole} a été retiré.`);
                     },
-                    error: (erreur) => this.message.set({ type: 'error', text: apiErrorMessage(erreur, 'Retrait impossible.') })
+                    error: (erreur) => this.notifier('error', apiErrorMessage(erreur, 'Retrait impossible.'))
                 })
         });
     }
@@ -377,6 +385,10 @@ export class PortefeuillesComponent implements OnInit {
         });
     }
 
+    private notifier(severity: 'success' | 'error', detail: string): void {
+        this.messages.add({ severity, summary: severity === 'success' ? 'Succès' : 'Erreur', detail });
+    }
+
     couleur(portefeuille: Portefeuille): string {
         return COULEURS[portefeuille.id % COULEURS.length];
     }
@@ -386,7 +398,7 @@ export class PortefeuillesComponent implements OnInit {
         return ((mots[0]?.[0] ?? '') + (mots[1]?.[0] ?? mots[0]?.[1] ?? '')).toUpperCase() || '?';
     }
 
-    type(id: string) {
-        return TYPES[id] ?? { libelle: id, icone: 'pi-circle', couleur: '#64748b' };
+    type(id: string): TypeActif {
+        return TYPES[id] ?? { libelle: id, icone: 'pi-circle', couleur: '#64748b', severite: 'secondary' };
     }
 }
