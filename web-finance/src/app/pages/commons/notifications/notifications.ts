@@ -1,4 +1,3 @@
-import { DatePipe } from '@angular/common';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OverlayBadge } from 'primeng/overlaybadge';
@@ -26,17 +25,18 @@ const JOURS_AFFICHES = 7;
 const JOURS_ANALYSE = 60;
 /** true si l'API renvoie 0.025 pour 2,5 %, comme dans analyse-actif. */
 const RATIOS_EN_FRACTION = true;
+const UN_JOUR_MS = 86400000;
 
 @Component({
     selector: 'app-notifications',
     standalone: true,
-    imports: [DatePipe, RouterLink, OverlayBadge, Popover],
+    imports: [RouterLink, OverlayBadge, Popover],
     template: `
         <button
             type="button"
             class="layout-topbar-action"
-            title="Mouvements inhabituels"
-            [attr.aria-label]="nonLues() ? nonLues() + ' nouveaux mouvements inhabituels' : 'Mouvements inhabituels'"
+            title="Notifications"
+            [attr.aria-label]="nonLues() ? nonLues() + ' nouvelles notifications' : 'Notifications'"
             (click)="ouvrir($event, panneau)">
             @if (nonLues()) {
                 <p-overlaybadge [value]="nonLues() > 9 ? '9+' : '' + nonLues()" severity="danger">
@@ -49,32 +49,48 @@ const RATIOS_EN_FRACTION = true;
 
         <p-popover #panneau appendTo="body" (onHide)="marquerCommeVues()">
             <div class="w-80 max-w-[85vw]">
-                <h3 class="m-0 mb-1 text-sm font-semibold">Mouvements inhabituels</h3>
-                <p class="m-0 mb-3 text-xs text-muted-color">{{ jours }} derniers jours</p>
 
                 @if (chargement()) {
-                    <p class="m-0 py-3 text-sm text-muted-color"><i class="pi pi-spin pi-spinner mr-2"></i>Chargement…</p>
+                    <p class="m-0 py-6 text-center text-sm text-muted-color">
+                        <i class="pi pi-spin pi-spinner mr-2"></i>Chargement…
+                    </p>
                 } @else if (erreur()) {
-                    <p class="m-0 py-3 text-sm text-red-500" role="alert">Impossible de charger les mouvements inhabituels.</p>
+                    <p class="m-0 py-6 text-center text-sm text-muted-color" role="alert">
+                        Impossible de charger les notifications.
+                    </p>
                 } @else {
-                    <div class="flex max-h-80 flex-col overflow-y-auto">
+                    <div class="flex max-h-80 flex-col gap-1 overflow-y-auto">
                         @for (n of notifications(); track n.cle) {
                             <a
-                                class="flex items-center justify-between gap-3 rounded border-b border-surface px-1 py-2 text-color no-underline hover:bg-emphasis"
+                                class="flex items-center gap-3 rounded-lg p-2 text-color no-underline hover:bg-emphasis"
                                 [routerLink]="['/', cheminDetail, n.symbole]"
                                 (click)="panneau.hide()">
-                                <span class="flex min-w-0 flex-col">
-                                    <strong class="truncate text-sm">{{ n.symbole }}</strong>
-                                    <small class="truncate text-muted-color">{{ n.nom }} · {{ n.horodatage | date: 'dd/MM/yyyy' : 'UTC' }}</small>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emphasis">
+                                    <i
+                                        class="pi text-sm"
+                                        [class.pi-arrow-up-right]="(n.variation ?? 0) > 0"
+                                        [class.pi-arrow-down-right]="(n.variation ?? 0) < 0"
+                                        [class.pi-bell]="!n.variation"
+                                        [class.text-green-500]="(n.variation ?? 0) > 0"
+                                        [class.text-red-500]="(n.variation ?? 0) < 0"></i>
                                 </span>
-                                @if (n.variation !== null) {
-                                    <span class="shrink-0 text-sm font-semibold tabular-nums" [class.text-green-500]="n.variation > 0" [class.text-red-500]="n.variation < 0">
-                                        {{ formaterVariation(n.variation) }}
+
+                                <span class="flex min-w-0 flex-1 flex-col">
+                                    <span class="truncate text-sm">
+                                        <strong>{{ n.symbole }}</strong> {{ message(n.variation) }}
                                     </span>
+                                    <small class="truncate text-muted-color">{{ tempsEcoule(n.horodatage) }}</small>
+                                </span>
+
+                                @if (estNonLue(n)) {
+                                    <span class="h-2 w-2 shrink-0 rounded-full bg-primary" aria-label="Non lue"></span>
                                 }
                             </a>
                         } @empty {
-                            <p class="m-0 py-3 text-sm text-muted-color">Aucun mouvement inhabituel récent.</p>
+                            <div class="flex flex-col items-center gap-2 py-6 text-muted-color">
+                                <i class="pi pi-bell text-xl"></i>
+                                <p class="m-0 text-sm">Aucune notification</p>
+                            </div>
                         }
                     </div>
                 }
@@ -86,14 +102,13 @@ export class Notifications implements OnInit {
     private readonly actifService = inject(ActifService);
 
     readonly cheminDetail = AppConstantRoute.Detail_Actif_PATH;
-    readonly jours = JOURS_AFFICHES;
     readonly notifications = signal<Notification[]>([]);
     readonly chargement = signal(true);
     readonly erreur = signal(false);
 
     private readonly derniereVue = signal(this.lireDerniereVue());
 
-    readonly nonLues = computed(() => this.notifications().filter((n) => new Date(n.horodatage).getTime() > this.derniereVue()).length);
+    readonly nonLues = computed(() => this.notifications().filter((n) => this.estNonLue(n)).length);
 
     ngOnInit(): void {
         this.charger();
@@ -104,10 +119,29 @@ export class Notifications implements OnInit {
         this.charger();
     }
 
+    estNonLue(notification: Notification): boolean {
+        return new Date(notification.horodatage).getTime() > this.derniereVue();
+    }
+
+    message(variation: number | null): string {
+        if (!variation) return ': mouvement inhabituel';
+
+        const pourcent = Math.abs(RATIOS_EN_FRACTION ? variation * 100 : variation);
+        const texte = pourcent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `${variation > 0 ? 'en hausse' : 'en baisse'} de ${texte} %`;
+    }
+
+    tempsEcoule(horodatage: string): string {
+        const jours = Math.max(0, Math.floor((Date.now() - new Date(horodatage).getTime()) / UN_JOUR_MS));
+        if (jours === 0) return "Aujourd'hui";
+        if (jours === 1) return 'Hier';
+        return `Il y a ${jours} jours`;
+    }
+
     private charger(): void {
         const maintenant = Date.now();
-        const limite = maintenant - JOURS_AFFICHES * 86400000;
-        const debut = new Date(maintenant - JOURS_ANALYSE * 86400000).toISOString();
+        const limite = maintenant - JOURS_AFFICHES * UN_JOUR_MS;
+        const debut = new Date(maintenant - JOURS_ANALYSE * UN_JOUR_MS).toISOString();
 
         this.erreur.set(false);
         this.actifService
@@ -152,12 +186,6 @@ export class Notifications implements OnInit {
             ),
             catchError(() => of([] as Notification[]))
         );
-    }
-
-    formaterVariation(valeur: number): string {
-        const pourcent = RATIOS_EN_FRACTION ? valeur * 100 : valeur;
-        const texte = pourcent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        return `${pourcent > 0 ? '+' : ''}${texte} %`;
     }
 
     private nombre(valeur: unknown): number | null {
