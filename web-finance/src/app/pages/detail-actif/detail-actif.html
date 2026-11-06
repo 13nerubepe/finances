@@ -326,7 +326,7 @@
         </div>
 
         @if (vueTableau === 'historique') {
-            <h2>Historique {{ reference ? 'de ' + reference?.symbole : '' }} ({{ periodeLabel }})</h2>
+            <h2>Historique {{ reference ? 'de ' + reference.symbole : '' }} ({{ periodeLabel }})</h2>
 
             <p-table [value]="lignesHistorique()" [loading]="loading" size="small" [paginator]="true" [rows]="10"
                      [tableStyle]="{ 'min-width': '42rem' }">
@@ -477,7 +477,9 @@
             <p class="m-0"><i class="pi pi-spin pi-spinner mr-2"></i>L'agent analyse ce jour et les actualités de la période…</p>
         } @else if (explicationErreur) {
             <p class="m-0 mb-3 text-red-500" role="alert">{{ explicationErreur }}</p>
-            <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" size="small" (onClick)="demanderExplication()" />
+            @if (!erreurSansReessai) {
+                <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" size="small" (onClick)="demanderExplication()" />
+            }
         } @else if (explication) {
             <p class="m-0 mb-3 whitespace-pre-line leading-relaxed">{{ explication.texte }}</p>
 

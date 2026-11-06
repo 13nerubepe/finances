@@ -156,6 +156,8 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     explication: ExplicationPic | null = null;
     explicationEnCours = false;
     explicationErreur = '';
+    /** 404 : réessayer ne changera rien, le jour n'est pas un pic enregistré. */
+    erreurSansReessai = false;
 
     private readonly tousLesTypes: { label: string; value: TypeGraphe; ohlc: boolean }[] = [
         { label: 'Chandeliers', value: 'candle', ohlc: true },
@@ -842,6 +844,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         this.fenetreVisible = true;
         this.explication = null;
         this.explicationErreur = '';
+        this.erreurSansReessai = false;
         this.explicationEnCours = false;
         this.requeteExplication?.unsubscribe();
 
@@ -873,6 +876,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
                 error: (erreur: HttpErrorResponse) => {
                     console.error("Erreur de l'agent :", erreur.status, erreur.url, erreur.error);
                     this.explicationErreur = this.messageAgent(erreur);
+                    this.erreurSansReessai = erreur.status === 404;
                     this.explicationEnCours = false;
                     this.cdr.markForCheck();
                 }
@@ -885,7 +889,8 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
         if (erreur.status === 0) return 'Le serveur ne répond pas. Vérifie que Django est lancé.';
         if (erreur.status === 401 || erreur.status === 403) return `Accès refusé à l'agent : reconnecte-toi.${detail}`;
-        if (erreur.status === 404) return `L'agent a bien été appelé, mais il n'a pas de données pour ce jour.${detail}`;
+        if (erreur.status === 404) return "Ce jour n'est pas enregistré comme pic dans la base : l'agent ne peut expliquer que les pics enregistrés. Posez la question à l'assistant IA pour une analyse libre.";
+        if (erreur.status === 503) return `L'IA est momentanément indisponible. Réessayez plus tard.${detail}`;
         return `L'agent a répondu par une erreur ${erreur.status}.${detail}`;
     }
 

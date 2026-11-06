@@ -40,6 +40,8 @@ const SEUIL_SENS = 0.3;
 const FENETRE = 20;
 const JOURS_ANALYSE = 90;
 const MAX_ACTIFS_CORRELATION = 10;
+/** Au-delà, ce n'est plus un raccourci mais une question pour l'agent. */
+const MAX_MOTS_COMMANDE = 5;
 const AIDE =
     'Vous pouvez aussi utiliser un raccourci avec un symbole, par exemple :\n' +
     '• « pics AAPL »\n• « explique AAPL 2026-10-25 »\n• « volatilité BTC-USD »\n• « corrélation AAPL MSFT »\n• « actualités AAPL »';
@@ -191,11 +193,15 @@ export class AssistantAi {
     private traiter(question: string, actifs: Actif[], choisie?: Intention): void {
         const symboles = this.trouverSymboles(question, actifs);
         const jour = this.trouverJour(question);
-        const intention = choisie ?? this.trouverIntention(question) ?? this.attente;
         const contexte = this.actifDeLaPage(actifs);
+        // Un bouton ou une réponse à « De quel actif ? » est toujours une commande ; une phrase libre part à l'agent.
+        const commande = !!choisie || !!this.attente || this.estCommande(question);
+        const intention = commande ? (choisie ?? this.trouverIntention(question) ?? this.attente) : null;
         this.attente = null;
 
-        if (jour && (symboles[0] ?? contexte)) {
+        if (!commande) {
+            this.questionLibre(question, symboles.length ? symboles : contexte ? [contexte] : []);
+        } else if (jour && (symboles[0] ?? contexte)) {
             this.expliquer(symboles[0] ?? contexte!, jour);
         } else if (!intention) {
             this.questionLibre(question, symboles.length ? symboles : contexte ? [contexte] : []);
@@ -333,6 +339,11 @@ export class AssistantAi {
             if (actif && !trouves.includes(actif.symbole)) trouves.push(actif.symbole);
         }
         return trouves;
+    }
+
+    /** Raccourci : « pics AAPL », « volatilité BTC-USD », « corrélation AAPL MSFT ». Une vraie question (« ? », phrase longue) va à l'agent. */
+    private estCommande(question: string): boolean {
+        return !question.includes('?') && question.trim().split(/\s+/).length <= MAX_MOTS_COMMANDE;
     }
 
     private trouverJour(question: string): string | null {
