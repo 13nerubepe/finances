@@ -1,16 +1,13 @@
-<!--<div class="card !mb-0 min-h-[650px]">-->
+<p-toast />
+<p-confirmdialog [style]="{ width: '26rem' }" [breakpoints]="{ '575px': '95vw' }"></p-confirmdialog>
+
 <div class="card !mb-0 flex flex-col gap-5 overflow-y-auto lg:h-[calc(100vh-8rem)] [&>*]:shrink-0">
 
     <!-- En-tête -->
-    <div class="flex flex-col gap-3 mb-5 sm:flex-row
-                sm:items-center sm:justify-between">
-
+    <div class="flex flex-col gap-3 mb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-            <h2 class="text-xl font-semibold m-0">
-                Actifs financiers
-            </h2>
+            <h2 class="text-xl font-semibold m-0">Actifs financiers</h2>
         </div>
-
     </div>
 
     <!-- Boutons de vue -->
@@ -24,270 +21,521 @@
         </p-button>
 
         <p-button
-            [label]="'Mes actifs (' + actifsSelectionnes.length + ')'"
-            icon="pi pi-star"
+            label="Mes actifs"
+            icon="pi pi-wallet"
             [severity]="vue === 'mes' ? 'primary' : 'secondary'"
             [outlined]="vue !== 'mes'"
-            (onClick)="vue = 'mes'">
+            (onClick)="ouvrirMesActifs()">
         </p-button>
     </div>
 
-    <!-- Tableau -->
-    <p-table
-        #dt
-        [value]="actifsAffiches"
-        [loading]="loading"
-        dataKey="id"
-        [paginator]="true"
-        [alwaysShowPaginator]="actifsAffiches.length > 0"
-        [rows]="12"
-        [rowsPerPageOptions]="[10, 25, 50]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} actifs"
-        [globalFilterFields]="['name', 'symbol', 'currency']"
-        [rowHover]="true"
-        responsiveLayout="scroll"
-        [tableStyle]="{ 'min-width': '52rem' }"
-        styleClass="p-datatable-sm">
+    @if (vue === 'tous') {
+        <!-- ===================== TOUS LES ACTIFS ===================== -->
+        <p-table
+            #dt
+            [value]="actifs"
+            [loading]="loading"
+            dataKey="id"
+            [paginator]="true"
+            [alwaysShowPaginator]="actifs.length > 0"
+            [rows]="12"
+            [rowsPerPageOptions]="[10, 25, 50]"
+            [showCurrentPageReport]="true"
+            currentPageReportTemplate="Affichage de {first} à {last} sur {totalRecords} actifs"
+            [globalFilterFields]="['nom', 'symbole']"
+            [rowHover]="true"
+            responsiveLayout="scroll"
+            [tableStyle]="{ 'min-width': '52rem' }"
+            styleClass="p-datatable-sm">
 
-        <!-- Recherche et compteur -->
-        <ng-template #caption>
-            <div class="flex flex-col gap-3 mb-3
-                        sm:flex-row sm:items-center sm:justify-between">
+            <!-- Recherche et compteur -->
+            <ng-template #caption>
+                <div class="flex flex-col gap-3 mb-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2">
+                        <i class="pi pi-chart-line text-primary text-xl"></i>
+                        <span class="font-semibold">Liste des actifs</span>
+                        <p-tag [value]="actifs.length + ' actif(s)'" severity="secondary"></p-tag>
+                    </div>
 
-                <div class="flex items-center gap-2">
-                    <i class="pi pi-chart-line text-primary text-xl"></i>
+                    <p-iconfield class="w-full sm:w-80">
+                        <p-inputicon class="pi pi-search"></p-inputicon>
+                        <input
+                            pInputText
+                            type="text"
+                            class="w-full"
+                            placeholder="Rechercher un actif..."
+                            (input)="dt.filterGlobal($any($event.target).value, 'contains')">
+                    </p-iconfield>
+                </div>
+            </ng-template>
 
-                    <span class="font-semibold">
-                        {{ vue === 'mes' ? 'Mes actifs' : 'Liste des actifs' }}
-                    </span>
+            <!-- En-têtes -->
+            <ng-template #header>
+                <tr>
+                    <th pSortableColumn="name">
+                        Actif
+                        <p-sortIcon field="name"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="currentPrice" class="text-right">
+                        Prix actuel
+                        <p-sortIcon field="currentPrice"></p-sortIcon>
+                    </th>
+                    <th pSortableColumn="variation" class="text-right">
+                        Variation
+                        <p-sortIcon field="variation"></p-sortIcon>
+                    </th>
+                    <th style="width: 16rem">Performance</th>
+                    <th pSortableColumn="trend" class="text-center">
+                        Tendance
+                        <p-sortIcon field="trend"></p-sortIcon>
+                    </th>
+                    <th class="text-center" style="width: 8rem">Actions</th>
+                </tr>
+            </ng-template>
 
-                    <p-tag
-                        [value]="actifsAffiches.length + ' actif(s)'"
-                        severity="secondary">
-                    </p-tag>
+            <!-- Corps du tableau -->
+            <ng-template #body let-actif>
+                <tr>
+                    <!-- Actif : nom, symbole et icône -->
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <span
+                                class="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold
+                                       text-primary bg-surface-100 dark:bg-surface-800 shrink-0">
+                                {{ actif.symbole?.slice(0, 2) || 'NA' }}
+                            </span>
+                            <div class="flex flex-col gap-1 min-w-0">
+                                <span class="font-semibold">{{ actif.nom }}</span>
+                                <span class="text-xs text-surface-500">{{ actif.symbole }}</span>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Prix actuel -->
+                    <td class="text-right font-medium whitespace-nowrap">
+                        {{ actif.currentPrice | number:'1.2-2' }}
+                        {{ actif.devise || '' }}
+                    </td>
+
+                    <!-- Variation en pourcentage -->
+                    <td
+                        class="text-right font-medium whitespace-nowrap"
+                        [ngClass]="{
+                            'text-green-600': (actif.variation ?? 0) > 0,
+                            'text-red-500': (actif.variation ?? 0) < 0,
+                            'text-surface-500': (actif.variation ?? 0) === 0
+                        }">
+                        <i
+                            class="pi mr-1"
+                            [ngClass]="{
+                                'pi-arrow-up-right': (actif.variation ?? 0) > 0,
+                                'pi-arrow-down-right': (actif.variation ?? 0) < 0,
+                                'pi-minus': (actif.variation ?? 0) === 0
+                            }">
+                        </i>
+                        {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
+                    </td>
+
+                    <!-- Barre de performance -->
+                    <td>
+                        <div class="flex items-center gap-3">
+                            <div class="relative flex-1 h-2 rounded-full bg-surface-100 dark:bg-surface-800">
+                                <!-- Axe central -->
+                                <span class="absolute left-1/2 top-[-2px] bottom-[-2px] w-px bg-surface-300 dark:bg-surface-600"></span>
+
+                                <!-- Barre positive ou négative -->
+                                <span
+                                    class="absolute top-0 h-2 rounded-full"
+                                    [ngClass]="(actif.variation ?? 0) >= 0 ? 'left-1/2 bg-green-500' : 'right-1/2 bg-red-500'"
+                                    [style.width.%]="largeurPerformance(actif)">
+                                </span>
+                            </div>
+
+                            <span
+                                class="w-16 text-right font-semibold text-sm"
+                                [ngClass]="(actif.variation ?? 0) >= 0 ? 'text-green-600' : 'text-red-500'">
+                                {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
+                            </span>
+                        </div>
+                    </td>
+
+                    <!-- Tendance -->
+                    <td class="text-center">
+                        <p-tag
+                            [value]="actif.trend === 'up' ? 'Hausse' : actif.trend === 'down' ? 'Baisse' : 'Stable'"
+                            [severity]="actif.trend === 'up' ? 'success' : actif.trend === 'down' ? 'danger' : 'secondary'">
+                        </p-tag>
+                    </td>
+
+                    <!-- Actions -->
+                    <td>
+                        <div class="flex items-center justify-center gap-1">
+                            <p-button
+                                icon="pi pi-plus"
+                                severity="success"
+                                [text]="true"
+                                [rounded]="true"
+                                pTooltip="Ajouter à une liste"
+                                ariaLabel="Ajouter à une liste"
+                                (onClick)="ouvrirAjoutDepuisTous(actif)">
+                            </p-button>
+
+                            <p-button
+                                icon="pi pi-eye"
+                                severity="secondary"
+                                [text]="true"
+                                [rounded]="true"
+                                pTooltip="Consulter les détails"
+                                (onClick)="voirActif(actif)">
+                            </p-button>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+
+            <!-- Aucun résultat -->
+            <ng-template #emptymessage>
+                <tr>
+                    <td colspan="6">
+                        <div class="flex flex-col items-center justify-center gap-3 py-10">
+                            <i class="pi pi-chart-bar text-4xl text-surface-400"></i>
+                            <span class="font-semibold">Aucun actif financier disponible</span>
+                            <span class="text-sm text-surface-500">Vérifiez les données ou modifiez votre recherche.</span>
+                        </div>
+                    </td>
+                </tr>
+            </ng-template>
+        </p-table>
+    } @else {
+        <!-- ======================== MES ACTIFS ======================== -->
+        <div class="flex flex-col gap-6">
+            <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="!m-0 !text-lg !font-semibold">Mes portefeuilles</h3>
+<!--                    <p class="m-0 mt-1 text-sm text-muted-color">Regroupez vos actifs en listes et suivez leurs pics de volatilité.</p>-->
+                </div>
+                <p-button label="Nouvelle liste" icon="pi pi-plus" (onClick)="ouvrirCreationListe()" />
+            </header>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="rounded-border border border-surface p-4">
+                    <div class="flex items-center gap-3">
+                        <p-avatar icon="pi pi-folder" shape="circle" size="large" />
+                        <div class="flex min-w-0 flex-col">
+                            <span class="text-sm text-muted-color">Listes</span>
+                            <span class="text-2xl font-semibold tabular-nums">{{ listes().length }}</span>
+                        </div>
+                    </div>
                 </div>
 
-                <p-iconfield class="w-full sm:w-80">
-                    <p-inputicon class="pi pi-search"></p-inputicon>
+                <div class="rounded-border border border-surface p-4">
+                    <div class="flex items-center gap-3">
+                        <p-avatar icon="pi pi-chart-pie" shape="circle" size="large" />
+                        <div class="flex min-w-0 flex-col">
+                            <span class="text-sm text-muted-color">Actifs suivis</span>
+                            <span class="text-2xl font-semibold tabular-nums">{{ totalActifsSuivis() }}</span>
+                        </div>
+                    </div>
+                </div>
 
-                    <input
-                        pInputText
-                        type="text"
-                        class="w-full"
-                        placeholder="Rechercher un actif..."
-                        (input)="dt.filterGlobal(
-                            $any($event.target).value,
-                            'contains'
-                        )">
-                </p-iconfield>
+                <div class="rounded-border border border-surface p-4">
+                    <div class="flex items-center gap-3">
+                        <p-avatar icon="pi pi-clock" shape="circle" size="large" />
+                        <div class="flex min-w-0 flex-col">
+                            <span class="text-sm text-muted-color">Dernière créée</span>
+                            <span class="truncate text-lg font-semibold">{{ listeRecente()?.nom ?? '—' }}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </ng-template>
 
-        <!-- En-têtes -->
-        <ng-template #header>
-            <tr>
-                <th pSortableColumn="name">
-                    Actif
-                    <p-sortIcon field="name"></p-sortIcon>
-                </th>
-
-                <th pSortableColumn="currentPrice" class="text-right">
-                    Prix actuel
-                    <p-sortIcon field="currentPrice"></p-sortIcon>
-                </th>
-
-                <th pSortableColumn="variation" class="text-right">
-                    Variation
-                    <p-sortIcon field="variation"></p-sortIcon>
-                </th>
-
-                <th style="width: 16rem">
-                    Performance
-                </th>
-
-                <th pSortableColumn="trend" class="text-center">
-                    Tendance
-                    <p-sortIcon field="trend"></p-sortIcon>
-                </th>
-
-                <th class="text-center" style="width: 8rem">
-                    Actions
-                </th>
-            </tr>
-        </ng-template>
-
-        <!-- Corps du tableau -->
-        <ng-template #body let-actif>
-            <tr>
-
-                <!-- Actif : nom, symbole et icône -->
-                <td>
-                    <div class="flex items-center gap-3">
-
-                        <span
-                            class="w-10 h-10 rounded-full flex items-center
-                                   justify-center text-xs font-bold
-                                   text-primary bg-surface-100
-                                   dark:bg-surface-800 shrink-0">
-                            {{ actif.symbole?.slice(0, 2) || 'NA' }}
-                        </span>
-
-                        <div class="flex flex-col gap-1 min-w-0">
-                            <span class="font-semibold">
-                                {{ actif.nom }}
-                            </span>
-
-                            <span class="text-xs text-surface-500">
-                                {{ actif.symbole }}
-                            </span>
-                        </div>
-
+            <section>
+                @if (erreurListes()) {
+                    <div class="flex flex-col items-center gap-4 py-8">
+                        <p-message severity="error" [text]="erreurListes()" />
+                        <p-button label="Réessayer" icon="pi pi-refresh" severity="secondary" [outlined]="true" (onClick)="chargerListes()" />
                     </div>
-                </td>
+                } @else {
+                    <p-table
+                        #dtListes
+                        [value]="listes()"
+                        [loading]="chargementListes()"
+                        [rowHover]="true"
+                        dataKey="id"
+                        selectionMode="single"
+                        [metaKeySelection]="false"
+                        [selection]="listeOuverte()"
+                        (onRowSelect)="selectionnerListe($event.data)"
+                        (onRowUnselect)="fermerListe()"
+                        [globalFilterFields]="['nom', 'description', 'devise']"
+                        [paginator]="listes().length > 10"
+                        [rows]="10"
+                        [tableStyle]="{ 'min-width': '48rem' }">
+                        <ng-template #caption>
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <span class="text-lg font-semibold">Mes listes</span>
+                                <p-iconfield iconPosition="left" styleClass="sm:w-72">
+                                    <p-inputicon styleClass="pi pi-search" />
+                                    <input pInputText type="text" class="w-full" placeholder="Rechercher" aria-label="Rechercher une liste" (input)="filtrerListes(dtListes, $event)" />
+                                </p-iconfield>
+                            </div>
+                        </ng-template>
 
-                <!-- Prix actuel -->
-                <td class="text-right font-medium whitespace-nowrap">
-                    {{ actif.currentPrice | number:'1.2-2' }}
-                    {{ actif.devise || '' }}
-                </td>
+                        <ng-template #header>
+                            <tr>
+                                <th pSortableColumn="nom">Liste <p-sortIcon field="nom" /></th>
+                                <th pSortableColumn="devise" class="w-28">Devise <p-sortIcon field="devise" /></th>
+                                <th pSortableColumn="nb_actifs" class="w-32">Actifs <p-sortIcon field="nb_actifs" /></th>
+                                <th pSortableColumn="date_creation" class="w-40">Créée le <p-sortIcon field="date_creation" /></th>
+                                <th class="w-44 !text-right">Actions</th>
+                            </tr>
+                        </ng-template>
 
-                <!-- Variation en pourcentage -->
-                <td
-                    class="text-right font-medium whitespace-nowrap"
-                    [ngClass]="{
-                        'text-green-600': (actif.variation ?? 0) > 0,
-                        'text-red-500': (actif.variation ?? 0) < 0,
-                        'text-surface-500': (actif.variation ?? 0) === 0
-                    }">
+                        <ng-template #body let-p>
+                            <tr [pSelectableRow]="p" class="cursor-pointer">
+                                <td>
+                                    <div class="flex min-w-0 items-center gap-3">
+                                        <p-avatar [label]="initialesListe(p.nom)" shape="circle" size="large" [style.background-color]="couleurListe(p)" [style.color]="'#fff'" />
+                                        <div class="flex min-w-0 flex-col">
+                                            <span class="truncate font-semibold">{{ p.nom }}</span>
+                                            <span class="max-w-md truncate text-sm text-muted-color">{{ p.description || 'Aucune description' }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><p-tag [value]="p.devise" severity="secondary" /></td>
+                                <td><p-tag [value]="'' + p.nb_actifs" icon="pi pi-chart-pie" severity="info" /></td>
+                                <td class="text-sm text-muted-color">{{ p.date_creation | date: 'dd MMM yyyy' }}</td>
+                                <td class="text-right" (click)="$event.stopPropagation()">
+                                    <p-button icon="pi pi-plus" [rounded]="true" [text]="true" severity="success"
+                                              pTooltip="Ajouter un actif" tooltipPosition="top" ariaLabel="Ajouter un actif" (onClick)="ouvrirAjout(p)" />
+                                    <p-button icon="pi pi-pencil" [rounded]="true" [text]="true" severity="secondary"
+                                              pTooltip="Modifier" tooltipPosition="top" ariaLabel="Modifier la liste" (onClick)="ouvrirModificationListe(p)" />
+                                    <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger"
+                                              pTooltip="Supprimer" tooltipPosition="top" ariaLabel="Supprimer la liste" (onClick)="confirmerSuppressionListe(p)" />
+                                </td>
+                            </tr>
+                        </ng-template>
 
-                    <i
-                        class="pi mr-1"
-                        [ngClass]="{
-                            'pi-arrow-up-right': (actif.variation ?? 0) > 0,
-                            'pi-arrow-down-right': (actif.variation ?? 0) < 0,
-                            'pi-minus': (actif.variation ?? 0) === 0
-                        }">
-                    </i>
+                        <ng-template #emptymessage>
+                            <tr>
+                                <td colspan="5">
+                                    <div class="flex flex-col items-center gap-3 py-12 text-center">
+                                        <p-avatar icon="pi pi-wallet" shape="circle" size="xlarge" />
+                                        <div>
+                                            <p class="m-0 font-semibold">Aucune liste</p>
+                                            <p class="m-0 mt-1 text-sm text-muted-color">Créez votre première liste pour suivre vos actifs.</p>
+                                        </div>
+                                        <p-button label="Créer une liste" icon="pi pi-plus" size="small" (onClick)="ouvrirCreationListe()" />
+                                    </div>
+                                </td>
+                            </tr>
+                        </ng-template>
+                    </p-table>
+                }
+            </section>
 
-                    {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
-                </td>
+            <div #detailListe class="scroll-mt-24">
+                @if (listeOuverte(); as liste) {
+                    <div class="flex flex-col gap-6 border-t border-surface pt-6">
+                        <section>
+                            <div class="mb-5 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                                <div class="flex min-w-0 items-center gap-4">
+                                    <p-avatar [label]="initialesListe(liste.nom)" shape="circle" size="large" [style.background-color]="couleurListe(liste)" [style.color]="'#fff'" />
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="!m-0 !text-xl !font-semibold">{{ liste.nom }}</h3>
+                                            <p-tag [value]="liste.devise" severity="secondary" />
+                                        </div>
+                                        <p class="m-0 mt-1 whitespace-pre-line text-sm text-muted-color">{{ liste.description || 'Aucune description' }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex shrink-0 flex-wrap gap-2">
+                                    <p-button label="Ajouter un actif" icon="pi pi-plus" size="small" (onClick)="ouvrirAjout(liste)" />
+                                    <p-button label="Modifier" icon="pi pi-pencil" severity="secondary" [outlined]="true" size="small" (onClick)="ouvrirModificationListe(liste)" />
+                                    <p-button icon="pi pi-times" severity="secondary" [text]="true" [rounded]="true" size="small" pTooltip="Fermer" tooltipPosition="top" ariaLabel="Fermer le détail" (onClick)="fermerListe()" />
+                                </div>
+                            </div>
 
-                <!-- Barre de performance -->
-                <td>
-                    <div class="flex items-center gap-3">
+                            @if (repartitionListe().length) {
+                                <p-metergroup class="mb-5 block" [value]="repartitionListe()" [max]="liste.actifs.length"></p-metergroup>
+                            }
 
-                        <div
-                            class="relative flex-1 h-2 rounded-full
-                                   bg-surface-100 dark:bg-surface-800">
+                            <p-table [value]="liste.actifs" [loading]="chargementDetailListe()" dataKey="symbole" [rowHover]="true" size="small" [tableStyle]="{ 'min-width': '40rem' }">
+                                <ng-template #header>
+                                    <tr>
+                                        <th>Actif</th>
+                                        <th>Type</th>
+                                        <th>Quantité</th>
+                                        <th>Ajouté le</th>
+                                        <th class="!text-right">Actions</th>
+                                    </tr>
+                                </ng-template>
+                                <ng-template #body let-position>
+                                    <tr>
+                                        <td>
+                                            <a [routerLink]="['/detail-actif', position.symbole]" class="font-semibold hover:underline">{{ position.symbole }}</a>
+                                            <div class="text-sm text-muted-color">{{ position.nom }}</div>
+                                        </td>
+                                        <td>
+                                            <p-tag [value]="infoType(position.type_actif).libelle" [icon]="'pi ' + infoType(position.type_actif).icone" [severity]="infoType(position.type_actif).severite" />
+                                        </td>
+                                        <td>
+                                            <div class="flex items-center gap-1">
+                                                <p-inputnumber [(ngModel)]="quantites[position.symbole]" [min]="0" [maxFractionDigits]="8" placeholder="—" inputStyleClass="w-28" size="small" [inputId]="'quantite-' + position.symbole" [ariaLabel]="'Quantité de ' + position.symbole"></p-inputnumber>
+                                                @if (quantiteModifiee(position)) {
+                                                    <p-button icon="pi pi-check" size="small" [rounded]="true" [text]="true" severity="success" pTooltip="Enregistrer" ariaLabel="Enregistrer la quantité" (onClick)="enregistrerQuantite(position)" />
+                                                }
+                                            </div>
+                                        </td>
+                                        <td class="text-sm text-muted-color">{{ position.date_ajout | date: 'dd MMM yyyy' }}</td>
+                                        <td class="text-right">
+                                            <p-button icon="pi pi-trash" [rounded]="true" [text]="true" severity="danger" pTooltip="Retirer" tooltipPosition="top"
+                                                      ariaLabel="Retirer l'actif" (onClick)="retirerActif(position)" />
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                                <ng-template #emptymessage>
+                                    <tr>
+                                        <td colspan="5">
+                                            <div class="flex flex-col items-center gap-3 py-8 text-center">
+                                                <p class="m-0 text-sm text-muted-color">Aucun actif dans cette liste.</p>
+                                                <p-button label="Ajouter un actif" icon="pi pi-plus" size="small" [outlined]="true" (onClick)="ouvrirAjout(liste)" />
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </ng-template>
+                            </p-table>
+                        </section>
 
-                            <!-- Axe central -->
-                            <span
-                                class="absolute left-1/2 top-[-2px] bottom-[-2px]
-                                       w-px bg-surface-300 dark:bg-surface-600">
-                            </span>
+                        <section>
+                            <div class="mb-4">
+                                <h3 class="!m-0 !text-lg !font-semibold">Pics de volatilité récents</h3>
+                                <p class="m-0 mt-1 text-sm text-muted-color">Journées inhabituelles des {{ joursPics }} derniers jours pour cette liste.</p>
+                            </div>
 
-                            <!-- Barre positive ou négative -->
-                            <span
-                                class="absolute top-0 h-2 rounded-full"
-                                [ngClass]="
-                                    (actif.variation ?? 0) >= 0
-                                        ? 'left-1/2 bg-green-500'
-                                        : 'right-1/2 bg-red-500'
-                                "
-                                [style.width.%]="largeurPerformance(actif)">
-                            </span>
-
-                        </div>
-
-                        <span
-                            class="w-16 text-right font-semibold text-sm"
-                            [ngClass]="
-                                (actif.variation ?? 0) >= 0
-                                    ? 'text-green-600'
-                                    : 'text-red-500'
-                            ">
-                            {{ (actif.variation ?? 0) > 0 ? '+' : '' }}{{ actif.variation ?? 0 | number:'1.2-2' }} %
-                        </span>
-
+                            @if (erreurPics()) {
+                                <p-message severity="error" [text]="erreurPics()" />
+                            } @else if (!picsDeLaListe().length) {
+                                <p-message severity="secondary" text="Aucun pic récent sur ces actifs." />
+                            } @else {
+                                <p-table [value]="picsDeLaListe()" dataKey="id" [rowHover]="true" size="small" [tableStyle]="{ 'min-width': '36rem' }"
+                                         [paginator]="picsDeLaListe().length > 10" [rows]="10">
+                                    <ng-template #header>
+                                        <tr>
+                                            <th pSortableColumn="date">Date <p-sortIcon field="date" /></th>
+                                            <th pSortableColumn="symbole">Actif <p-sortIcon field="symbole" /></th>
+                                            <th pSortableColumn="variation">Variation <p-sortIcon field="variation" /></th>
+                                            <th pSortableColumn="z">Score Z <p-sortIcon field="z" /></th>
+                                            <th>Type</th>
+                                        </tr>
+                                    </ng-template>
+                                    <ng-template #body let-pic>
+                                        <tr>
+                                            <td class="text-sm">{{ pic.date | date: 'dd MMM yyyy' }}</td>
+                                            <td><a [routerLink]="['/detail-actif', pic.symbole]" class="font-semibold hover:underline">{{ pic.symbole }}</a></td>
+                                            <td>
+                                                @if (pic.variation === null) {
+                                                    —
+                                                } @else {
+                                                    <p-tag
+                                                        [value]="(pic.variation | number: '1.2-2') + ' %'"
+                                                        [icon]="pic.variation >= 0 ? 'pi pi-arrow-up-right' : 'pi pi-arrow-down-right'"
+                                                        [severity]="pic.variation >= 0 ? 'success' : 'danger'" />
+                                                }
+                                            </td>
+                                            <td class="tabular-nums">{{ pic.z === null ? '—' : (pic.z | number: '1.1-1') }}</td>
+                                            <td>
+                                                @if (pic.type_pic) {
+                                                    <p-tag [value]="pic.type_pic === 'systemique' ? 'Systémique' : 'Spécifique'" [severity]="pic.type_pic === 'systemique' ? 'warn' : 'info'" />
+                                                } @else {
+                                                    —
+                                                }
+                                            </td>
+                                        </tr>
+                                    </ng-template>
+                                </p-table>
+                            }
+                        </section>
                     </div>
-                </td>
-
-                <!-- Tendance -->
-                <td class="text-center">
-                    <p-tag
-                        [value]="
-                            actif.trend === 'up'
-                                ? 'Hausse'
-                                : actif.trend === 'down'
-                                    ? 'Baisse'
-                                    : 'Stable'
-                        "
-                        [severity]="
-                            actif.trend === 'up'
-                                ? 'success'
-                                : actif.trend === 'down'
-                                    ? 'danger'
-                                    : 'secondary'
-                        ">
-                    </p-tag>
-                </td>
-
-                <!-- Actions -->
-                <td>
-                    <div class="flex items-center justify-center gap-1">
-
-                        <p-button
-                            [icon]="estSelectionne(actif) ? 'pi pi-star-fill' : 'pi pi-star'"
-                            severity="warn"
-                            [text]="true"
-                            [rounded]="true"
-                            [pTooltip]="estSelectionne(actif)
-                                ? 'Retirer de mes actifs'
-                                : 'Ajouter à mes actifs'"
-                            (onClick)="basculerSelection(actif)">
-                        </p-button>
-
-                        <p-button
-                            icon="pi pi-eye"
-                            severity="secondary"
-                            [text]="true"
-                            [rounded]="true"
-                            pTooltip="Consulter les détails"
-                            (onClick)="voirActif(actif)">
-                        </p-button>
-
-                    </div>
-                </td>
-
-            </tr>
-        </ng-template>
-
-        <!-- Aucun résultat -->
-        <ng-template #emptymessage>
-            <tr>
-                <td colspan="6">
-                    <div class="flex flex-col items-center
-                                justify-center gap-3 py-10">
-
-                        <i class="pi pi-chart-bar text-4xl text-surface-400"></i>
-
-                        <span class="font-semibold">
-                            {{ vue === 'mes'
-                            ? "Vous n'avez sélectionné aucun actif"
-                            : 'Aucun actif financier disponible' }}
-                        </span>
-
-                        <span class="text-sm text-surface-500">
-                            {{ vue === 'mes'
-                            ? "Cliquez sur l'étoile d'un actif pour l'ajouter ici."
-                            : 'Vérifiez les données ou modifiez votre recherche.' }}
-                        </span>
-
-                    </div>
-                </td>
-            </tr>
-        </ng-template>
-
-    </p-table>
+                }
+            </div>
+        </div>
+    }
 </div>
+
+<!-- Création / modification d'une liste -->
+<p-dialog [header]="listeEnEdition ? 'Modifier la liste' : 'Nouvelle liste'" [visible]="fenetreListeVisible()" (visibleChange)="fenetreListeVisible.set($event)"
+          [modal]="true" [draggable]="false" [style]="{ width: '30rem' }" [breakpoints]="{ '575px': '95vw' }">
+    <form class="flex flex-col gap-4" (ngSubmit)="enregistrerListe()">
+        <div class="flex flex-col gap-1.5">
+            <label for="liste-nom" class="text-sm font-medium">Nom</label>
+            <input pInputText id="liste-nom" name="nom" [(ngModel)]="saisieListe.nom" maxlength="100" required autocomplete="off" placeholder="Ex. Croissance long terme" />
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label for="liste-description" class="text-sm font-medium">Description <span class="font-normal text-muted-color">(facultatif)</span></label>
+            <textarea pTextarea id="liste-description" name="description" [(ngModel)]="saisieListe.description" rows="3" placeholder="Objectif, horizon, stratégie…"></textarea>
+        </div>
+        <div class="flex flex-col gap-1.5">
+            <label for="liste-devise" class="text-sm font-medium">Devise</label>
+            <input pInputText id="liste-devise" name="devise" [(ngModel)]="saisieListe.devise" maxlength="10" placeholder="USD" class="uppercase" />
+        </div>
+
+        @if (erreurFenetreListe()) {
+            <p-message severity="error" [text]="erreurFenetreListe()" />
+        }
+
+        <div class="flex justify-end gap-2 pt-1">
+            <p-button label="Annuler" severity="secondary" [text]="true" (onClick)="fenetreListeVisible.set(false)" />
+            <p-button type="submit" [label]="listeEnEdition ? 'Enregistrer' : 'Créer la liste'" icon="pi pi-check" [loading]="enregistrementListe()" />
+        </div>
+    </form>
+</p-dialog>
+
+<!-- Ajout d'un actif à une liste -->
+<p-dialog [header]="choixListeAjout() ? 'Ajouter ' + symboleAjout + ' à une liste' : 'Ajouter un actif à « ' + (cibleAjout()?.nom ?? '') + ' »'" [visible]="ajoutVisible()" (visibleChange)="ajoutVisible.set($event)" [modal]="true" [draggable]="false"
+          [style]="{ width: '32rem' }" [breakpoints]="{ '575px': '95vw' }">
+    <form class="flex flex-col gap-4" (ngSubmit)="ajouterActif()">
+        @if (choixListeAjout()) {
+            <div class="flex flex-col gap-1.5">
+                <label for="liste-ajout" class="text-sm font-medium">Liste</label>
+                <p-select inputId="liste-ajout" name="liste" [options]="listes()" optionLabel="nom" optionValue="id" [ngModel]="idListeAjout" (ngModelChange)="choisirListeAjout($event)"
+                          placeholder="Choisir une liste" styleClass="w-full" appendTo="body" emptyMessage="Aucune liste : créez-en une dans Mes actifs" />
+            </div>
+
+            @if (actifDejaDansListe()) {
+                <p-message severity="warn" [text]="symboleAjout + ' est déjà dans cette liste.'" />
+            }
+        } @else {
+            <div class="flex flex-col gap-1.5">
+                <label for="actif-ajout" class="text-sm font-medium">Actif</label>
+                <p-select inputId="actif-ajout" name="actif" [options]="actifsDisponibles()" [(ngModel)]="symboleAjout" [filter]="true" filterBy="label"
+                          placeholder="Choisir un actif" styleClass="w-full" appendTo="body" emptyFilterMessage="Aucun actif trouvé" emptyMessage="Tous les actifs sont déjà dans cette liste">
+                    <ng-template #item let-option>
+                        <div class="flex w-full items-center gap-3">
+                            <div class="flex min-w-0 flex-col">
+                                <span class="font-semibold">{{ option.actif.symbole }}</span>
+                                <span class="truncate text-sm text-muted-color">{{ option.actif.nom }}</span>
+                            </div>
+                            <p-tag class="ml-auto" [value]="infoType(option.actif.type_actif).libelle" [severity]="infoType(option.actif.type_actif).severite" />
+                        </div>
+                    </ng-template>
+                </p-select>
+            </div>
+        }
+        <div class="flex flex-col gap-1.5">
+            <label for="quantite-ajout" class="text-sm font-medium">Quantité <span class="font-normal text-muted-color">(facultatif)</span></label>
+            <p-inputnumber inputId="quantite-ajout" name="quantite" [(ngModel)]="quantiteAjout" [min]="0" [maxFractionDigits]="8" styleClass="w-full" inputStyleClass="w-full" placeholder="0"></p-inputnumber>
+        </div>
+
+        <p-message severity="info" size="small" icon="pi pi-info-circle" text="Un nouvel actif est importé et analysé automatiquement : l'ajout peut prendre quelques secondes." />
+
+        @if (erreurAjout()) {
+            <p-message severity="error" [text]="erreurAjout()" />
+        }
+
+        <div class="flex justify-end gap-2 pt-1">
+            <p-button label="Annuler" severity="secondary" [text]="true" (onClick)="ajoutVisible.set(false)" />
+            <p-button type="submit" label="Ajouter" icon="pi pi-plus" [loading]="ajoutEnCours()" [disabled]="!symboleAjout || !cibleAjout() || actifDejaDansListe()" />
+        </div>
+    </form>
+</p-dialog>
