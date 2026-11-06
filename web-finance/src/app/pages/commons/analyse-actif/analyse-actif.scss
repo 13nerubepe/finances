@@ -6,6 +6,7 @@
     --hausse: #089981;
     --baisse: #f23645;
     display: block;
+    padding: 1rem;
     font-size: 0.875rem;
 }
 
@@ -13,7 +14,7 @@
 .entete {
     margin-bottom: 0.75rem;
 
-    h2 { margin: 0; font-size: 1.125rem; font-weight: 600; }
+    h2 { margin: 0; font-size: 0.875rem; font-weight: 600; }
     p { margin: 0.125rem 0 0; color: var(--muet); font-size: 0.8125rem; }
 }
 
