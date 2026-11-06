@@ -90,7 +90,7 @@ const COULEUR_BAISSE = '#f23645';
 const COULEUR_MM20 = '#f7a600';
 const COULEUR_MM50 = '#ab47bc';
 const COULEUR_PIC = '#f7a600';
-/** Les pics de l'agent sont journaliers : un an couvre toutes les périodes du graphique. */
+/** Les pics sont journaliers : un peu plus d'un an couvre toutes les périodes du graphique. */
 const JOURS_PICS = 400;
 
 const STATS_VIDES: StatsActif = { perf: null, volatilite: null, ouverture: null, haut: null, bas: null, dernier: null, volume: null };
@@ -774,11 +774,12 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
             return;
         }
 
-        const debut = new Date(Date.now() - JOURS_PICS * 86400000).toISOString();
+        const debut = new Date(Date.now() - JOURS_PICS * 86400000).toISOString().slice(0, 10);
+        // Mêmes pics que la cloche et l'assistant : ce sont ceux que l'agent sait expliquer.
         const sub = this.actifService
-            .getPics(symbole, '1j', 20, 2, debut)
+            .getPicsJournaliers({ symbole, debut })
             .pipe(
-                map((reponse): PicGraphique[] => reponse.pics ?? []),
+                map((pics): PicGraphique[] => pics.map((pic) => ({ debut: pic.date, fin: pic.date, horodatage_max: pic.date }))),
                 catchError(() => of([] as PicGraphique[]))
             )
             .subscribe((pics) => {

@@ -11,7 +11,6 @@ export type Onglet = 'volatilite' | 'pics' | 'correlation' | 'actualites';
 /** true si l'API renvoie 0.025 pour 2,5 %. Mets false si elle renvoie déjà 2.5. */
 const RATIOS_EN_FRACTION = true;
 const FENETRE = 20;
-const SEUIL = 2;
 const ANALYSE_VIDE: Analyse = { volatilite: null, pics: null, correlations: null, covariances: {}, actualites: null };
 
 function nombre(valeur: unknown): number | null {
@@ -86,9 +85,8 @@ export class AnalyseActif {
 
     readonly sansCours = computed(() => !this.periode() && !this.enChargement());
 
-    readonly pics = computed(() =>
-        [...(this.donnees().pics?.pics ?? [])].sort((a, b) => b.debut.localeCompare(a.debut))
-    );
+    /** Pics journaliers enregistrés en base (|z| au-dessus du seuil) : ce sont ceux que l'assistant sait expliquer. */
+    readonly pics = computed(() => [...(this.donnees().pics ?? [])].sort((a, b) => b.date.localeCompare(a.date)));
 
     readonly courbe = computed(() => {
         const points = (this.donnees().volatilite?.serie ?? [])
@@ -97,10 +95,9 @@ export class AnalyseActif {
             .sort((a, b) => a.t - b.t);
         if (points.length < 2) return null;
 
-        const limite = nombre(this.donnees().pics?.limite);
         const valeurs = points.map((p) => p.v);
-        const min = Math.min(...valeurs, limite ?? Infinity);
-        const max = Math.max(...valeurs, limite ?? -Infinity);
+        const min = Math.min(...valeurs);
+        const max = Math.max(...valeurs);
         const debut = points[0].t;
         const fin = points[points.length - 1].t;
         // Coordonnées en % : le tracé s'adapte à la largeur disponible
@@ -108,11 +105,12 @@ export class AnalyseActif {
         const y = (v: number) => 94 - ((v - min) / (max - min || 1)) * 86;
         const trace = points.map((p) => `${x(p.t).toFixed(2)},${y(p.v).toFixed(2)}`).join(' ');
 
+        // Le repère se pose sur le point de la courbe le plus proche du jour du pic (à un jour près).
         const reperes = this.pics().flatMap((pic) => {
-            const t = new Date(pic.horodatage_max).getTime();
-            const v = nombre(pic.volatilite_max);
-            if (v === null || t < debut || t > fin) return [];
-            return [{ x: x(t), y: Math.min(94, Math.max(8, y(v))), titre: `Pic du ${new Date(t).toLocaleString()} : ${this.pourcent(v)}` }];
+            const t = new Date(pic.date).getTime();
+            const proche = points.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a));
+            if (Math.abs(proche.t - t) > 86400000) return [];
+            return [{ x: x(proche.t), y: Math.min(94, Math.max(8, y(proche.v))), titre: `Pic du ${new Date(pic.date).toLocaleDateString('fr-FR')} : ${this.decimal(pic.variation)} %` }];
         });
 
         return {
@@ -120,7 +118,6 @@ export class AnalyseActif {
             aire: `0,100 ${trace} 100,100`,
             reperes,
             graduations: [max, min + (max - min) * (2 / 3), min + (max - min) / 3, min].map((v) => ({ y: y(v), texte: this.pourcent(v) })),
-            limite: limite === null ? null : { y: y(limite), texte: this.pourcent(limite) },
             dates: [debut, (debut + fin) / 2, fin]
         };
     });
@@ -161,7 +158,7 @@ export class AnalyseActif {
             series: forkJoin(
                 symboles.map((s) => this.actifService.getVolatilite(s, frequence, FENETRE, debut, fin).pipe(catchError(() => of(null))))
             ),
-            pics: this.actifService.getPics(symbole, frequence, FENETRE, SEUIL, debut, fin).pipe(catchError(() => of(null))),
+            pics: this.actifService.getPicsJournaliers({ symbole, debut: debut.slice(0, 10), fin: fin.slice(0, 10) }).pipe(catchError(() => of(null))),
             correlations:
                 symboles.length < 2
                     ? of(null)

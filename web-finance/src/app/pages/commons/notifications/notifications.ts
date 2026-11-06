@@ -2,10 +2,8 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { OverlayBadge } from 'primeng/overlaybadge';
 import { Popover } from 'primeng/popover';
-import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { AppConstantRoute } from '@/app/constants';
-import type { Actif } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 
 interface Notification {
@@ -17,14 +15,8 @@ interface Notification {
 }
 
 const CLE_DERNIERE_VUE = 'notifications-pics-derniere-vue';
-/** L'API n'a pas de route dédiée : un appel par actif, donc un nombre limité d'actifs. */
-const MAX_ACTIFS = 10;
 const MAX_NOTIFICATIONS = 15;
 const JOURS_AFFICHES = 7;
-/** Assez de jours pour que l'écart-type sur 20 bougies soit calculable. */
-const JOURS_ANALYSE = 60;
-/** true si l'API renvoie 0.025 pour 2,5 %, comme dans analyse-actif. */
-const RATIOS_EN_FRACTION = true;
 const UN_JOUR_MS = 86400000;
 
 @Component({
@@ -126,7 +118,7 @@ export class Notifications implements OnInit {
     message(variation: number | null): string {
         if (!variation) return ': mouvement inhabituel';
 
-        const pourcent = Math.abs(RATIOS_EN_FRACTION ? variation * 100 : variation);
+        const pourcent = Math.abs(variation);
         const texte = pourcent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         return `${variation > 0 ? 'en hausse' : 'en baisse'} de ${texte} %`;
     }
@@ -138,54 +130,34 @@ export class Notifications implements OnInit {
         return `Il y a ${jours} jours`;
     }
 
+    /** Une seule requête : les pics journaliers enregistrés (|z| au-dessus du seuil) des derniers jours, tous actifs confondus. */
     private charger(): void {
-        const maintenant = Date.now();
-        const limite = maintenant - JOURS_AFFICHES * UN_JOUR_MS;
-        const debut = new Date(maintenant - JOURS_ANALYSE * UN_JOUR_MS).toISOString();
+        const debut = new Date(Date.now() - JOURS_AFFICHES * UN_JOUR_MS).toISOString().slice(0, 10);
 
         this.erreur.set(false);
-        this.actifService
-            .getAssets()
-            .pipe(
-                switchMap((actifs) => {
-                    const suivis = actifs.filter((a) => (a as { est_suivi?: boolean }).est_suivi !== false).slice(0, MAX_ACTIFS);
-                    if (!suivis.length) return of([] as Notification[][]);
-                    // Un actif en erreur ne doit pas faire disparaître les autres.
-                    return forkJoin(suivis.map((actif) => this.picsDe(actif, debut, limite)));
-                })
-            )
-            .subscribe({
-                next: (listes) => {
-                    this.notifications.set(
-                        listes
-                            .flat()
-                            .sort((a, b) => b.horodatage.localeCompare(a.horodatage))
-                            .slice(0, MAX_NOTIFICATIONS)
-                    );
-                    this.chargement.set(false);
-                },
-                error: () => {
-                    this.erreur.set(true);
-                    this.chargement.set(false);
-                }
-            });
-    }
-
-    private picsDe(actif: Actif, debut: string, limite: number) {
-        return this.actifService.getPics(actif.symbole, '1j', 20, 2, debut).pipe(
-            map((reponse): Notification[] =>
-                (reponse.pics ?? [])
-                    .filter((pic) => new Date(pic.horodatage_max).getTime() >= limite)
-                    .map((pic) => ({
-                        cle: `${actif.symbole}|${pic.horodatage_max}`,
-                        symbole: actif.symbole,
-                        nom: actif.nom,
-                        horodatage: pic.horodatage_max,
-                        variation: this.nombre(pic.variation_prix)
-                    }))
-            ),
-            catchError(() => of([] as Notification[]))
-        );
+        this.actifService.getPicsJournaliers({ debut }).subscribe({
+            next: (pics) => {
+                this.notifications.set(
+                    pics
+                        .map(
+                            (pic): Notification => ({
+                                cle: `${pic.symbole}|${pic.date}`,
+                                symbole: pic.symbole,
+                                nom: pic.nom,
+                                horodatage: pic.date,
+                                variation: this.nombre(pic.variation)
+                            })
+                        )
+                        .sort((a, b) => b.horodatage.localeCompare(a.horodatage))
+                        .slice(0, MAX_NOTIFICATIONS)
+                );
+                this.chargement.set(false);
+            },
+            error: () => {
+                this.erreur.set(true);
+                this.chargement.set(false);
+            }
+        });
     }
 
     private nombre(valeur: unknown): number | null {

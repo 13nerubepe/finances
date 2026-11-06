@@ -92,3 +92,26 @@ class MemoireTests(TestCase):
         contexte_conversation(self.user)
         self.assertEqual(faux_resumer.call_count, 2)
         self.assertEqual(faux_resumer.call_args.args[0], "Résumé : AAPL a chuté le 31/07 (z = -4,1).")
+
+
+class ExplicationPicTests(APITestCase):
+    def setUp(self):
+        from datetime import date
+
+        from marches.models import Actif, IndicateurJournalier
+
+        self.client.force_authenticate(User.objects.create_user(telephone="690000001", password="x", nom="A", prenom="B"))
+        aapl = Actif.objects.create(symbole="AAPL", nom="Apple Inc.")
+        IndicateurJournalier.objects.create(actif=aapl, date=date(2026, 7, 31), rendement=-0.09, z=-4.1, est_pic=True)
+
+    def demander(self, jour="2026-07-31"):
+        return self.client.get(reverse("explication-pic", args=["AAPL", jour]))
+
+    @patch("agent.views.expliquer_pic", side_effect=ValueError("No API key was provided."))
+    def test_cle_google_absente_renvoie_503(self, _faux):
+        reponse = self.demander()
+        self.assertEqual(reponse.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertIn("GOOGLE_API_KEY", reponse.data["detail"])
+
+    def test_jour_sans_pic_renvoie_404(self):
+        self.assertEqual(self.demander("2026-07-30").status_code, status.HTTP_404_NOT_FOUND)

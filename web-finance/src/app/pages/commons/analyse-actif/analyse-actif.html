@@ -40,9 +40,6 @@
                         <h3>Écart-type glissant</h3>
                         <ul class="legende">
                             <li><span class="cle-trait"></span>Volatilité</li>
-                            @if (c.limite) {
-                                <li><span class="cle-seuil"></span>Seuil de pic</li>
-                            }
                             <li><span class="cle-pic"></span>Pic</li>
                         </ul>
                     </div>
@@ -63,9 +60,6 @@
                                 <polygon [attr.points]="c.aire" fill="url(#aire-volatilite)" />
                                 <polyline [attr.points]="c.trace" class="ligne" vector-effect="non-scaling-stroke" />
                             </svg>
-                            @if (c.limite; as l) {
-                                <div class="seuil" [style.top.%]="l.y" [title]="'Seuil de pic : ' + l.texte"></div>
-                            }
                             @for (r of c.reperes; track r.x) {
                                 <span class="repere" [style.left.%]="r.x" [style.top.%]="r.y" [title]="r.titre"></span>
                             }
@@ -85,39 +79,34 @@
         }
 
         @case ('pics') {
-            @if (donnees().pics; as p) {
-                <p class="aide">Un pic correspond à une volatilité supérieure à la moyenne + {{ p.seuil }} × l'écart-type.</p>
+            @if (donnees().pics) {
+                <p class="aide">Un pic est un jour où le rendement s'écarte fortement de la volatilité habituelle (score z élevé). Ce sont les pics que l'assistant IA sait expliquer.</p>
                 @if (pics().length) {
                     <div class="defilement">
                         <table class="tableau">
                             <thead>
                             <tr>
-                                <th>Période</th>
-                                <th>Maximum atteint</th>
-                                <th class="droite">Volatilité max</th>
-                                <th class="droite">Score</th>
-                                <th class="droite">Variation du prix</th>
-                                <th class="droite">Bougies</th>
+                                <th>Jour</th>
+                                <th class="droite">Variation</th>
+                                <th class="droite">Score z</th>
+                                <th>Type</th>
+                                <th class="droite">Écart à l'ouverture</th>
                                 <th><span class="sr-only">Explication</span></th>
                             </tr>
                             </thead>
                             <tbody>
-                                @for (pic of pics(); track pic.debut) {
+                                @for (pic of pics(); track pic.id) {
                                     <tr>
-                                        <td>
-                                            {{ pic.debut | date: 'dd/MM/yy HH:mm' }}
-                                            <span class="secondaire">→ {{ pic.fin | date: 'dd/MM/yy HH:mm' }}</span>
-                                        </td>
-                                        <td>{{ pic.horodatage_max | date: 'dd/MM/yy HH:mm' }}</td>
-                                        <td class="droite">{{ pourcent(pic.volatilite_max) }}</td>
-                                        <td class="droite"><span class="score">{{ decimal(pic.score_max) }}</span></td>
-                                        <td class="droite"><strong [class]="classeSigne(pic.variation_prix)">{{ pourcent(pic.variation_prix) }}</strong></td>
-                                        <td class="droite">{{ pic.nb_points }}</td>
+                                        <td>{{ pic.date | date: 'dd/MM/yyyy' }}</td>
+                                        <td class="droite"><strong [class]="classeSigne(pic.variation)">{{ decimal(pic.variation) }} %</strong></td>
+                                        <td class="droite"><span class="score">{{ decimal(pic.z) }}</span></td>
+                                        <td>{{ pic.type_pic === 'systemique' ? 'Systémique' : pic.type_pic === 'specifique' ? 'Spécifique' : '—' }}</td>
+                                        <td class="droite">{{ pic.gap === null ? '—' : decimal(pic.gap) + ' %' }}</td>
                                         <td class="droite">
                                             <button type="button"
                                                     class="cursor-pointer whitespace-nowrap rounded border border-surface bg-transparent px-2 py-1 text-xs font-semibold text-primary"
-                                                    (click)="expliquerPic.emit(pic.horodatage_max)">
-                                                <i class="pi pi-sparkles mr-1 text-xs"></i>Expliquer ce pic
+                                                    (click)="expliquerPic.emit(pic.date)">
+                                                <i class="pi pi-sparkles mr-1 text-xs"></i>{{ pic.explication_disponible ? "Voir l'explication" : 'Expliquer ce pic' }}
                                             </button>
                                         </td>
                                     </tr>

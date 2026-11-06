@@ -191,7 +191,7 @@ export interface TopMoversResponse {
 
 export interface Analyse {
     volatilite: VolatiliteResponse | null;
-    pics: PicsResponse | null;
+    pics: PicJournalier[] | null;
     correlations: CorrelationsResponse | null;
     covariances: Record<string, Record<string, number | null>>;
     actualites: Actualite[] | null;

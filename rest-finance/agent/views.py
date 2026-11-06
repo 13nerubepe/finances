@@ -35,6 +35,11 @@ class ExplicationPicView(APIView):
             explication = expliquer_pic(pic)
         except errors.APIError as erreur:
             return Response({"detail": f"Erreur de l'IA : {erreur}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except ValueError:  # clé GOOGLE_API_KEY absente : le client Gemini refuse de démarrer
+            return Response(
+                {"detail": "Clé GOOGLE_API_KEY absente : renseignez-la dans rest-finance/.env (voir .env.example)."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         return Response(ExplicationSerializer(explication).data)
 
 
