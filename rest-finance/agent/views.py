@@ -21,7 +21,7 @@ from .serializers import (
 from .services import expliquer_pic
 
 class ExplicationPicView(APIView):
-    """Explication d'un pic journalier : générée au premier appel, puis lue en base."""
+    """Explication d'un jour (pic ou non) : générée au premier appel, puis lue en base."""
 
     @extend_schema(responses=ExplicationSerializer)
     def get(self, request, symbole, jour):
@@ -30,7 +30,8 @@ class ExplicationPicView(APIView):
         except ValueError:
             return Response({"detail": "Date attendue au format AAAA-MM-JJ."}, status=status.HTTP_400_BAD_REQUEST)
 
-        pic = get_object_or_404(IndicateurJournalier, actif__symbole=symbole.upper(), date=jour, est_pic=True)
+        # Tout jour dont les indicateurs sont calculés peut être expliqué, pic ou non (clic sur le graphique).
+        pic = get_object_or_404(IndicateurJournalier, actif__symbole=symbole.upper(), date=jour)
         try:
             explication = expliquer_pic(pic)
         except errors.APIError as erreur:

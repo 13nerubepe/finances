@@ -156,7 +156,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     explication: ExplicationPic | null = null;
     explicationEnCours = false;
     explicationErreur = '';
-    /** 404 : réessayer ne changera rien, le jour n'est pas un pic enregistré. */
+    /** 404 : réessayer ne changera rien, aucun indicateur n'existe pour ce jour. */
     erreurSansReessai = false;
 
     private readonly tousLesTypes: { label: string; value: TypeGraphe; ohlc: boolean }[] = [
@@ -890,7 +890,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
         if (erreur.status === 0) return 'Le serveur ne répond pas. Vérifie que Django est lancé.';
         if (erreur.status === 401 || erreur.status === 403) return `Accès refusé à l'agent : reconnecte-toi.${detail}`;
-        if (erreur.status === 404) return "Ce jour n'est pas enregistré comme pic dans la base : l'agent ne peut expliquer que les pics enregistrés. Posez la question à l'assistant IA pour une analyse libre.";
+        if (erreur.status === 404) return "Pas de données pour ce jour (week-end, jour férié ou indicateurs non calculés) : choisissez un autre jour de bourse.";
         if (erreur.status === 503) return `L'IA est momentanément indisponible. Réessayez plus tard.${detail}`;
         return `L'agent a répondu par une erreur ${erreur.status}.${detail}`;
     }

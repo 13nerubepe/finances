@@ -113,5 +113,19 @@ class ExplicationPicTests(APITestCase):
         self.assertEqual(reponse.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertIn("GOOGLE_API_KEY", reponse.data["detail"])
 
-    def test_jour_sans_pic_renvoie_404(self):
+    def test_jour_sans_indicateur_renvoie_404(self):
         self.assertEqual(self.demander("2026-07-30").status_code, status.HTTP_404_NOT_FOUND)
+
+    @patch("agent.views.expliquer_pic")
+    def test_un_jour_sans_pic_peut_etre_explique(self, faux):
+        from datetime import date
+
+        from marches.models import Actif, IndicateurJournalier
+
+        IndicateurJournalier.objects.create(
+            actif=Actif.objects.get(symbole="AAPL"), date=date(2026, 7, 30), rendement=0.004, z=0.5, est_pic=False
+        )
+        faux.return_value = type("E", (), {"texte": "RAS", "sources": [], "modele": "m"})()
+        with patch("agent.views.ExplicationSerializer") as serial:
+            serial.return_value.data = {"texte": "RAS"}
+            self.assertEqual(self.demander("2026-07-30").status_code, status.HTTP_200_OK)

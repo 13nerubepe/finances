@@ -34,10 +34,15 @@ def articles_du_pic(pic):
 
 def construire_prompt(pic, articles):
     actif = pic.actif
-    lignes = [
-        f"Actif : {actif.nom} ({actif.symbole}), pic de volatilité du {pic.date:%d/%m/%Y}.",
-        f"- Variation du jour : {pourcentage(pic.rendement)} %, soit {pic.z:.1f} fois la volatilité habituelle.",
-    ]
+    if pic.est_pic:
+        lignes = [f"Actif : {actif.nom} ({actif.symbole}), pic de volatilité du {pic.date:%d/%m/%Y}."]
+    else:
+        lignes = [f"Actif : {actif.nom} ({actif.symbole}), journée du {pic.date:%d/%m/%Y} (mouvement non exceptionnel)."]
+    if pic.rendement is not None:
+        variation = f"- Variation du jour : {pourcentage(pic.rendement)} %"
+        if pic.z is not None:
+            variation += f", soit {pic.z:.1f} fois la volatilité habituelle"
+        lignes.append(variation + ".")
     if pic.gap is not None:
         lignes.append(f"- Écart à l'ouverture (gap) : {pourcentage(pic.gap)} %.")
     if pic.z_volume is not None:
@@ -57,7 +62,8 @@ def construire_prompt(pic, articles):
         lignes.append("\nAucun article en base pour cette date.")
 
     lignes.append(
-        "\nExplique en français, en 5 phrases maximum, la cause la plus probable de ce mouvement. "
+        "\nExplique en français, en 5 phrases maximum, la cause la plus probable de ce mouvement "
+        "(si la journée était calme, dis-le et cite ce qui a pu rythmer le marché). "
         "Appuie-toi d'abord sur les articles fournis, complète avec une recherche web sur cette date précise. "
         "N'invente aucun chiffre. Si aucune cause claire n'apparaît, dis-le."
     )
