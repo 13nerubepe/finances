@@ -10,6 +10,7 @@ import { Dialog } from 'primeng/dialog';
 import { MultiSelect } from 'primeng/multiselect';
 import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
+import { InputText } from 'primeng/inputtext';
 import { Tag } from 'primeng/tag';
 
 import {
@@ -99,7 +100,7 @@ const STATS_VIDES: StatsActif = { perf: null, volatilite: null, ouverture: null,
 @Component({
     selector: 'app-detail-actif',
     standalone: true,
-    imports: [CommonModule, FormsModule, Button, Dialog, MultiSelect, Select, TableModule, Tag, AnalyseActif],
+    imports: [CommonModule, FormsModule, Button, Dialog, InputText, MultiSelect, Select, TableModule, Tag, AnalyseActif],
     templateUrl: './detail-actif.html',
     styleUrl: './detail-actif.scss'
 })
@@ -132,6 +133,14 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         { label: '6M', value: 4320 },
         { label: '1A', value: 8760 }
     ];
+
+    /** Dates précises choisies par l'utilisateur (AAAA-MM-JJ, UTC) ; null = période prédéfinie. */
+    plageDates: { debut: string; fin: string } | null = null;
+    saisieDates = false;
+    dateDebutSaisie = '';
+    dateFinSaisie = '';
+    erreurDates = '';
+    readonly aujourdhui = new Date().toISOString().slice(0, 10);
 
     // Graphique
     mode: ModeGraphe = 'cours';
@@ -365,11 +374,55 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
 
     changerPeriode(value: number): void {
         this.periode = value;
+        this.plageDates = null;
+        this.saisieDates = false;
         this.demanderComparaison();
     }
 
     get periodeLabel(): string {
+        if (this.plageDates) return `du ${this.dateCourte(this.plageDates.debut)} au ${this.dateCourte(this.plageDates.fin)}`;
         return this.periodes.find((p) => p.value === this.periode)?.label ?? '';
+    }
+
+    /** Ouvre ou ferme la saisie des dates, préremplie avec la période affichée. */
+    basculerSaisieDates(): void {
+        this.saisieDates = !this.saisieDates;
+        this.erreurDates = '';
+        if (this.saisieDates && !this.plageDates) {
+            this.dateFinSaisie = this.aujourdhui;
+            this.dateDebutSaisie = this.formaterDate(new Date(Date.now() - this.periode * 3600000));
+        }
+    }
+
+    appliquerDates(): void {
+        const debut = this.dateDebutSaisie;
+        const fin = this.dateFinSaisie;
+        if (!debut || !fin) {
+            this.erreurDates = 'Choisissez une date de début et une date de fin.';
+            return;
+        }
+        if (debut > fin) {
+            this.erreurDates = 'La date de début doit précéder la date de fin.';
+            return;
+        }
+        if (fin > this.aujourdhui) {
+            this.erreurDates = "La date de fin ne peut pas dépasser aujourd'hui.";
+            return;
+        }
+        this.erreurDates = '';
+        this.plageDates = { debut, fin };
+        this.saisieDates = false;
+        this.demanderComparaison();
+    }
+
+    /** Durée affichée en heures, pour choisir le format des dates (avec l'heure sous une semaine). */
+    private get dureeHeures(): number {
+        if (!this.plageDates) return this.periode;
+        return (Date.parse(`${this.plageDates.fin}T23:59:59Z`) - Date.parse(`${this.plageDates.debut}T00:00:00Z`)) / 3600000;
+    }
+
+    private dateCourte(jour: string): string {
+        return new Date(`${jour}T00:00:00Z`).toLocaleDateString('fr-FR', { timeZone: 'UTC' });
     }
 
     changerMode(mode: ModeGraphe): void {
@@ -420,19 +473,22 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     private chargerHistoriques() {
         const actifsSelectionnes = [...this.selection];
         const maintenant = Date.now();
-        const debutExact = maintenant - this.periode * 3600000;
+        const plage = this.plageDates;
+        // Dates précises : du début du premier jour à la fin du dernier jour (UTC).
+        const debutExact = plage ? Date.parse(`${plage.debut}T00:00:00Z`) : maintenant - this.periode * 3600000;
+        const finExact = plage ? Date.parse(`${plage.fin}T23:59:59.999Z`) : Infinity;
 
         // L'API reçoit des jours entiers, avec une marge d'un jour de chaque côté.
         // creerSerie coupe ensuite à l'heure exacte, ce qui fait marcher 1H et 6H.
         const debut = this.formaterDate(new Date(debutExact - 86400000));
-        const fin = this.formaterDate(new Date(maintenant + 86400000));
+        const fin = this.formaterDate(new Date((plage ? finExact : maintenant) + 86400000));
 
         // Une erreur sur un actif ne doit pas faire disparaître les autres.
         const requetes = actifsSelectionnes.map((actif) => {
             const filtres: FiltresCours = { actif: actif.symbole, debut, fin };
 
             return this.actifService.getAllAssetHistory(filtres).pipe(
-                map((response: any) => this.creerSerie(actif, response.results ?? response, false, debutExact)),
+                map((response: any) => this.creerSerie(actif, response.results ?? response, false, debutExact, finExact)),
                 catchError((err) => {
                     console.error(`Erreur d'historique pour ${actif.symbole} :`, err);
                     return of(this.creerSerie(actif, [], true));
@@ -443,13 +499,13 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         return forkJoin(requetes);
     }
 
-    private creerSerie(actif: Actif, cours: HistoricalPrice[], enErreur: boolean, debutExact = 0): SerieActif {
+    private creerSerie(actif: Actif, cours: HistoricalPrice[], enErreur: boolean, debutExact = 0, finExact = Infinity): SerieActif {
         const parTemps = new Map<number, Bougie>();
 
         for (const c of cours) {
             const close = this.nombre(c.close);
             const secondes = Math.floor(new Date(c.horodatage).getTime() / 1000);
-            if (close === null || Number.isNaN(secondes) || secondes * 1000 < debutExact) continue;
+            if (close === null || Number.isNaN(secondes) || secondes * 1000 < debutExact || secondes * 1000 > finExact) continue;
 
             parTemps.set(secondes, {
                 time: secondes as UTCTimestamp,
@@ -1118,7 +1174,7 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
                     month: 'short',
                     year: 'numeric',
                     // Heure seulement pour les courtes périodes, en UTC comme l'axe du graphique.
-                    ...(this.periode <= 168 ? { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' } : {})
+                    ...(this.dureeHeures <= 168 ? { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' } : {})
                 }),
                 open: point.open,
                 high: point.high,

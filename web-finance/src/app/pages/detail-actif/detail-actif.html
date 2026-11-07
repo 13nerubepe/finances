@@ -47,11 +47,17 @@
             <div class="tv-outils">
                 <div class="tv-groupe" role="group" aria-label="Période">
                     @for (p of periodes; track p.value) {
-                        <button type="button" class="tv-bouton" [class.actif]="periode === p.value"
-                                [attr.aria-pressed]="periode === p.value" (click)="changerPeriode(p.value)">
+                        <button type="button" class="tv-bouton" [class.actif]="!plageDates && periode === p.value"
+                                [attr.aria-pressed]="!plageDates && periode === p.value" (click)="changerPeriode(p.value)">
                             {{ p.label }}
                         </button>
                     }
+                    <button type="button" class="tv-bouton" [class.actif]="!!plageDates || saisieDates"
+                            [attr.aria-pressed]="!!plageDates" [attr.aria-expanded]="saisieDates"
+                            title="Choisir des dates précises" (click)="basculerSaisieDates()">
+                        <i class="pi pi-calendar text-xs" aria-hidden="true"></i>
+                        {{ plageDates ? periodeLabel : 'Dates' }}
+                    </button>
                 </div>
 
                 <span class="tv-separateur"></span>
@@ -87,6 +93,24 @@
                     </button>
                 </div>
             </div>
+
+            @if (saisieDates) {
+                <form class="flex flex-wrap items-end gap-3 border-b border-surface px-3 py-3" (ngSubmit)="appliquerDates()" aria-label="Choisir des dates précises">
+                    <label class="flex flex-col gap-1 text-xs text-muted-color" for="date-debut">
+                        Du
+                        <input pInputText id="date-debut" name="debut" type="date" [(ngModel)]="dateDebutSaisie" [max]="dateFinSaisie || aujourdhui" class="!py-1 text-sm" />
+                    </label>
+                    <label class="flex flex-col gap-1 text-xs text-muted-color" for="date-fin">
+                        Au
+                        <input pInputText id="date-fin" name="fin" type="date" [(ngModel)]="dateFinSaisie" [min]="dateDebutSaisie" [max]="aujourdhui" class="!py-1 text-sm" />
+                    </label>
+                    <p-button type="submit" label="Afficher" icon="pi pi-check" size="small" />
+                    <p-button label="Annuler" severity="secondary" [text]="true" size="small" (onClick)="saisieDates = false" />
+                    @if (erreurDates) {
+                        <p class="m-0 w-full text-sm text-red-500" role="alert">{{ erreurDates }}</p>
+                    }
+                </form>
+            }
 
             <!-- Sélection des actifs à comparer -->
             <div class="tv-comparaison">
