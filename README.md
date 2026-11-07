@@ -344,6 +344,7 @@ Ils passent sur SQLite et sur PostgreSQL.
 | Membre (compte Git) | Rôle | Principales contributions |
 |---|---|---|
 | mngono / margotB | Frontend et intégration | Interface Angular : tableau de bord, actifs et listes, détail d'un actif, assistant, authentification ; intégration front-back, actualités |
-| yannick.fono | Backend et agent | Moteur d'indicateurs et pics journaliers (`marches`), agent IA (`agent`), API des comptes et des listes (`finance`), configuration |
+| yannick.fono / AizG237 | Backend, agent et revue | Moteur d'indicateurs et pics journaliers (`marches`), agent IA (`agent`), API des comptes et des listes (`finance`), configuration ; revue et fusion des pull requests |
 | yveszogo | Backend | Premier socle Django, modèles et API des marchés, application des portefeuilles |
-| AizG237 | Intégration et revue | Revue et fusion des pull requests |
+
+Deux membres ont commité sous deux comptes Git : mngono et margotB désignent la même personne, de même que yannick.fono et AizG237.
