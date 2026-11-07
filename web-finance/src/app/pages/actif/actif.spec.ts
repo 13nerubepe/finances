@@ -1,17 +1,21 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 
-import { Actif } from './actif';
+import { ActifComponent } from './actif';
 
 describe('Actif', () => {
-    let component: Actif;
-    let fixture: ComponentFixture<Actif>;
+    let component: ActifComponent;
+    let fixture: ComponentFixture<ActifComponent>;
 
     beforeEach(async () => {
         await TestBed.configureTestingModule({
-            imports: [Actif]
+            imports: [ActifComponent],
+            providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])]
         }).compileComponents();
 
-        fixture = TestBed.createComponent(Actif);
+        fixture = TestBed.createComponent(ActifComponent);
         component = fixture.componentInstance;
         await fixture.whenStable();
     });

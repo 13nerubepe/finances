@@ -74,13 +74,13 @@
             <!-- En-têtes -->
             <ng-template #header>
                 <tr>
-                    <th pSortableColumn="name">
+                    <th pSortableColumn="nom">
                         Actif
-                        <p-sortIcon field="name"></p-sortIcon>
+                        <p-sortIcon field="nom"></p-sortIcon>
                     </th>
-                    <th pSortableColumn="currentPrice" class="text-right">
+                    <th pSortableColumn="prix_actuel" class="text-right">
                         Prix actuel
-                        <p-sortIcon field="currentPrice"></p-sortIcon>
+                        <p-sortIcon field="prix_actuel"></p-sortIcon>
                     </th>
                     <th pSortableColumn="variation" class="text-right">
                         Variation
@@ -115,7 +115,7 @@
 
                     <!-- Prix actuel -->
                     <td class="text-right font-medium whitespace-nowrap">
-                        {{ actif.currentPrice | number:'1.2-2' }}
+                        {{ actif.prix_actuel | number:'1.2-2' }}
                         {{ actif.devise || '' }}
                     </td>
 

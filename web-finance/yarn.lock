@@ -2898,11 +2898,6 @@
   resolved "https://registry.npmjs.org/@rtsao/scc/-/scc-1.1.0.tgz#927dd2fae9bc3361403ac2c7a00c32ddce9ad7e8"
   integrity sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==
 
-"@scarf/scarf@^1.1.1":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@scarf/scarf/-/scarf-1.4.0.tgz#3bbb984085dbd6d982494538b523be1ce6562972"
-  integrity sha512-xxeapPiUXdZAE3che6f3xogoJPeZgig6omHEy1rIY5WVsB3H2BHNnZH+gHG6x91SCWyQCzWGsuL2Hh3ClO5/qQ==
-
 "@schematics/angular@21.2.24":
   version "21.2.24"
   resolved "https://registry.npmjs.org/@schematics/angular/-/angular-21.2.24.tgz#741074e559deb93a0877ef57b59fcdfd0ce83758"
@@ -7123,14 +7118,6 @@ neo-async@^2.6.2:
   version "2.6.2"
   resolved "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz#b4aafb93e3aeb2d8174ca53cf163ab7d7308305f"
   integrity sha512-Yd3UES5mWCSqR+qNT93S3UoYUkqAZ9lLg8a7g9rimsWmYGK8cVToA4/sF3RrshdyV3sAGMXVUmpMYOw+dLpOuw==
-
-ngx-lottie@^22.0.0:
-  version "22.0.0"
-  resolved "https://registry.yarnpkg.com/ngx-lottie/-/ngx-lottie-22.0.0.tgz#c3d64e94f9de829e872e439fcccd4eeb32e182fa"
-  integrity sha512-nsKk2fJifG2H4AWNYanF/wfJ3FsWzClkxkcD7KnzD6qpIwDrDU+89Tguv8h9i3Q9rn4r4awxvewYTJkrrIsj1g==
-  dependencies:
-    "@scarf/scarf" "^1.1.1"
-    tslib "^2.3.0"
 
 node-addon-api@^6.1.0:
   version "6.1.0"
