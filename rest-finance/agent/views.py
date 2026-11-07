@@ -1,5 +1,5 @@
+import logging
 from datetime import date
-from .memoire import contexte_conversation
 
 from drf_spectacular.utils import extend_schema
 from google.genai import errors
@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from marches.models import IndicateurJournalier
 
 from .graphe import decrire_portefeuilles, repondre
+from .memoire import contexte_conversation
 from .models import Message
 from .serializers import (
     ExplicationSerializer,
@@ -19,6 +20,11 @@ from .serializers import (
     ReponseSerializer,
 )
 from .services import expliquer_pic
+
+logger = logging.getLogger(__name__)
+
+MESSAGE_IA_INDISPONIBLE = "L'assistant est momentanément indisponible. Réessayez dans quelques instants."
+
 
 class ExplicationPicView(APIView):
     """Explication d'un jour (pic ou non) : générée au premier appel, puis lue en base."""
@@ -34,8 +40,9 @@ class ExplicationPicView(APIView):
         pic = get_object_or_404(IndicateurJournalier, actif__symbole=symbole.upper(), date=jour)
         try:
             explication = expliquer_pic(pic)
-        except errors.APIError as erreur:
-            return Response({"detail": f"Erreur de l'IA : {erreur}"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except errors.APIError:
+            logger.exception("Explication de %s du %s impossible", symbole, jour)
+            return Response({"detail": MESSAGE_IA_INDISPONIBLE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ValueError:  # clé GOOGLE_API_KEY absente : le client Gemini refuse de démarrer
             return Response(
                 {"detail": "Clé GOOGLE_API_KEY absente : renseignez-la dans rest-finance/.env (voir .env.example)."},
@@ -70,11 +77,9 @@ class QuestionAssistantView(APIView):
                 decrire_portefeuilles(request.user),
                 resume,
             )
-        except Exception as erreur:  # quota Gemini, réseau... : on prévient le front sans planter
-            return Response(
-                {"detail": f"L'assistant est indisponible : {erreur}"},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+        except Exception:  # quota Gemini, réseau, clé absente... : détail dans les logs, message simple au front
+            logger.exception("Réponse de l'assistant impossible")
+            return Response({"detail": MESSAGE_IA_INDISPONIBLE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         Message.objects.create(
             utilisateur=request.user,

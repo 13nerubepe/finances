@@ -6,7 +6,7 @@ import yfinance as yf
 
 from django.utils import timezone
 
-from marches.models import Actif, CoursHistorique
+from marches.models import CoursHistorique
 
 
 # Configuration Yahoo Finance

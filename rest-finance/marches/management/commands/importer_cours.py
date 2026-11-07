@@ -1,7 +1,5 @@
-import yfinance as yf
-
 from django.core.management.base import BaseCommand
-from marches.models import Actif, CoursJournalier
+from marches.models import Actif
 from marches.journalier import importer_cours
 
 class Command(BaseCommand):

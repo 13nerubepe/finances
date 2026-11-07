@@ -201,33 +201,3 @@ class PicJournalierSerializer(serializers.ModelSerializer):
 
     def get_explication_disponible(self, pic) -> bool:
         return hasattr(pic, "explication")
-
-def _en_pourcentage(log_rendement):
-    """Log-rendement -> variation en % (ex. -0.0943 -> -9.0)."""
-    return None if log_rendement is None else round((math.exp(log_rendement) - 1) * 100, 2)
-
-
-class PicJournalierSerializer(serializers.ModelSerializer):
-    symbole = serializers.CharField(source="actif.symbole")
-    nom = serializers.CharField(source="actif.nom")
-    variation = serializers.SerializerMethodField(help_text="Variation du jour en %.")
-    gap = serializers.SerializerMethodField(help_text="Écart à l'ouverture en %.")
-    explication_disponible = serializers.SerializerMethodField(
-        help_text="Vrai si l'assistant a déjà expliqué ce pic (réponse immédiate)."
-    )
-
-    class Meta:
-        model = IndicateurJournalier
-        fields = [
-            "id", "symbole", "nom", "date", "variation", "z", "z_volume", "gap",
-            "volatilite_annuelle", "type_pic", "explication_disponible",
-        ]
-
-    def get_variation(self, pic) -> float | None:
-        return _en_pourcentage(pic.rendement)
-
-    def get_gap(self, pic) -> float | None:
-        return _en_pourcentage(pic.gap)
-
-    def get_explication_disponible(self, pic) -> bool:
-        return hasattr(pic, "explication")

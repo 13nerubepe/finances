@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import Explication, Message,Resume
-from .models import Explication,Message
+from .models import Explication, Message, Resume
 
 
 @admin.register(Explication)

@@ -3,8 +3,6 @@
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
-from django.urls import reverse
-from rest_framework import status
 from rest_framework.test import APITestCase
 
 from finance.models import User
