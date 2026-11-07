@@ -286,6 +286,16 @@ Il explique le risque et les points à surveiller, mais ne recommande jamais d'a
 Depuis le graphique, un clic sur une bougie ouvre l'explication du jour ; le bouton **Demander à l'assistant** lui
 transmet le moment, la bougie et l'explication pour une analyse détaillée.
 
+### Analyse croisée (frontend)
+
+Le bouton **Analyse croisée** de la page détail (dernier jour, ou jour cliqué sur le graphique) est calculé dans le
+navigateur par `AnalyseCroiseeService` (`web-finance/src/app/pages/service/service/analyse-croisee.service.ts`), sans
+route dédiée : il lit les routes existantes (actif, volatilité de l'actif et de son indice, pics journaliers,
+corrélations, actualités, listes de l'utilisateur) puis `croiserInformations()` en déduit le mouvement du jour et son
+score Z, le régime de volatilité, le lien avec le marché, les actifs liés ou diversifiants, les articles de la période,
+l'exposition des listes, un niveau de risque et des conseils de lecture du risque. L'explication de Gemini peut y être
+ajoutée, et l'analyse peut être transmise à l'assistant pour l'approfondir.
+
 ---
 
 ## Tests

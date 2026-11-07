@@ -12,6 +12,7 @@ import { Select } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { InputText } from 'primeng/inputtext';
 import { Tag } from 'primeng/tag';
+import { Tooltip } from 'primeng/tooltip';
 
 import {
     AreaSeries,
@@ -33,6 +34,7 @@ import type { Actif, Bougie, ExplicationPic, FiltresCours, HistoricalPrice } fro
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { AnalyseActif } from '@/app/pages/commons/analyse-actif/analyse-actif';
 import { AssistantPont } from '@/app/pages/commons/assistant-ai/assistant-pont';
+import { AnalyseCroiseeComponent } from '@/app/pages/commons/analyse-croisee/analyse-croisee';
 
 type TypeGraphe = 'candle' | 'line' | 'area' | 'bar' | 'baseline';
 type ModeGraphe = 'cours' | 'base100';
@@ -100,7 +102,7 @@ const STATS_VIDES: StatsActif = { perf: null, volatilite: null, ouverture: null,
 @Component({
     selector: 'app-detail-actif',
     standalone: true,
-    imports: [CommonModule, FormsModule, Button, Dialog, InputText, MultiSelect, Select, TableModule, Tag, AnalyseActif],
+    imports: [CommonModule, FormsModule, Button, Dialog, InputText, MultiSelect, Select, TableModule, Tag, Tooltip, AnalyseActif, AnalyseCroiseeComponent],
     templateUrl: './detail-actif.html',
     styleUrl: './detail-actif.scss'
 })
@@ -163,6 +165,11 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     fenetreSymbole = '';
     fenetreJour = '';
     fenetreAvecPic = false;
+    // Analyse croisée (volatilité, pics, marché, corrélations, actualités, listes) d'un jour
+    analyseVisible = false;
+    analyseSymbole = '';
+    analyseJour = '';
+
     /** Moment cliqué sur le graphique (UTC) et bougie correspondante, s'il y en a une. */
     fenetreMoment: Date | null = null;
     fenetreBougie: { ouverture: number; cloture: number; variation: number | null } | null = null;
@@ -964,6 +971,19 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
                     this.cdr.markForCheck();
                 }
             });
+    }
+
+    /** Ouvre l'analyse croisée de l'actif de référence : jour donné, ou dernier jour coté par défaut. */
+    ouvrirAnalyse(jour?: string): void {
+        const actif = this.reference;
+        if (!actif) return;
+        const points = this.serieReference?.points ?? [];
+        const dernierJour = points.length ? this.jourDe(points[points.length - 1].time) : new Date().toISOString().slice(0, 10);
+        this.analyseSymbole = actif.symbole;
+        this.analyseJour = jour ?? dernierJour;
+        this.fenetreVisible = false;
+        this.analyseVisible = true;
+        this.cdr.markForCheck();
     }
 
     /** Envoie le moment cliqué (et l'explication déjà obtenue) à l'assistant, qui l'analyse et conseille. */
