@@ -26,6 +26,11 @@ function covariance(a: number[], b: number[]): number | null {
     return a.reduce((s, v, i) => s + (v - moyenneA) * (b[i] - moyenneB), 0) / (a.length - 1);
 }
 
+/** Nombre au format français (virgule décimale), comme sur le reste de l'application. */
+function enFrancais(n: number, decimales: number): string {
+    return n.toLocaleString('fr-FR', { minimumFractionDigits: decimales, maximumFractionDigits: decimales });
+}
+
 @Component({
     selector: 'app-analyse-actif',
     standalone: true,
@@ -212,18 +217,18 @@ export class AnalyseActif {
     pourcent(v: unknown): string {
         const n = nombre(v);
         if (n === null) return '—';
-        return `${(RATIOS_EN_FRACTION ? n * 100 : n).toFixed(2)} %`;
+        return `${enFrancais(RATIOS_EN_FRACTION ? n * 100 : n, 2)} %`;
     }
 
     decimal(v: unknown): string {
         const n = nombre(v);
-        return n === null ? '—' : n.toFixed(2);
+        return n === null ? '—' : enFrancais(n, 2);
     }
 
     scientifique(v: unknown): string {
         const n = nombre(v);
         if (n === null) return '—';
-        return n !== 0 && Math.abs(n) < 0.001 ? n.toExponential(2) : n.toFixed(4);
+        return n !== 0 && Math.abs(n) < 0.001 ? n.toExponential(2).replace('.', ',') : enFrancais(n, 4);
     }
 
     couleurCorrelation(v: unknown): string {

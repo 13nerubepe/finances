@@ -163,7 +163,7 @@ export class AppTopbar {
     userItems: MenuItem[] = [
         { label: 'Mon profil', icon: 'pi pi-user', command: () => this.router.navigate(['/profil']) },
         // { label: 'Paramètres', icon: 'pi pi-cog', command: () => this.router.navigate(['/parametres']) },
-        { label: 'Aide', icon: 'pi pi-question-circle', command: () => this.router.navigate(['/aide']) },
+        // { label: 'Aide', icon: 'pi pi-question-circle', command: () => this.router.navigate(['/aide']) },
         // { label: 'Actualités', icon: 'pi pi-fw pi-home', routerLink: ['/actualités'] },
         { separator: true },
         // { label: 'Se déconnecter', icon: 'pi pi-sign-out', styleClass: 'text-red-500', command: () => this.authService.logout() }

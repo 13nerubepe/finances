@@ -250,13 +250,13 @@
                         </div>
                         <div>
                             <dt>Volatilité</dt>
-                            <dd>{{ volatilite(actif) !== null ? formaterPrix(volatilite(actif)) + ' %' : '—' }}</dd>
+                            <dd>{{ formaterPourcent(volatilite(actif)) }}</dd>
                         </div>
                         <div>
                             <dt>Amplitude</dt>
                             @let haut = statsActif(actif).haut;
                             @let bas = statsActif(actif).bas;
-                            <dd>{{ haut !== null && bas !== null && bas > 0 ? formaterPrix((haut! / bas! - 1) * 100) + ' %' : '—' }}</dd>
+                            <dd>{{ haut !== null && bas !== null && bas > 0 ? formaterPourcent((haut! / bas! - 1) * 100) : '—' }}</dd>
                         </div>
                         <div>
                             <dt>Ouverture</dt>
@@ -292,7 +292,7 @@
                     <span>Actif le plus volatil ({{ periodeLabel }})</span>
                     <strong>
                         {{ plusVolatil.nom }}
-                        <em class="tv-orange">{{ formaterPrix(volatilite(plusVolatil)) }} %</em>
+                        <em class="tv-orange">{{ formaterPourcent(volatilite(plusVolatil)) }}</em>
                     </strong>
                 </div>
             </div>
@@ -405,7 +405,7 @@
                         </td>
 
                         <td class="text-right tv-chiffre">
-                            {{ volatilite(a) !== null ? formaterPrix(volatilite(a)) + ' %' : '—' }}
+                            {{ formaterPourcent(volatilite(a)) }}
                         </td>
 
                         <td class="text-right font-medium tv-chiffre"

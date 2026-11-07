@@ -1,5 +1,7 @@
+import { registerLocaleData } from '@angular/common';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
-import { ApplicationConfig, provideZonelessChangeDetection } from '@angular/core';
+import localeFr from '@angular/common/locales/fr';
+import { ApplicationConfig, LOCALE_ID, provideZonelessChangeDetection } from '@angular/core';
 import { provideRouter, TitleStrategy, withEnabledBlockingInitialNavigation, withInMemoryScrolling } from '@angular/router';
 // import Aura from '@primeuix/themes/aura';
 import Lara from '@primeuix/themes/lara';
@@ -9,7 +11,9 @@ import { definePreset } from '@primeuix/themes';
 import { authInterceptor } from '@/app/pages/service/service/auth.interceptor';
 import { TitreStrategy } from '@/app/titre.strategy';
 
-// import
+// Nombres et dates des pipes Angular au format français (1 234,56 ; 07 nov. 2026).
+registerLocaleData(localeFr);
+
 const AppPreset = definePreset(Lara, {
     primitive: {
         orange: {
@@ -100,6 +104,7 @@ export const appConfig: ApplicationConfig = {
         provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
         provideZonelessChangeDetection(),
         { provide: TitleStrategy, useClass: TitreStrategy },
+        { provide: LOCALE_ID, useValue: 'fr-FR' },
         // providePrimeNG({ theme: { preset: Aura, options: { darkModeSelector: '.app-dark' } } })
         providePrimeNG({ theme: { preset: AppPreset, options: { darkModeSelector: '.app-dark' } } })
 

@@ -646,6 +646,12 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /** Valeur signée : « +1,25 % », ou « — » si la donnée manque. */
+    /** Pourcentage non signé (volatilité, amplitude), toujours avec 2 décimales. */
+    formaterPourcent(valeur: number | null | undefined): string {
+        if (valeur === null || valeur === undefined) return '—';
+        return `${valeur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
+    }
+
     formaterVariation(valeur: number | null, suffixe = ' %'): string {
         if (valeur === null) return '—';
         const signe = valeur > 0 ? '+' : '';
