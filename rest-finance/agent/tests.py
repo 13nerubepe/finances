@@ -113,6 +113,12 @@ class ExplicationPicTests(APITestCase):
         self.assertEqual(reponse.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
         self.assertIn("GOOGLE_API_KEY", reponse.data["detail"])
 
+    @patch("agent.views.expliquer_pic", side_effect=RuntimeError("Réponse vide de Gemini"))
+    def test_panne_de_l_ia_renvoie_un_message_simple(self, _faux):
+        reponse = self.demander()
+        self.assertEqual(reponse.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertNotIn("Gemini", reponse.data["detail"])
+
     def test_jour_sans_indicateur_renvoie_404(self):
         self.assertEqual(self.demander("2026-07-30").status_code, status.HTTP_404_NOT_FOUND)
 
@@ -129,3 +135,34 @@ class ExplicationPicTests(APITestCase):
         with patch("agent.views.ExplicationSerializer") as serial:
             serial.return_value.data = {"texte": "RAS"}
             self.assertEqual(self.demander("2026-07-30").status_code, status.HTTP_200_OK)
+
+
+class CoursAutourDUneHeureTests(TestCase):
+    def setUp(self):
+        from datetime import datetime, timedelta, timezone
+
+        from marches.models import Actif, CoursHistorique
+
+        aapl = Actif.objects.create(symbole="AAPL", nom="Apple Inc.")
+        debut = datetime(2026, 11, 6, 10, 0, tzinfo=timezone.utc)
+        for i, close in enumerate([100.0, 101.0, 95.0, 96.0]):
+            CoursHistorique.objects.create(
+                actif=aapl, horodatage=debut + timedelta(hours=i), open=close, high=close, low=close, close=close, volume=10
+            )
+
+    def appeler(self, **arguments):
+        from .outils import cours_autour_d_une_heure
+
+        return cours_autour_d_une_heure.invoke(arguments)
+
+    def test_bougies_autour_du_moment_avec_variations(self):
+        texte = self.appeler(symbole="aapl", moment="2026-11-06T12:00", heures=2)
+        self.assertIn("12:00 : ouverture 95.0", texte)
+        self.assertIn("variation -5.94 %, volume 10  <- moment demandé", texte)
+        self.assertIn("10:00 : ouverture 100.0, haut 100.0, bas 100.0, clôture 100.0, variation n/d,", texte)
+        self.assertIn("Variation sur la fenêtre : -4.0 %.", texte)
+
+    def test_actif_ou_moment_invalide(self):
+        self.assertIn("Actif inconnu", self.appeler(symbole="XXX", moment="2026-11-06T12:00"))
+        self.assertIn("format", self.appeler(symbole="AAPL", moment="hier"))
+        self.assertIn("Aucun cours horaire", self.appeler(symbole="AAPL", moment="2026-01-01T12:00"))

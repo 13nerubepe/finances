@@ -16,7 +16,7 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from . import indicateurs
 from .filters import CoursFilter, PicJournalierFilter
-from .models import Actif, CoursHistorique, IndicateurJournalier
+from .models import Actif, CoursHistorique, CoursJournalier, IndicateurJournalier
 from .pagination import PaginationCours
 from .serializers import (
     ActifSerializer,
@@ -86,14 +86,19 @@ class ActifViewSet(ReadOnlyModelViewSet):
             .filter(actif=OuterRef("pk"))
             .order_by("-horodatage")
         )
+        # Repli : un actif sans cours horaires (import récent, horaire en échec) garde un prix
+        # grâce à ses deux dernières clôtures journalières.
+        derniers_jours = (
+            CoursJournalier.objects
+            .filter(actif=OuterRef("pk"))
+            .order_by("-date")
+        )
 
         return Actif.objects.annotate(
-            prix_actuel_db=Subquery(
-                dernieres_bougies.values("close")[:1]
-            ),
-            prix_precedent_db=Subquery(
-                dernieres_bougies.values("close")[1:2]
-            ),
+            prix_actuel_db=Subquery(dernieres_bougies.values("close")[:1]),
+            prix_precedent_db=Subquery(dernieres_bougies.values("close")[1:2]),
+            cloture_jour_db=Subquery(derniers_jours.values("close")[:1]),
+            cloture_veille_db=Subquery(derniers_jours.values("close")[1:2]),
         )
 
     def get_object(self):

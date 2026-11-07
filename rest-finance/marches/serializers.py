@@ -21,15 +21,21 @@ class ActifSerializer(serializers.ModelSerializer):
 #             )
 #         return obj._dernieres_bougies_cache
 
+    @staticmethod
+    def _deux_derniers_prix(obj):
+        """Deux derniers cours horaires ; à défaut, deux dernières clôtures journalières."""
+        if getattr(obj, "prix_actuel_db", None) is not None:
+            return obj.prix_actuel_db, getattr(obj, "prix_precedent_db", None)
+        return getattr(obj, "cloture_jour_db", None), getattr(obj, "cloture_veille_db", None)
+
     def get_prix_actuel(self, obj):
-        prix = obj.prix_actuel_db
+        prix, _ = self._deux_derniers_prix(obj)
 
         return float(prix) if prix is not None else None
 
 
     def get_variation(self, obj):
-        dernier = obj.prix_actuel_db
-        precedent = obj.prix_precedent_db
+        dernier, precedent = self._deux_derniers_prix(obj)
 
         if dernier is None or precedent is None or precedent == 0:
             return None

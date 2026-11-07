@@ -48,6 +48,9 @@ class ExplicationPicView(APIView):
                 {"detail": "Clé GOOGLE_API_KEY absente : renseignez-la dans rest-finance/.env (voir .env.example)."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
+        except Exception:  # réseau, réponse vide... : détail dans les logs, message simple au front
+            logger.exception("Explication de %s du %s impossible", symbole, jour)
+            return Response({"detail": MESSAGE_IA_INDISPONIBLE}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         return Response(ExplicationSerializer(explication).data)
 
 

@@ -1,10 +1,10 @@
 """Outils de l'agent : chaque outil lit nos données (pics, indicateurs, explications) à partir d'un ticker."""
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from langchain_core.tools import tool
 
-from marches.models import Actif, IndicateurJournalier
+from marches.models import Actif, CoursHistorique, IndicateurJournalier
 
 from .services import expliquer_pic, pourcentage
 
@@ -71,9 +71,9 @@ def indicateurs_du_jour(symbole: str, jour: str) -> str:
         pic = f"oui ({ligne.type_pic})" if ligne.type_pic else "oui"
     return (
         f"{actif.nom} ({actif.symbole}) le {ligne.date} : "
-        f"variationm: {_pourcent(ligne.rendement)} %,\n volatilité annualisée: {volatilite} %, "
-        f"z-score: {_valeur(ligne.z)}, \nvolume anormal (z): {_valeur(ligne.z_volume)}, "
-        f"gap d'ouverture: {_pourcent(ligne.gap)} %, \nbêta: {_valeur(ligne.beta)}, pic : {pic}."
+        f"variation : {_pourcent(ligne.rendement)} %, volatilité annualisée : {volatilite} %, "
+        f"z-score : {_valeur(ligne.z)}, volume anormal (z) : {_valeur(ligne.z_volume)}, "
+        f"gap d'ouverture : {_pourcent(ligne.gap)} %, bêta : {_valeur(ligne.beta)}, pic : {pic}."
     )
 
 
@@ -98,4 +98,44 @@ def expliquer_un_pic(symbole: str, jour: str) -> str:
     return f"{explication.texte}\n\nSources :\n{sources}"
 
 
-OUTILS = [lister_pics, indicateurs_du_jour, expliquer_un_pic]
+@tool
+def cours_autour_d_une_heure(symbole: str, moment: str, heures: int = 6) -> str:
+    """Donne les bougies horaires d'un actif autour d'un moment précis, pour expliquer un mouvement
+    à une heure donnée (clic sur le graphique). moment au format AAAA-MM-JJTHH:MM (UTC) ;
+    heures = nombre d'heures avant et après ce moment (1 à 24, 6 par défaut)."""
+    actif = _actif(symbole)
+    if actif is None:
+        return f"Actif inconnu : {symbole}."
+    try:
+        instant = datetime.fromisoformat(moment.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return "Moment attendu au format AAAA-MM-JJTHH:MM."
+    if instant.tzinfo is None:
+        instant = instant.replace(tzinfo=timezone.utc)
+    marge = timedelta(hours=max(1, min(int(heures), 24)))
+
+    bougies = list(
+        CoursHistorique.objects.filter(
+            actif=actif, horodatage__range=(instant - marge, instant + marge)
+        ).order_by("horodatage")
+    )
+    if not bougies:
+        return f"Aucun cours horaire pour {actif.symbole} autour du {instant:%d/%m/%Y %H:%M} UTC."
+
+    lignes = [f"Bougies horaires de {actif.nom} ({actif.symbole}) autour du {instant:%d/%m/%Y %H:%M} UTC :"]
+    precedent = None
+    for b in bougies:
+        variation = "n/d" if not precedent else f"{round((b.close - precedent) / precedent * 100, 2)} %"
+        repere = "  <- moment demandé" if abs(b.horodatage - instant) < timedelta(minutes=30) else ""
+        lignes.append(
+            f"- {b.horodatage:%d/%m %H:%M} : ouverture {_valeur(b.open)}, haut {_valeur(b.high)}, "
+            f"bas {_valeur(b.low)}, clôture {_valeur(b.close)}, variation {variation}, volume {b.volume}{repere}"
+        )
+        precedent = b.close
+    debut, fin = bougies[0].open, bougies[-1].close
+    if debut:
+        lignes.append(f"Variation sur la fenêtre : {round((fin - debut) / debut * 100, 2)} %.")
+    return "\n".join(lignes)
+
+
+OUTILS = [lister_pics, indicateurs_du_jour, expliquer_un_pic, cours_autour_d_une_heure]

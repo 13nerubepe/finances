@@ -94,5 +94,8 @@ def expliquer_pic(pic):
         contents=construire_prompt(pic, articles),
         config=types.GenerateContentConfig(tools=[recherche_google]),
     )
+    texte = (reponse.text or "").strip()
+    if not texte:  # réponse bloquée ou vide : on n'enregistre rien, l'appel pourra être retenté
+        raise RuntimeError(f"Réponse vide de Gemini pour {pic.actif.symbole} le {pic.date}")
     sources = [{"titre": a.titre, "url": a.lien} for a in articles] + extraire_sources(reponse)
-    return Explication.objects.create(pic=pic, texte=reponse.text, sources=sources, modele=MODELE)
+    return Explication.objects.create(pic=pic, texte=texte, sources=sources, modele=MODELE)

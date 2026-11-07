@@ -88,6 +88,26 @@ class ActifsTests(BaseApiTest):
         self.assertEqual(self.client.get("/api/actifs/ETH-USD/").status_code, 200)
         self.assertEqual(self.client.get("/api/actifs/XXX/").status_code, 404)
 
+    def test_prix_actuel_depuis_les_cours_horaires(self):
+        r = self.client.get("/api/actifs/AAPL/")
+        self.assertAlmostEqual(r.data["prix_actuel"], self.closes_aapl[-1], places=4)
+
+    def test_prix_actuel_repli_sur_les_clotures_journalieres(self):
+        from datetime import date
+
+        from .models import CoursJournalier
+
+        for jour, close in [(date(2026, 10, 21), 2000.0), (date(2026, 10, 22), 2100.0)]:
+            CoursJournalier.objects.create(actif=self.vide, date=jour, open=close, high=close, low=close, close=close)
+        r = self.client.get("/api/actifs/ETH-USD/")
+        self.assertEqual(r.data["prix_actuel"], 2100.0)
+        self.assertEqual(r.data["variation"], 5.0)
+
+    def test_sans_aucun_cours_le_prix_est_vide(self):
+        r = self.client.get("/api/actifs/ETH-USD/")
+        self.assertIsNone(r.data["prix_actuel"])
+        self.assertIsNone(r.data["variation"])
+
 
 class CoursTests(BaseApiTest):
     def test_filtre_par_actif_et_pagination(self):
