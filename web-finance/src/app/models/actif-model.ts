@@ -11,7 +11,7 @@ export interface Actif {
     type_actif: 'action' | 'indice' | 'crypto';
     devise: string;
     est_suivi: boolean;
-    prix_actuel?: number;
+    prix_actuel?: number | null;
     variation?: number;
     logo?: string;
     trend?: 'up' | 'down' | 'stable';

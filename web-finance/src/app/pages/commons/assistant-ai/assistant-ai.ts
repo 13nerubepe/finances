@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, ElementRef, inject, ViewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe, NgClass, NgFor, NgIf } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +12,7 @@ import { Observable } from 'rxjs';
 import type { Actif, ExplicationPic } from '@/app/models/actif-model';
 import { apiErrorMessage } from '@/app/models/api-errors';
 import { ActifService } from '@/app/pages/service/service/actif-service';
+import { AssistantPont, DemandeAssistant } from './assistant-pont';
 
 type Intention = 'pics' | 'volatilite' | 'actualites' | 'correlations';
 
@@ -139,6 +141,25 @@ export class AssistantAi {
     /** L'historique n'est chargé qu'à la première ouverture. */
     private historiqueCharge = false;
 
+    constructor() {
+        // Une page (ex. le graphique du détail d'un actif) peut poser une question : l'assistant s'ouvre et répond.
+        inject(AssistantPont)
+            .demandes$.pipe(takeUntilDestroyed())
+            .subscribe((demande) => this.recevoir(demande));
+    }
+
+    private recevoir(demande: DemandeAssistant): void {
+        if (!this.ouvert) this.basculer();
+        if (this.enCours) {
+            this.ajouter({ auteur: 'ia', texte: 'Je termine la réponse en cours ; reposez la question dans un instant.' });
+            return;
+        }
+        this.vue = 'chat';
+        this.ajouter({ auteur: 'user', texte: demande.affichage });
+        this.enCours = true;
+        this.questionLibre(demande.question, demande.symboles);
+    }
+
     basculer(): void {
         this.ouvert = !this.ouvert;
         if (this.ouvert && !this.historiqueCharge) this.chargerHistorique();
@@ -240,7 +261,7 @@ export class AssistantAi {
             }
             this.repondre(`Derniers pics de ${symbole}. Lequel voulez-vous expliquer ?`, {
                 options: recents.map((pic) => ({
-                    label: `${pic.date} (${pic.variation === null ? '—' : `${pic.variation.toFixed(2)} %`})${pic.explication_disponible ? ' ✓' : ''}`,
+                    label: `${pic.date} (${pic.variation === null ? '—' : `${pic.variation.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`})${pic.explication_disponible ? ' ✓' : ''}`,
                     action: () => this.demanderExplication(symbole, pic.date)
                 }))
             });
@@ -297,7 +318,7 @@ export class AssistantAi {
                     } else {
                         const n = Number(valeur);
                         const sens = n >= SEUIL_SENS ? 'même sens' : n <= -SEUIL_SENS ? 'sens opposés' : 'pas de lien net';
-                        lignes.push(`• ${a} / ${b} : ${sens} (${n.toFixed(2)})`);
+                        lignes.push(`• ${a} / ${b} : ${sens} (${n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`);
                     }
                 }
             });
@@ -377,7 +398,7 @@ export class AssistantAi {
 
     private pourcent(valeur: unknown): string {
         const n = valeur === null || valeur === undefined || valeur === '' ? NaN : Number(valeur);
-        return Number.isFinite(n) ? `${(RATIOS_EN_FRACTION ? n * 100 : n).toFixed(2)} %` : '—';
+        return Number.isFinite(n) ? `${(RATIOS_EN_FRACTION ? n * 100 : n).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %` : '—';
     }
 
     private repondre(texte: string, extra: Pick<Message, 'sources' | 'options'> = {}): void {

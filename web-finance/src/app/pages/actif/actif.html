@@ -115,8 +115,11 @@
 
                     <!-- Prix actuel -->
                     <td class="text-right font-medium whitespace-nowrap">
-                        {{ actif.prix_actuel | number:'1.2-2' }}
-                        {{ actif.devise || '' }}
+                        @if (actif.prix_actuel !== null && actif.prix_actuel !== undefined) {
+                            {{ actif.prix_actuel | number:'1.2-2' }} {{ actif.devise || '' }}
+                        } @else {
+                            <span class="text-surface-500" pTooltip="Aucun cours importé pour cet actif">—</span>
+                        }
                     </td>
 
                     <!-- Variation en pourcentage -->

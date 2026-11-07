@@ -31,6 +31,7 @@ import type { IChartApi, ISeriesApi, MouseEventParams, SeriesType, UTCTimestamp 
 import type { Actif, Bougie, ExplicationPic, FiltresCours, HistoricalPrice } from '@/app/models/actif-model';
 import { ActifService } from '@/app/pages/service/service/actif-service';
 import { AnalyseActif } from '@/app/pages/commons/analyse-actif/analyse-actif';
+import { AssistantPont } from '@/app/pages/commons/assistant-ai/assistant-pont';
 
 type TypeGraphe = 'candle' | 'line' | 'area' | 'bar' | 'baseline';
 type ModeGraphe = 'cours' | 'base100';
@@ -153,6 +154,9 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     fenetreSymbole = '';
     fenetreJour = '';
     fenetreAvecPic = false;
+    /** Moment cliqué sur le graphique (UTC) et bougie correspondante, s'il y en a une. */
+    fenetreMoment: Date | null = null;
+    fenetreBougie: { ouverture: number; cloture: number; variation: number | null } | null = null;
     explication: ExplicationPic | null = null;
     explicationEnCours = false;
     explicationErreur = '';
@@ -190,7 +194,8 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
     constructor(
         private actifService: ActifService,
         private route: ActivatedRoute,
-        private cdr: ChangeDetectorRef
+        private cdr: ChangeDetectorRef,
+        private assistant: AssistantPont
     ) {
         this.typesGraphe = this.tousLesTypes;
     }
@@ -832,22 +837,37 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
         const jour = this.jourDe(secondes);
         const pic = (this.picsParSymbole.get(symbole) ?? []).find((p) => p.debut.slice(0, 10) <= jour && jour <= p.fin.slice(0, 10));
 
-        this.preparerFenetre(symbole, pic ? this.jourDe(new Date(pic.horodatage_max).getTime() / 1000) : jour, !!pic);
+        this.preparerFenetre(symbole, pic ? this.jourDe(new Date(pic.horodatage_max).getTime() / 1000) : jour, !!pic, secondes);
+    }
+
+    /** Bougie cliquée et sa variation par rapport à la bougie précédente. */
+    private bougieA(secondes: number): { ouverture: number; cloture: number; variation: number | null } | null {
+        const points = this.serieReference?.points ?? [];
+        const i = points.findIndex((p) => p.time === secondes);
+        if (i < 0) return null;
+        const precedente = i > 0 ? points[i - 1].close : null;
+        return {
+            ouverture: points[i].open,
+            cloture: points[i].close,
+            variation: precedente ? ((points[i].close - precedente) / precedente) * 100 : null
+        };
     }
 
     /** Bouton « Expliquer ce pic » de l'onglet Mouvements inhabituels. */
     expliquerPic(horodatage: string): void {
         const symbole = this.reference?.symbole;
-        if (symbole) this.preparerFenetre(symbole, this.jourDe(new Date(horodatage).getTime() / 1000), true);
+        if (symbole) this.preparerFenetre(symbole, this.jourDe(new Date(horodatage).getTime() / 1000), true, new Date(horodatage).getTime() / 1000);
     }
 
-    private preparerFenetre(symbole: string, jour: string, avecPic: boolean): void {
+    private preparerFenetre(symbole: string, jour: string, avecPic: boolean, secondes?: number): void {
         // La fenêtre ne peut pas s'afficher par-dessus le plein écran.
         if (document.fullscreenElement) document.exitFullscreen();
 
         this.fenetreSymbole = symbole;
         this.fenetreJour = jour;
         this.fenetreAvecPic = avecPic;
+        this.fenetreMoment = secondes ? new Date(secondes * 1000) : null;
+        this.fenetreBougie = secondes ? this.bougieA(secondes) : null;
         this.fenetreVisible = true;
         this.explication = null;
         this.explicationErreur = '';
@@ -890,13 +910,42 @@ export class DetailActif implements OnInit, AfterViewInit, OnDestroy {
             });
     }
 
+    /** Envoie le moment cliqué (et l'explication déjà obtenue) à l'assistant, qui l'analyse et conseille. */
+    demanderAssistant(): void {
+        const actif = this.reference;
+        if (!actif) return;
+
+        const moment = this.fenetreMoment;
+        const quand = moment
+            ? `le ${moment.toLocaleDateString('fr-FR', { timeZone: 'UTC' })} à ${moment.toLocaleTimeString('fr-FR', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit' })} UTC`
+            : `le ${new Date(this.fenetreJour).toLocaleDateString('fr-FR', { timeZone: 'UTC' })}`;
+        const lignes = [`Explique le mouvement de ${actif.nom} (${this.fenetreSymbole}) ${quand}, puis conseille-moi.`];
+
+        const bougie = this.fenetreBougie;
+        if (bougie) {
+            const variation = bougie.variation === null ? 'inconnue' : this.formaterVariation(bougie.variation);
+            lignes.push(`Bougie cliquée : ouverture ${this.formaterPrix(bougie.ouverture)}, clôture ${this.formaterPrix(bougie.cloture)}, variation ${variation} par rapport à la bougie précédente.`);
+        }
+        if (this.explication?.texte) lignes.push(`Explication déjà obtenue pour cette journée : ${this.explication.texte}`);
+        if (moment) lignes.push(`Utilise cours_autour_d_une_heure avec moment=${moment.toISOString().slice(0, 16)}, puis indicateurs_du_jour pour le ${this.fenetreJour}.`);
+        else lignes.push(`Utilise indicateurs_du_jour pour le ${this.fenetreJour}.`);
+        lignes.push("Termine par les points à surveiller et ce que cela implique pour mes listes d'actifs.");
+
+        this.fenetreVisible = false;
+        this.assistant.demander({
+            affichage: `Expliquer le mouvement de ${this.fenetreSymbole} ${quand} et me conseiller`,
+            question: lignes.join('\n'),
+            symboles: [this.fenetreSymbole]
+        });
+    }
+
     /** Affiche la raison donnée par le serveur, pour distinguer une absence de données d'une panne. */
     private messageAgent(erreur: HttpErrorResponse): string {
         const detail = typeof erreur.error?.detail === 'string' ? ` (${erreur.error.detail})` : '';
 
         if (erreur.status === 0) return 'Le serveur ne répond pas. Vérifie que Django est lancé.';
         if (erreur.status === 401 || erreur.status === 403) return `Accès refusé à l'agent : reconnecte-toi.${detail}`;
-        if (erreur.status === 404) return "Pas de données pour ce jour (week-end, jour férié ou indicateurs non calculés) : choisissez un autre jour de bourse.";
+        if (erreur.status === 404) return "Les indicateurs de cette journée ne sont pas encore calculés (ils le sont chaque nuit) ou il n'y a pas eu de cotation ce jour-là.";
         if (erreur.status === 503) return `L'IA est momentanément indisponible. Réessayez plus tard.${detail}`;
         return `L'agent a répondu par une erreur ${erreur.status}.${detail}`;
     }
